@@ -1,19 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import api from "../../api/axios";
+import { useAuth } from "../../features/auth/AuthContext";
+import api from "../../core/api";
 import toast from "react-hot-toast";
-import Spinner from "../../components/ui/Spinner";
 
-const ACADEMIC_YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Masters", "PhD", "Other"];
+const ACADEMIC_YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Graduate", "Other"];
 
 export default function RegisterPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    name: "", email: "", password: "", confirmPassword: "",
-    academicYear: "", monthlyAllowanceBaseline: "", monthlySavingsGoal: "",
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    academicYear: "1st Year",
+    monthlyAllowanceBaseline: "",
+    monthlySavingsGoal: "",
   });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,8 +25,8 @@ export default function RegisterPage() {
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "Name is required.";
-    if (!form.email) e.email = "Email is required.";
+    if (!form.name.trim()) e.name = "Full name is required.";
+    if (!form.email.trim()) e.email = "Email is required.";
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email.";
     if (!form.password) e.password = "Password is required.";
     else if (form.password.length < 6) e.password = "Password must be at least 6 characters.";
@@ -38,7 +42,7 @@ export default function RegisterPage() {
     try {
       const payload = {
         name: form.name.trim(),
-        email: form.email,
+        email: form.email.toLowerCase().trim(),
         password: form.password,
         academicYear: form.academicYear,
         monthlyAllowanceBaseline: form.monthlyAllowanceBaseline ? parseFloat(form.monthlyAllowanceBaseline) : 0,
@@ -51,136 +55,143 @@ export default function RegisterPage() {
         navigate("/dashboard", { replace: true });
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Registration failed.");
+      toast.error(err.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const set = (k) => (e) => {
-    setForm(f => ({ ...f, [k]: e.target.value }));
-    setErrors(er => ({ ...er, [k]: "" }));
-  };
-
-  const field = (label, key, type = "text", placeholder = "", extra = {}) => (
-    <div>
-      <label className="cc-label">{label}</label>
-      <input
-        type={type}
-        className="cc-input"
-        placeholder={placeholder}
-        value={form[key]}
-        onChange={set(key)}
-        style={errors[key] ? { borderColor: "var(--color-danger)" } : {}}
-        {...extra}
-      />
-      {errors[key] && <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: 4 }}>{errors[key]}</p>}
-    </div>
-  );
-
   return (
-    <div className="cc-card" style={{ padding: "32px 32px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Create your account</h2>
-        <p style={{ fontSize: 13, color: "var(--color-subtle)", marginTop: 6 }}>
-          Free forever. No credit card needed.
+    <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl transition-all duration-300 hover:border-white/20">
+      <div className="mb-6 text-center sm:text-left">
+        <h2 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center sm:justify-start gap-2">
+          <span>Create Account</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-brand-mint/20 text-emerald-300 border border-brand-mint/30">
+            Free
+          </span>
+        </h2>
+        <p className="text-sm text-zinc-400 mt-1">
+          Set up your smart student budget tracker in 30 seconds.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {field("Full Name", "name", "text", "Your full name")}
-        {field("Email Address", "email", "email", "you@university.edu", { autoComplete: "email" })}
-
-        {/* Password */}
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div>
-          <label className="cc-label">Password</label>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPass ? "text" : "password"}
-              className="cc-input"
-              placeholder="Min. 6 characters"
-              value={form.password}
-              onChange={set("password")}
-              style={{ paddingRight: 44, ...(errors.password ? { borderColor: "var(--color-danger)" } : {}) }}
-            />
-            <button type="button" onClick={() => setShowPass(s => !s)} style={{
-              position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-              background: "none", border: "none", cursor: "pointer", color: "var(--color-subtle)", display: "flex",
-            }}>
-              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {errors.password && <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: 4 }}>{errors.password}</p>}
-        </div>
-
-        {/* Confirm Password */}
-        <div>
-          <label className="cc-label">Confirm Password</label>
+          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+            Full Name
+          </label>
           <input
-            type="password"
-            className="cc-input"
-            placeholder="Re-enter password"
-            value={form.confirmPassword}
-            onChange={set("confirmPassword")}
-            style={errors.confirmPassword ? { borderColor: "var(--color-danger)" } : {}}
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="e.g. Alex Morgan"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
-          {errors.confirmPassword && <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: 4 }}>{errors.confirmPassword}</p>}
+          {errors.name && <p className="text-xs text-brand-coral mt-1">{errors.name}</p>}
         </div>
 
-        {/* Optional fields */}
-        <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 14 }}>
-          <p style={{ fontSize: 12, color: "var(--color-subtle)", margin: 0 }}>
-            Optional — helps personalise your experience
-          </p>
+        <div>
+          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+            Campus Email
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="student@university.edu"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          />
+          {errors.email && <p className="text-xs text-brand-coral mt-1">{errors.email}</p>}
+        </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="cc-label">Academic Year</label>
-            <select className="cc-select" value={form.academicYear} onChange={set("academicYear")}>
-              <option value="">Select year</option>
-              {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+              Academic Year
+            </label>
+            <select
+              value={form.academicYear}
+              onChange={(e) => setForm({ ...form, academicYear: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
+            >
+              {ACADEMIC_YEARS.map((y) => (
+                <option key={y} value={y} className="bg-brand-obsidian">{y}</option>
+              ))}
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label className="cc-label">Monthly Allowance ($)</label>
-              <input
-                type="number"
-                className="cc-input"
-                placeholder="e.g. 300"
-                value={form.monthlyAllowanceBaseline}
-                onChange={set("monthlyAllowanceBaseline")}
-                min="0"
-              />
-            </div>
-            <div>
-              <label className="cc-label">Savings Goal ($)</label>
-              <input
-                type="number"
-                className="cc-input"
-                placeholder="e.g. 50"
-                value={form.monthlySavingsGoal}
-                onChange={set("monthlySavingsGoal")}
-                min="0"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+              Monthly Allowance ($)
+            </label>
+            <input
+              type="number"
+              placeholder="e.g. 350"
+              value={form.monthlyAllowanceBaseline}
+              onChange={(e) => setForm({ ...form, monthlyAllowanceBaseline: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
           </div>
         </div>
 
-        <button type="submit" className="cc-btn-primary" style={{ width: "100%", marginTop: 4 }} disabled={loading}>
-          {loading ? <Spinner size={17} color="#fff" /> : <UserPlus size={16} />}
-          {loading ? "Creating account..." : "Create Account"}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="••••••••"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+              >
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password && <p className="text-xs text-brand-coral mt-1">{errors.password}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              placeholder="••••••••"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
+            {errors.confirmPassword && <p className="text-xs text-brand-coral mt-1">{errors.confirmPassword}</p>}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white font-medium text-sm shadow-lg shadow-brand-primary/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {loading ? (
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <UserPlus className="w-4 h-4" />
+          )}
+          {loading ? "Registering Account..." : "Create Free Account"}
         </button>
       </form>
 
-      <div style={{ marginTop: 20, textAlign: "center" }}>
-        <hr className="cc-divider" style={{ margin: "0 0 16px" }} />
-        <p style={{ fontSize: 13, color: "var(--color-subtle)" }}>
-          Already have an account?{" "}
-          <Link to="/login" style={{ color: "var(--color-brand)", fontWeight: 600, textDecoration: "none" }}>
-            Sign in
-          </Link>
-        </p>
+      <div className="mt-6 pt-6 border-t border-white/10 text-center text-xs text-zinc-400">
+        Already have a student account?{" "}
+        <Link to="/login" className="text-brand-primary hover:text-brand-primary/80 font-semibold transition-colors">
+          Sign in
+        </Link>
       </div>
     </div>
   );

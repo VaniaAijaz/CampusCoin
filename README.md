@@ -1,160 +1,27 @@
-# Campus Coin — Smart Spending, Student Style
+# Campus Coin - NextGen BudgetBee Web Solution
 
-A full-stack MERN web application for student budget and expense tracking with AI-powered insights.
+Campus Coin is a lightweight, student-first financial tracking web application built to track income, expenses, and budgeting without requiring bank integrations. Designed with a premium Glassmorphism SaaS aesthetic, it empowers users with manual transaction logging, gamified budget tracking, and AI-driven spending insights.
 
----
+## Core Features & AI Agent Context
+- **User Authentication:** JWT-based secure login, registration, and session management with demo student and admin presets.
+- **Transaction Engine:** Quick-add forms for logging income and expenses, supporting custom and default categories with real-time AI category suggestion.
+- **Dynamic Dashboard:** Real-time calculation of current month balances, 6-month income vs. expense trends, and visual data representation.
+- **Gamified Budgeting:** Users set monthly category caps (e.g., Food: $50). The system visually tracks spending against these caps using circular SVG progress rings.
+- **AI Insights:** The system analyzes spending velocity and category trends to generate plain-text, actionable financial advice with urgency badges and potential savings metrics.
 
-## Tech Stack
+## Database Relational Map
+The application utilizes MongoDB (NoSQL), but strictly enforces the following logical relationships:
+1. **User (1) -> (M) Transactions:** `userId` on Transaction references the User.
+2. **User (1) -> (M) Budgets:** `userId` on Budget references the User.
+3. **Category (1) -> (M) Transactions:** `categoryId` on Transaction references the custom or default Category.
+4. **User (1) -> (M) Categories:** Users can own custom categories alongside system-wide default categories.
 
-| Layer     | Technology                                      |
-|-----------|-------------------------------------------------|
-| Frontend  | React 18, Vite, Tailwind CSS v4, Chart.js       |
-| Backend   | Node.js, Express.js                             |
-| Database  | MongoDB + Mongoose                              |
-| Auth      | JWT + bcrypt                                    |
-| Icons     | Lucide React                                    |
+## Setup & Execution
+The project is a monorepo configured for simultaneous execution.
+1. Unified root `.env` contains `MONGO_URI`, `JWT_SECRET`, `PORT=5000`, and `VITE_API_BASE_URL=http://localhost:5000/api`.
+2. Run `npm run install:all` (or `npm install` in the root, `/server`, and `/client` directories).
+3. Run `npm run dev` from the root directory to start both the Express API and Vite React client concurrently via `concurrently`.
 
----
-
-## Prerequisites
-
-Install these before starting:
-
-1. **Node.js** v18 or higher — https://nodejs.org
-2. **MongoDB** (local) — https://www.mongodb.com/try/download/community  
-   OR use a free cloud cluster at https://cloud.mongodb.com
-
----
-
-## Installation
-
-### 1. Clone / Open the project
-```
-cd CampusCoin
-```
-
-### 2. Install Server dependencies
-```
-cd server
-npm install
-```
-
-### 3. Configure Server environment
-The file `server/.env` is already pre-configured for local development.  
-Edit `MONGO_URI` if your MongoDB runs on a different port or you use Atlas:
-
-```
-MONGO_URI=mongodb://localhost:27017/campuscoin
-JWT_SECRET=campuscoin_jwt_secret_key_2024_secure
-PORT=5000
-CLIENT_URL=http://localhost:5173
-ADMIN_EMAIL=admin@campuscoin.com
-ADMIN_PASSWORD=Admin@123
-```
-
-### 4. Install Client dependencies
-```
-cd ../client
-npm install
-```
-
----
-
-## Running the Application
-
-Open **two terminal windows**:
-
-**Terminal 1 — Backend:**
-```
-cd server
-npm run dev
-```
-Server runs at: http://localhost:5000
-
-**Terminal 2 — Frontend:**
-```
-cd client
-npm run dev
-```
-Frontend runs at: http://localhost:5173
-
-Open http://localhost:5173 in your browser.
-
----
-
-## User Credentials
-
-| Role    | Email                   | Password   |
-|---------|-------------------------|------------|
-| Admin   | admin@campuscoin.com    | Admin@123  |
-| Student | Register a new account  | Your choice|
-
-The admin account is automatically seeded on first server start.
-
----
-
-## Features
-
-### Student Features
-- Register / Login / Password Reset
-- Dashboard with income vs expense charts, balance, saving tips
-- Add/Edit/Delete income and expense transactions
-- AI-powered category suggestions as you type
-- Recurring transaction support
-- Monthly budget goals per category with real-time progress bars
-- In-app alerts when budget is near or exceeded
-- Category management (personal + default)
-- Monthly reports with PDF export
-- AI-generated monthly spending insights
-- Bookmark and pin insights
-- CSV transaction import
-- Dark mode + font size settings
-
-### Admin Features
-- Platform statistics dashboard
-- User management (view, enable/disable, delete)
-- Default category management
-- System-wide announcements
-
----
-
-## Project Structure
-
-```
-CampusCoin/
-├── server/                    # Express.js backend
-│   ├── controllers/           # Route handlers
-│   ├── middleware/            # JWT auth middleware
-│   ├── models/                # Mongoose schemas
-│   ├── routes/                # API route definitions
-│   ├── utils/                 # DB connection, seeding, token
-│   ├── index.js               # Server entry point
-│   └── .env                   # Environment variables
-│
-└── client/                    # React frontend
-    ├── src/
-    │   ├── api/               # Axios instance
-    │   ├── components/        # Reusable UI + layout components
-    │   ├── context/           # Auth + Theme context
-    │   ├── pages/             # All application pages
-    │   │   └── auth/          # Login, Register, Reset pages
-    │   └── index.css          # Tailwind v4 design system
-    ├── index.html
-    └── vite.config.js
-```
-
----
-
-## AI Tools Used
-
-- **Kiro (AI IDE)** — Used as a coding assistant for scaffolding, code generation guidance, and debugging support.
-- All business logic, design decisions, and implementation were reviewed, understood, and directed by the development team.
-
----
-
-## Notes
-
-- No real banking integration — all data is manually entered or CSV-imported.
-- AI categorization is rule-based keyword matching (no external API required).
-- AI insights are generated from the user's own transaction history.
-- All AI suggestions are advisory and can be overridden.
+## Default Credentials
+- **Admin**: `admin@campuscoin.com` / `Admin@123`
+- **Student**: `student@campus.edu` / `Password123` (or register a free account)

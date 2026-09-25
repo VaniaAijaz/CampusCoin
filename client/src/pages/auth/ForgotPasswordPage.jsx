@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, ArrowLeft } from "lucide-react";
-import api from "../../api/axios";
+import { Mail, ArrowLeft, Send } from "lucide-react";
+import api from "../../core/api";
 import toast from "react-hot-toast";
-import Spinner from "../../components/ui/Spinner";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -13,13 +12,15 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) { toast.error("Please enter your email."); return; }
+    if (!email) {
+      toast.error("Please enter your campus email.");
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await api.post("/auth/forgot-password", { email });
       setSent(true);
-      // In development the token is returned in response
-      if (data.resetToken) setResetToken(data.resetToken);
+      if (data.token) setResetToken(data.token);
     } catch (err) {
       toast.error(err.response?.data?.message || "Something went wrong.");
     } finally {
@@ -29,79 +30,84 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="cc-card" style={{ padding: "32px", textAlign: "center" }}>
-        <div style={{
-          width: 52, height: 52,
-          background: "var(--color-success-bg)",
-          borderRadius: 14,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          margin: "0 auto 16px",
-        }}>
-          <Mail size={24} color="var(--color-success)" />
+      <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+        <div className="w-12 h-12 rounded-2xl bg-brand-mint/20 text-brand-mint border border-brand-mint/30 flex items-center justify-center mx-auto mb-4">
+          <Mail className="w-6 h-6" />
         </div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Check your email</h2>
-        <p style={{ fontSize: 13, color: "var(--color-subtle)", marginBottom: 20 }}>
-          If an account exists for <strong>{email}</strong>, a password reset link has been sent.
+        <h2 className="text-xl font-bold text-white mb-2">Check Your Email</h2>
+        <p className="text-xs text-zinc-400 mb-5">
+          If an account exists for <strong className="text-zinc-200">{email}</strong>, a password reset link has been dispatched.
         </p>
+
         {resetToken && (
-          <div style={{
-            background: "var(--color-brand-light)", borderRadius: 9, padding: "12px 16px",
-            marginBottom: 20, textAlign: "left",
-          }}>
-            <p style={{ fontSize: 11, color: "var(--color-brand)", fontWeight: 600, margin: "0 0 4px" }}>
-              DEV MODE — Reset Token:
-            </p>
-            <p style={{ fontSize: 11, color: "var(--color-brand)", wordBreak: "break-all", margin: 0 }}>
-              {resetToken}
-            </p>
+          <div className="p-3.5 rounded-xl bg-brand-primary text-brand-dark/10 border border-brand-primary/20 text-left mb-5">
+            <span className="text-3xs uppercase font-bold text-brand-primary block mb-1">
+              Dev Mode Reset URL:
+            </span>
             <Link
               to={`/reset-password/${resetToken}`}
-              style={{ fontSize: 12, color: "var(--color-brand)", fontWeight: 600, textDecoration: "none", display: "block", marginTop: 6 }}
+              className="text-xs text-brand-primary/80 hover:text-white underline break-all font-medium block"
             >
-              → Click here to reset password
+              Reset your password now →
             </Link>
           </div>
         )}
-        <Link to="/login" style={{ fontSize: 13, color: "var(--color-brand)", fontWeight: 600, textDecoration: "none" }}>
-          Back to Sign In
+
+        <Link
+          to="/app"
+          className="text-xs text-brand-primary hover:text-brand-primary/80 font-semibold"
+        >
+          Return to Sign In
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="cc-card" style={{ padding: "32px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Reset your password</h2>
-        <p style={{ fontSize: 13, color: "var(--color-subtle)", marginTop: 6 }}>
-          Enter your email and we'll send you a reset link.
+    <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white">Reset Password</h2>
+        <p className="text-xs text-zinc-400 mt-1">
+          Enter your campus email to receive a recovery link.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="cc-label">Email address</label>
+          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+            Campus Email Address
+          </label>
           <input
             type="email"
-            className="cc-input"
-            placeholder="you@university.edu"
+            required
             value={email}
-            onChange={e => setEmail(e.target.value)}
-            autoFocus
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="student@university.edu"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
-        <button type="submit" className="cc-btn-primary" style={{ width: "100%" }} disabled={loading}>
-          {loading ? <Spinner size={17} color="#fff" /> : <Mail size={16} />}
-          {loading ? "Sending..." : "Send Reset Link"}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white font-medium text-sm shadow-lg shadow-brand-primary/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {loading ? (
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+          {loading ? "Sending link..." : "Send Reset Instructions"}
         </button>
       </form>
 
-      <div style={{ marginTop: 20, textAlign: "center" }}>
-        <Link to="/login" style={{
-          fontSize: 13, color: "var(--color-muted)", textDecoration: "none",
-          display: "inline-flex", alignItems: "center", gap: 6,
-        }}>
-          <ArrowLeft size={14} /> Back to Sign In
+      <div className="mt-6 pt-6 border-t border-white/10 text-center">
+        <Link
+          to="/app"
+          className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1.5 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Sign In
         </Link>
       </div>
     </div>

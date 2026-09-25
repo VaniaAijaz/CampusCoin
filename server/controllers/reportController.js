@@ -43,7 +43,7 @@ const byCategory = async (req, res) => {
       { $match: { userId: req.user._id, type, date: { $gte: start, $lte: end }, isDeleted: false } },
       { $group: { _id: "$categoryId", total: { $sum: "$amount" }, count: { $sum: 1 } } },
       { $lookup: { from: "categories", localField: "_id", foreignField: "_id", as: "category" } },
-      { $unwind: { path: "$category", preserveNullAndEmpty: true } },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
       { $project: { _id: 1, total: 1, count: 1, name: "$category.name", icon: "$category.icon", color: "$category.color" } },
       { $sort: { total: -1 } },
     ]);

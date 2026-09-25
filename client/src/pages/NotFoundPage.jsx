@@ -34,7 +34,7 @@ export default function NotFoundPage() {
         <button onClick={() => window.history.back()} className="cc-btn-secondary">
           <ArrowLeft size={15} /> Go Back
         </button>
-        <Link to="/dashboard" className="cc-btn-primary">
+        <Link to="/app" className="cc-btn-primary">
           <Home size={15} /> Dashboard
         </Link>
       </div>

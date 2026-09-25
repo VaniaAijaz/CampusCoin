@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { KeyRound, Eye, EyeOff } from "lucide-react";
-import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
+import { KeyRound, Eye, EyeOff, Lock } from "lucide-react";
+import api from "../../core/api";
+import { useAuth } from "../../features/auth/AuthContext";
 import toast from "react-hot-toast";
-import Spinner from "../../components/ui/Spinner";
 
 export default function ResetPasswordPage() {
   const { token } = useParams();
@@ -17,76 +16,91 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!password || password.length < 6) { toast.error("Password must be at least 6 characters."); return; }
-    if (password !== confirm) { toast.error("Passwords do not match."); return; }
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("Passwords do not match.");
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await api.post(`/auth/reset-password/${token}`, { password });
       if (data.success) {
-        toast.success("Password reset successfully. Logging you in...");
-        if (data.token) {
-          // Token returned — we need user data
-          const me = await api.get("/auth/me", { headers: { Authorization: `Bearer ${data.token}` } });
-          login(me.data.user, data.token);
-          navigate("/dashboard", { replace: true });
-        } else {
-          navigate("/login", { replace: true });
-        }
+        toast.success("Password reset successfully! Redirecting to sign in...");
+        navigate("/app", { replace: true });
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Reset failed. The link may have expired.");
+      toast.error(err.response?.data?.message || "Reset failed. The token may be invalid or expired.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="cc-card" style={{ padding: "32px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Set new password</h2>
-        <p style={{ fontSize: 13, color: "var(--color-subtle)", marginTop: 6 }}>
-          Choose a strong password for your account.
+    <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white">Create New Password</h2>
+        <p className="text-xs text-zinc-400 mt-1">
+          Choose a strong password for your Campus Coin account.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="cc-label">New Password</label>
-          <div style={{ position: "relative" }}>
+          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+            New Password
+          </label>
+          <div className="relative">
             <input
               type={showPass ? "text" : "password"}
-              className="cc-input"
-              placeholder="Min. 6 characters"
+              required
+              placeholder="••••••••"
               value={password}
-              onChange={e => setPassword(e.target.value)}
-              style={{ paddingRight: 44 }}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
-            <button type="button" onClick={() => setShowPass(s => !s)} style={{
-              position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-              background: "none", border: "none", cursor: "pointer", color: "var(--color-subtle)", display: "flex",
-            }}>
-              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+            >
+              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
+
         <div>
-          <label className="cc-label">Confirm Password</label>
+          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+            Confirm New Password
+          </label>
           <input
             type="password"
-            className="cc-input"
-            placeholder="Re-enter new password"
+            required
+            placeholder="••••••••"
             value={confirm}
-            onChange={e => setConfirm(e.target.value)}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
-        <button type="submit" className="cc-btn-primary" style={{ width: "100%" }} disabled={loading}>
-          {loading ? <Spinner size={17} color="#fff" /> : <KeyRound size={16} />}
-          {loading ? "Resetting..." : "Reset Password"}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white font-medium text-sm shadow-lg shadow-brand-primary/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {loading ? (
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <KeyRound className="w-4 h-4" />
+          )}
+          {loading ? "Resetting..." : "Reset Password & Continue"}
         </button>
       </form>
 
-      <div style={{ marginTop: 20, textAlign: "center" }}>
-        <Link to="/login" style={{ fontSize: 13, color: "var(--color-muted)", textDecoration: "none" }}>
+      <div className="mt-6 pt-6 border-t border-white/10 text-center">
+        <Link to="/app" className="text-xs text-zinc-400 hover:text-white">
           Back to Sign In
         </Link>
       </div>

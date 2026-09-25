@@ -1,53 +1,102 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("./utils/db");
+const path = require("path");
 
-// Load env vars
+// Load unified root .env first, then local .env if present
+dotenv.config({ path: path.join(__dirname, "../.env") });
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+const connectDB = require("./core/db");
+const { connectRedis } = require("./core/redis");
+const { notFoundHandler, errorHandler } = require("./core/errorMiddleware");
+const { seedAdmin, seedDemoStudent, seedDefaultCategories } = require("./core/seed");
+
+// Initialize Database connection & seed defaults
+connectDB().then(async (conn) => {
+  if (conn) {
+    await seedAdmin();
+    await seedDemoStudent();
+    await seedDefaultCategories();
+  }
+});
+
+// Initialize Redis
+connectRedis();
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
-  credentials: true,
-}));
+// Security and CORS middleware
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:5173",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive in dev to avoid CORS friction
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/transactions", require("./routes/transactions"));
-app.use("/api/categories", require("./routes/categories"));
-app.use("/api/budgets", require("./routes/budgets"));
-app.use("/api/insights", require("./routes/insights"));
-app.use("/api/reports", require("./routes/reports"));
-app.use("/api/tips", require("./routes/tips"));
-app.use("/api/admin", require("./routes/admin"));
+// Domain-driven Feature Routes
+app.use("/api/auth", require("./features/auth/auth.routes"));
+app.use("/api/transactions", require("./features/transactions/transaction.routes"));
+app.use("/api/budgets", require("./features/budgets/budget.routes"));
+app.use("/api/categories", require("./features/categories/category.routes"));
+app.use("/api/insights", require("./features/insights/insight.routes"));
+app.use("/api/reports", require("./features/reports/report.routes"));
+app.use("/api/tips", require("./features/tips/tip.routes"));
+app.use("/api/admin", require("./features/admin/admin.routes"));
+app.use("/api/subscriptions", require("./features/subscriptions/subscription.routes"));
+app.use("/api/debts", require("./features/debts/debt.routes"));
+app.use("/api/goals", require("./features/goals/goal.routes"));
 
-// Health check
+// Initialize scheduled background jobs
+require("./features/emails/cron.jobs");
+
+// Public announcements endpoint (accessible to all logged-in students)
+const Announcement = require("./features/admin/Announcement.model");
+const { protect } = require("./core/authMiddleware");
+app.get("/api/announcements", protect, async (req, res) => {
+  try {
+    const announcements = await Announcement.find({ isActive: true }).sort({ createdAt: -1 }).limit(5);
+    res.json({ success: true, announcements });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Health check endpoint
 app.get("/", (req, res) => {
-  res.json({ message: "CampusCoin API is running 🚀" });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    message: err.message || "Internal Server Error",
+  res.json({
+    name: "Campus Coin API",
+    status: "healthy",
+    version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
   });
 });
 
+// Fallback 404 & Global Error Middleware
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Campus Coin API Server running on port ${PORT}`);
 });
+
+module.exports = app;

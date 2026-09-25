@@ -1,48 +1,33 @@
 import { Outlet, Link } from "react-router-dom";
+import { Coins } from "lucide-react";
 
 export default function AuthLayout() {
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "var(--color-page)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px 16px",
-    }}>
-      {/* Background subtle grid pattern */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: `radial-gradient(circle, var(--color-brand-soft) 1px, transparent 1px)`,
-        backgroundSize: "32px 32px",
-        opacity: 0.3,
-        pointerEvents: "none",
-      }} />
+    <div className="min-h-screen bg-gradient-to-br from-brand-obsidian via-brand-dark to-black text-zinc-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient background glow orbs */}
+      <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-brand-primary text-brand-dark/15 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-brand-ai/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 440 }}>
-        {/* Logo */}
-        <Link to="/" style={{
-          display: "flex", alignItems: "center", gap: 10,
-          justifyContent: "center", marginBottom: 32, textDecoration: "none",
-        }}>
-          <div style={{
-            width: 40, height: 40,
-            background: "var(--color-brand)",
-            borderRadius: 11,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <span style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>₵</span>
+      <div className="relative z-10 w-full max-w-md">
+        {/* Brand Header */}
+        <Link
+          to="/"
+          className="flex items-center justify-center gap-3 mb-8 no-underline group"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-primary via-brand-primary to-brand-ai flex items-center justify-center text-white shadow-xl shadow-brand-primary/30 group-hover:scale-105 transition-transform">
+            <Coins className="w-6 h-6 text-white" />
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-dark)", lineHeight: 1.2 }}>
+            <div className="text-xl font-black text-white tracking-tight leading-tight">
               Campus Coin
             </div>
-            <div style={{ fontSize: 12, color: "var(--color-subtle)" }}>
+            <div className="text-2xs text-brand-primary/80 font-semibold tracking-wide uppercase">
               Smart Spending, Student Style
             </div>
           </div>
         </Link>
 
+        {/* Content Outlet */}
         <Outlet />
       </div>
     </div>
