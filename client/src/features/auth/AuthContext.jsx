@@ -6,17 +6,18 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem("cc_user");
+      const saved = localStorage.getItem("cc_user") || localStorage.getItem("user");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  const [token, setToken] = useState(() => localStorage.getItem("cc_token") || null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(() => localStorage.getItem("cc_token") || localStorage.getItem("token") || null);
+  // If we already have a cached session, we are ready immediately; otherwise wait for init
+  const [loading, setLoading] = useState(() => !Boolean(token && user));
 
-  // Validate session on mount
+  // Validate session on mount in the background
   useEffect(() => {
     let isMounted = true;
     const verifyToken = async () => {
@@ -31,11 +32,14 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("cc_user", JSON.stringify(data.user));
         }
       } catch (err) {
-        if (isMounted) {
+        // If 401 unauthorized, clear session
+        if (err.response?.status === 401 && isMounted) {
           setUser(null);
           setToken(null);
           localStorage.removeItem("cc_token");
           localStorage.removeItem("cc_user");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -51,6 +55,7 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback((userData, authToken) => {
     setUser(userData);
     setToken(authToken);
+    setLoading(false);
     localStorage.setItem("cc_token", authToken);
     localStorage.setItem("cc_user", JSON.stringify(userData));
   }, []);
@@ -58,8 +63,11 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
+    setLoading(false);
     localStorage.removeItem("cc_token");
     localStorage.removeItem("cc_user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   }, []);
 
   const updateUser = useCallback((updatedUser) => {
@@ -76,6 +84,7 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
+        isLoading: loading,
         isAuthenticated,
         isAdmin,
         login,

@@ -1,5 +1,5 @@
-import LoginForm from "../../features/auth/LoginForm";
+import SplitAuthPage from "../../features/auth/SplitAuthPage";
 
 export default function LoginPage() {
-  return <LoginForm />;
+  return <SplitAuthPage defaultMode="login" />;
 }

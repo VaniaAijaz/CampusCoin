@@ -14,14 +14,14 @@ const SITEMAP = [
     section: "Main Application",
     color: "var(--color-brand)",
     pages: [
-      { path: "/dashboard",    icon: LayoutDashboard, label: "Dashboard",    desc: "Overview of income, expenses, balance, charts, recent transactions and saving tips." },
-      { path: "/transactions", icon: ArrowLeftRight,  label: "Transactions", desc: "Add, edit, delete income and expense transactions. Filter, search, import CSV." },
-      { path: "/reports",      icon: BarChart2,       label: "Reports",      desc: "Monthly reports, category breakdown, 6-month trends, daily summaries. PDF export." },
-      { path: "/budget",       icon: Target,          label: "Budget Goals", desc: "Set monthly budgets per category, track spending in real time, receive alerts." },
-      { path: "/categories",   icon: Tag,             label: "Categories",   desc: "Manage personal income and expense categories with custom names and colors." },
-      { path: "/insights",     icon: Lightbulb,       label: "AI Insights",  desc: "AI-generated monthly summaries, flagged spending patterns, saving tips and recommendations." },
-      { path: "/profile",      icon: Settings,        label: "Settings",     desc: "Edit profile, change password, toggle dark mode, adjust font size, import data." },
-      { path: "/sitemap",      icon: Map,             label: "Sitemap",      desc: "This page — visual overview of all application pages and features." },
+      { path: "/app",              icon: LayoutDashboard, label: "Dashboard",    desc: "Overview of income, expenses, balance, charts, recent transactions and saving tips." },
+      { path: "/app/transactions", icon: ArrowLeftRight,  label: "Transactions", desc: "Add, edit, delete income and expense transactions. Filter, search, import CSV." },
+      { path: "/app/reports",      icon: BarChart2,       label: "Reports",      desc: "Monthly reports, category breakdown, 6-month trends, daily summaries. PDF export." },
+      { path: "/app/budget",       icon: Target,          label: "Budget Goals", desc: "Set monthly budgets per category, track spending in real time, receive alerts." },
+      { path: "/app/categories",   icon: Tag,             label: "Categories",   desc: "Manage personal income and expense categories with custom names and colors." },
+      { path: "/app/insights",     icon: Lightbulb,       label: "AI Insights",  desc: "AI-generated monthly summaries, flagged spending patterns, saving tips and recommendations." },
+      { path: "/app/profile",      icon: Settings,        label: "Settings",     desc: "Edit profile, change password, toggle dark mode, adjust font size, import data." },
+      { path: "/app/sitemap",      icon: Map,             label: "Sitemap",      desc: "This page — visual overview of all application pages and features." },
     ],
   },
   {
@@ -58,10 +58,10 @@ const ADMIN_SECTION = {
   section: "Admin Panel",
   color: "var(--color-danger)",
   pages: [
-    { path: "/admin", icon: Shield,   label: "Admin Overview",    desc: "Platform statistics: total users, transactions, most-used categories." },
-    { path: "/admin", icon: Users,    label: "User Management",   desc: "View, enable, disable or delete student accounts." },
-    { path: "/admin", icon: Tag,      label: "Category Admin",    desc: "Create, edit or remove default system-wide categories." },
-    { path: "/admin", icon: Megaphone,label: "Announcements",     desc: "Create info, tip or warning announcements visible to all students." },
+    { path: "/app/admin", icon: Shield,   label: "Admin Overview",    desc: "Platform statistics: total users, transactions, most-used categories." },
+    { path: "/app/admin", icon: Users,    label: "User Management",   desc: "View, enable, disable or delete student accounts." },
+    { path: "/app/admin", icon: Tag,      label: "Category Admin",    desc: "Create, edit or remove default system-wide categories." },
+    { path: "/app/admin", icon: Megaphone,label: "Announcements",     desc: "Create info, tip or warning announcements visible to all students." },
   ],
 };
 

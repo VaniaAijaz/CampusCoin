@@ -2,21 +2,18 @@
 
 @theme {
   /* ─── Fonts ─────────────────────────────────── */
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", system-ui, sans-serif;
 
-  /* ─── Aurora Sapphire Theme ────────────────── */
-  --color-brand-primary: #3B82F6;
-  --color-brand-hover: #2563EB;
-  --color-brand-mint: #10B981;
-  --color-brand-rose: #E11D48;
-  --color-brand-dark: #0B0D0E;
-  
-  --color-success: #10B981;
-  --color-danger: #E11D48;
+  /* ─── Liquid Glass Palette ─────────────────── */
+  --color-brand-primary: #38BDF8;
+  --color-brand-hover: #0EA5E9;
+  --color-brand-mint: #34D399;
+  --color-brand-rose: #FB7185;
+  --color-brand-amber: #FBBF24;
 }
 
 /* ────────────────────────────────────────────────
-   Base Reset & Global Styles
+   Base Reset & iOS Global Styles
 ──────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -27,59 +24,71 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
-  background-color: #0B0F19;
-  color: #F8FAFC;
   min-height: 100vh;
+  color: #FFFFFF;
+  background-color: #07090E;
+  background-image: url("/liquid_bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  overflow-x: hidden;
 }
-
-/* Text Colors */
-.text-ash {
-  color: #94A3B8; /* text-slate-400 */
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0B0F19; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 /* ────────────────────────────────────────────────
-   Aurora Sapphire & Liquid Glass Components
+   Production-Grade Liquid Glass Utilities
 ──────────────────────────────────────────────── */
-@layer components {
-  /* Heavy frosted liquid glass effect */
-  .glass-panel {
-    @apply bg-[#111726] border border-slate-800 shadow-xl rounded-3xl;
-  }
-  
-  /* Inputs and nested cards */
-  .glass-input {
-    @apply w-full h-11 px-4 rounded-xl bg-[#0B0F19] border border-slate-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all;
-  }
-
-  /* Pill-shaped translucent glass buttons */
-  .glass-btn-primary {
-    @apply inline-flex items-center justify-center h-11 px-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
-  }
-
-  .glass-btn-secondary {
-    @apply inline-flex items-center justify-center h-11 px-6 rounded-full bg-[#1E293B] hover:bg-[#334155] border border-slate-700 text-slate-200 font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
-  }
-  
-  .glass-btn-danger {
-    @apply inline-flex items-center justify-center h-11 px-6 rounded-full bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
-  }
-
-  /* Liquid Glassmorphism Skeleton Loader */
-  .glass-skeleton {
-    @apply animate-pulse bg-[#111726] border border-slate-800 rounded-3xl;
-  }
+.liquid-glass {
+  background-color: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  border-radius: 32px;
 }
 
-.auth-form-container {
-  @apply bg-[#0B0F19] border-l border-slate-800 shadow-2xl;
+.liquid-glass-subtle {
+  background-color: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.20);
+}
+
+.liquid-glass-active {
+  background-color: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.50);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.30);
+}
+
+.liquid-pill {
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(25px) saturate(140%);
+  -webkit-backdrop-filter: blur(25px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  color: #FFFFFF;
+}
+
+/* Scrollbar Minimalist iOS */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45);
 }

@@ -27,10 +27,10 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link to="/app" className="hidden sm:block text-sm font-medium text-zinc-300 hover:text-white transition-colors">
+            <Link to="/login" className="hidden sm:block text-sm font-medium text-zinc-300 hover:text-white transition-colors">
               Log in
             </Link>
-            <Link to="/app" className="group flex items-center gap-2 bg-brand-primary hover:bg-brand-hover text-white text-sm font-semibold py-2.5 px-6 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all">
+            <Link to="/register" className="group flex items-center gap-2 bg-brand-primary hover:bg-brand-hover text-white text-sm font-semibold py-2.5 px-6 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all">
               Get started
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -56,10 +56,10 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/app" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-hover text-white text-base font-semibold py-3.5 px-8 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.4)] transition-all">
+            <Link to="/register" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-hover text-white text-base font-semibold py-3.5 px-8 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.4)] transition-all">
               Get started <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link to="/app" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white text-base font-medium py-3.5 px-8 rounded-full border border-white/10 backdrop-blur-md transition-all">
+            <Link to="/login?demo=student" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-base font-semibold py-3.5 px-8 rounded-full border border-white/20 backdrop-blur-md transition-all shadow-md active:scale-95">
               Explore the demo
             </Link>
           </div>

@@ -16,9 +16,14 @@ client/.env
 *.crt
 *.pfx
 *.p12
+*.token
 *serviceAccount*.json
 *credentials*.json
 *firebase-adminsdk*.json
+secrets/
+.secrets/
+id_rsa*
+*.secret
 
 # Production & Build Artifacts
 dist/

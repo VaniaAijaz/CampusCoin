@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { KeyRound, Eye, EyeOff, Lock } from "lucide-react";
+import { KeyRound, Eye, EyeOff, Lock, Coins, ArrowLeft } from "lucide-react";
 import api from "../../core/api";
-import { useAuth } from "../../features/auth/AuthContext";
 import toast from "react-hot-toast";
 
 export default function ResetPasswordPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -29,7 +27,7 @@ export default function ResetPasswordPage() {
       const { data } = await api.post(`/auth/reset-password/${token}`, { password });
       if (data.success) {
         toast.success("Password reset successfully! Redirecting to sign in...");
-        navigate("/app", { replace: true });
+        navigate("/login", { replace: true });
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Reset failed. The token may be invalid or expired.");
@@ -39,70 +37,99 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">Create New Password</h2>
-        <p className="text-xs text-zinc-400 mt-1">
-          Choose a strong password for your Campus Coin account.
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-6 text-white relative overflow-hidden">
+      {/* Background Refraction Canvas */}
+      <div 
+        className="fixed inset-0 h-screen w-screen bg-cover bg-center -z-20 scale-100"
+        style={{ backgroundImage: "url('/liquid_bg.jpg')" }}
+      />
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] -z-10" />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-            New Password
-          </label>
-          <div className="relative">
-            <input
-              type={showPass ? "text" : "password"}
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
-            >
-              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+      <div className="w-full max-w-md p-8 sm:p-10 rounded-[32px] bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)]">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-[16px] bg-white/20 border border-white/40 flex items-center justify-center text-white shadow-inner">
+            <Coins className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black tracking-tight text-white leading-tight">Campus Coin</h1>
+            <p className="text-[10px] uppercase font-bold tracking-widest text-sky-300">Set New Password</p>
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-            Confirm New Password
-          </label>
-          <input
-            type="password"
-            required
-            placeholder="••••••••"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-          />
+        <div className="mb-6">
+          <h2 className="text-2xl font-black text-white">Create New Password</h2>
+          <p className="text-xs text-white/70 mt-1">
+            Choose a secure password for your Campus Coin account.
+          </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white font-medium text-sm shadow-lg shadow-brand-primary/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-        >
-          {loading ? (
-            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <KeyRound className="w-4 h-4" />
-          )}
-          {loading ? "Resetting..." : "Reset Password & Continue"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[11px] font-bold text-white/80 uppercase tracking-wider mb-1.5">
+              New Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+              <input
+                type={showPass ? "text" : "password"}
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-11 pr-11 py-2.5 rounded-full bg-white/10 border border-white/25 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/60 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+              >
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
 
-      <div className="mt-6 pt-6 border-t border-white/10 text-center">
-        <Link to="/app" className="text-xs text-zinc-400 hover:text-white">
-          Back to Sign In
-        </Link>
+          <div>
+            <label className="block text-[11px] font-bold text-white/80 uppercase tracking-wider mb-1.5">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+              <input
+                type={showPass ? "text" : "password"}
+                required
+                placeholder="••••••••"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className="w-full pl-11 pr-4 py-2.5 rounded-full bg-white/10 border border-white/25 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/60 transition-colors"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 h-11 rounded-full bg-white/25 hover:bg-white/35 border border-white/40 text-white font-bold text-xs tracking-wide shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <KeyRound className="w-4 h-4" />
+                <span>Reset Password & Continue</span>
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 pt-6 border-t border-white/10 text-center">
+          <Link
+            to="/login"
+            className="text-xs text-white/70 hover:text-white inline-flex items-center gap-1.5 transition-colors font-medium"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Sign In
+          </Link>
+        </div>
       </div>
     </div>
   );
