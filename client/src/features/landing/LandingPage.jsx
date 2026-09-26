@@ -17,6 +17,7 @@ import {
   Calendar,
   Check,
 } from "lucide-react";
+import CampusCoinLogo from "../../components/ui/CampusCoinLogo";
 import Iridescence from "../../components/ui/Iridescence";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../auth/AuthContext";
@@ -178,12 +179,7 @@ export default function LandingPage() {
       {/* Sticky Top Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#07090E]/80 backdrop-blur-[64px] border-b border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
-              <Coins className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-black tracking-tight text-white">Campus Coin</span>
-          </div>
+          <CampusCoinLogo size="md" />
 
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-white/70">
             <a href="#features" className="hover:text-white transition-colors">

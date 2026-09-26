@@ -1,3 +1,4 @@
+import CampusCoinLogo from "../../components/ui/CampusCoinLogo";
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { KeyRound, Eye, EyeOff, Lock, Coins, ArrowLeft } from "lucide-react";
@@ -46,14 +47,8 @@ export default function ResetPasswordPage() {
       <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] -z-10" />
 
       <div className="w-full max-w-md p-8 sm:p-10 rounded-[32px] bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)]">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-[16px] bg-white/20 border border-white/40 flex items-center justify-center text-white shadow-inner">
-            <Coins className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black tracking-tight text-white leading-tight">Campus Coin</h1>
-            <p className="text-[10px] uppercase font-bold tracking-widest text-sky-300">Set New Password</p>
-          </div>
+        <div className="mb-6">
+          <CampusCoinLogo size="md" />
         </div>
 
         <div className="mb-6">

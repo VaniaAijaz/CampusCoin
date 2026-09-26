@@ -6,6 +6,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { auth, googleProvider, signInWithPopup } from "../../core/firebaseClient";
 import api from "../../core/api";
 import Iridescence from "../../components/ui/Iridescence";
+import CampusCoinLogo from "../../components/ui/CampusCoinLogo";
 import {
   Coins, Eye, EyeOff, ArrowRight, Sparkles,
   Shield, UserCheck, ChevronLeft, CheckCircle2,
@@ -326,13 +327,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
           {/* Brand Header */}
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-[16px] bg-white/15 border border-white/30 flex items-center justify-center backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] group-hover:bg-white/25 transition-all">
-                <Coins className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <span className="text-xl font-black tracking-tight text-white block">Campus Coin</span>
-                <span className="text-[10px] text-white/60 font-semibold tracking-wider uppercase block">NextGen Student Finance</span>
-              </div>
+              <CampusCoinLogo size="lg" />
             </Link>
 
             <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold tracking-wide flex items-center gap-2 backdrop-blur-md">
