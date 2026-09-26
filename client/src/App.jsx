@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { useAuth } from "./features/auth/AuthContext";
 import LoadingScreen from "./components/ui/LoadingScreen";
 import { lazy, Suspense } from "react";
@@ -43,10 +44,12 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
 export default function App() {
   const { loading } = useAuth();
+  const location = useLocation();
   if (loading) return <LoadingScreen />;
 
   return (
-    <Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
       {/* 1. Public Landing Page */}
       <Route path="/" element={<LandingPage />} />
       
@@ -100,5 +103,6 @@ export default function App() {
       {/* 5. Catch-all 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </AnimatePresence>
   );
 }

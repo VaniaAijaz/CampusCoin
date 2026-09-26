@@ -1,19 +1,15 @@
 import { Coins } from "lucide-react";
+import Iridescence from "./Iridescence";
 
 export default function LoadingScreen({ message = "Loading Campus Coin..." }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
-      role="status"
-      aria-live="polite"
-      aria-label={message}
-    >
-      {/* Background Refraction Backdrop */}
-      <div 
-        className="fixed inset-0 h-screen w-screen bg-cover bg-center -z-20 scale-105 filter blur-xs brightness-90"
-        style={{ backgroundImage: "url('/liquid_bg.jpg')" }}
-      />
-      <div className="fixed inset-0 bg-black/35 backdrop-blur-[30px] -z-10" />
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+      role="status" aria-live="polite" aria-label={message}>
+      {/* Iridescence bg */}
+      <div className="absolute inset-0 -z-20">
+        <Iridescence color={[1, 1, 1]} speed={1.0} amplitude={0.1} mouseReact={false} />
+      </div>
+      <div className="absolute inset-0 bg-black/20 -z-10" />
 
       {/* Floating Campus Coin Pod */}
       <div className="flex flex-col items-center gap-6 px-10 py-8 rounded-[32px] bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] animate-in fade-in zoom-in-95 duration-500">

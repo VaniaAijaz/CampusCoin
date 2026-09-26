@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import MonthPicker from "../../components/ui/MonthPicker";
 import {
   BarChart3,
   Calendar,
@@ -118,12 +119,7 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-xs text-white cursor-pointer"
-          />
+          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
           <button
             onClick={handleDownloadPDF}
             className="py-2 px-4 rounded-xl bg-brand-primary hover:bg-brand-hover text-white text-xs font-semibold shadow-lg transition-colors flex items-center gap-2 cursor-pointer"

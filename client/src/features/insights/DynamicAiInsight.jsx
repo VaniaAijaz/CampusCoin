@@ -1,16 +1,19 @@
 import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, RefreshCw, BrainCircuit } from "lucide-react";
 import { getDynamicInsight, regenerateDynamicInsight } from "./insightsApi";
+import { useAuth } from "../auth/AuthContext";
 import toast from "react-hot-toast";
 
 export default function DynamicAiInsight() {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["dynamicInsight"],
     queryFn: getDynamicInsight,
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
+    enabled: isAuthenticated,   // ← only fetch when logged in
   });
 
   const generateMutation = useMutation({

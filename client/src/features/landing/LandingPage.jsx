@@ -1,13 +1,39 @@
 import { Link } from "react-router-dom";
+import { useRef } from "react";
+import { motion } from "framer-motion";
 import { Coins, Sparkles, Brain, Target, FileText, ArrowRight } from "lucide-react";
+import Iridescence from "../../components/ui/Iridescence";
+
+/** Magnetic hover — button gently pulls toward cursor */
+function MagneticButton({ children, className, to, href }) {
+  const ref = useRef(null);
+  const handleMove = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width  / 2) * 0.25;
+    const y = (e.clientY - rect.top  - rect.height / 2) * 0.25;
+    el.style.transform = `translate(${x}px,${y}px)`;
+  };
+  const handleLeave = () => { if (ref.current) ref.current.style.transform = "translate(0,0)"; };
+  const style = { transition: "transform 0.3s cubic-bezier(.22,1,.36,1)" };
+  if (to) return (
+    <Link to={to} ref={ref} className={className} style={style}
+      onMouseMove={handleMove} onMouseLeave={handleLeave}>{children}</Link>
+  );
+  return (
+    <a href={href} ref={ref} className={className} style={style}
+      onMouseMove={handleMove} onMouseLeave={handleLeave}>{children}</a>
+  );
+}
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#050914] text-white font-sans overflow-x-hidden selection:bg-brand-primary/30">
-      {/* Global Background */}
+      {/* Global Background — Iridescence */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-fixed bg-center opacity-40 mix-blend-screen" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#050914]/80 via-[#050914]/90 to-[#050914]" />
+        <Iridescence color={[1, 1, 1]} speed={1.0} amplitude={0.1} mouseReact={false} />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
       {/* Sticky Top Navigation */}
@@ -30,10 +56,9 @@ export default function LandingPage() {
             <Link to="/login" className="hidden sm:block text-sm font-medium text-zinc-300 hover:text-white transition-colors">
               Log in
             </Link>
-            <Link to="/register" className="group flex items-center gap-2 bg-brand-primary hover:bg-brand-hover text-white text-sm font-semibold py-2.5 px-6 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all">
-              Get started
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <MagneticButton to="/register" className="group flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-sm font-semibold py-2.5 px-6 rounded-full border border-white/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]">
+              Get started <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </MagneticButton>
           </div>
         </div>
       </nav>
@@ -56,12 +81,12 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-hover text-white text-base font-semibold py-3.5 px-8 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.4)] transition-all">
+            <MagneticButton to="/register" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-base font-semibold py-3.5 px-8 rounded-full border border-white/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] active:scale-95">
               Get started <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link to="/login?demo=student" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-base font-semibold py-3.5 px-8 rounded-full border border-white/20 backdrop-blur-md transition-all shadow-md active:scale-95">
+            </MagneticButton>
+            <MagneticButton to="/login?demo=student" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-base font-semibold py-3.5 px-8 rounded-full border border-white/20 backdrop-blur-md active:scale-95">
               Explore the demo
-            </Link>
+            </MagneticButton>
           </div>
         </div>
 

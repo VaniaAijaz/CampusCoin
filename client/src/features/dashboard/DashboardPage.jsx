@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useOutletContext, Navigate } from "react-router-dom";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import gsap from "gsap";
 import {
   Sparkles, Plus, Wallet, ArrowUpRight, ArrowDownRight, Target, Clock,
@@ -16,6 +17,8 @@ import IouSlidingSheet from "../debts/IouSlidingSheet";
 import SubscriptionLogo from "../../components/ui/SubscriptionLogo";
 import CategoryIcon from "../../components/ui/CategoryIcon";
 import LoadingScreen from "../../components/ui/LoadingScreen";
+import DashboardSkeleton from "../../components/ui/DashboardSkeleton";
+import NumberTicker from "../../components/ui/NumberTicker";
 
 // Recharts
 import {
@@ -84,7 +87,7 @@ export default function DashboardPage() {
   const openAdd = outletCtx?.openQuickAdd || (() => setQuickAddOpen(true));
 
   // Query Hook with initialData and keepPreviousData: opens in 0ms and syncs live in background
-  const { data: dashboardData } = useQuery({
+  const { data: dashboardData, isLoading: queryLoading } = useQuery({
     queryKey: ["dashboardData"],
     queryFn: async () => {
       try {
@@ -124,9 +127,9 @@ export default function DashboardPage() {
             y: 0,
             opacity: 1,
             duration: 0.6,
-            stagger: 0.08,
-            ease: "power3.out",
-            clearProps: "all"
+            stagger: 0.1,
+            ease: "back.out(1.2)",
+            clearProps: "all",
           }
         );
       }, containerRef);
@@ -139,9 +142,13 @@ export default function DashboardPage() {
     return <Navigate to="/login" replace />;
   }
 
-  // If still actively initializing auth, show loading
   if (isAuthLoading) {
-    return <LoadingScreen message="Loading Campus Coin..." />;
+    return <DashboardSkeleton />;
+  }
+
+  // Show skeleton on first query load (no cached data yet)
+  if (queryLoading && !dashboardData) {
+    return <DashboardSkeleton />;
   }
 
   const { metrics, recentTx, budgets, subscriptions } = dashboardData || defaultDashboard;
@@ -201,7 +208,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-3xl font-black text-white tracking-tight drop-shadow-sm">
-              ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <NumberTicker value={totalBalance} prefix="$" decimals={2} />
             </div>
             <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white text-[11px] font-bold">
               <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300" /> {balanceChange} vs last month
@@ -219,7 +226,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-3xl font-black text-white tracking-tight drop-shadow-sm">
-              ${totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <NumberTicker value={totalExpense} prefix="$" decimals={2} />
             </div>
             <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white text-[11px] font-bold">
               <ArrowDownRight className="w-3.5 h-3.5 text-emerald-300" /> {expenseChange} vs last month
@@ -237,7 +244,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-3xl font-black text-white tracking-tight drop-shadow-sm">
-              ${availableBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <NumberTicker value={availableBudget} prefix="$" decimals={2} />
             </div>
             <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white text-[11px] font-bold">
               <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300" /> {budgetChange} vs last month
@@ -255,7 +262,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-3xl font-black text-white tracking-tight drop-shadow-sm">
-              ${savingsGoal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <NumberTicker value={savingsGoal} prefix="$" decimals={2} />
             </div>
             <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white text-[11px] font-bold">
               <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300" /> {savingsChange} vs last month

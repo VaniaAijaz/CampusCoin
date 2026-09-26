@@ -2,7 +2,8 @@
 
 @theme {
   /* ─── Fonts ─────────────────────────────────── */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Cabinet Grotesk", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "Cabinet Grotesk", "Plus Jakarta Sans", system-ui, sans-serif;
 
   /* ─── Liquid Glass Palette ─────────────────── */
   --color-brand-primary: #38BDF8;
@@ -20,11 +21,12 @@
 }
 
 html {
-  font-family: var(--font-sans);
+  font-family: "Cabinet Grotesk", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
   color-scheme: dark;
+  letter-spacing: -0.01em; /* Cabinet Grotesk looks best slightly tighter */
 }
 
 body {
