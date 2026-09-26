@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, login: setAuthSession, enterDemoMode, logout } = useAuth();
+  const { user, login: setAuthSession, logout } = useAuth();
   const { color } = useTheme();
 
   const tokenParam = searchParams.get("token");
@@ -46,9 +46,9 @@ export default function VerifyEmailPage() {
     try {
       const { data } = await api.post("/auth/verify-email", { token });
       if (data.success) {
-        toast.success(data.message || "Email verified successfully!");
-        setAuthSession(data.user, data.token);
-        navigate("/app", { replace: true });
+        toast.success(data.message || "Account activated! Please sign in to continue.");
+        logout();
+        navigate("/login", { replace: true });
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Verification link is invalid or expired.");
@@ -110,9 +110,9 @@ export default function VerifyEmailPage() {
       });
 
       if (data.success) {
-        toast.success(data.message || "Email verified successfully!");
-        setAuthSession(data.user, data.token);
-        navigate("/app", { replace: true });
+        toast.success(data.message || "Account activated! Please sign in to continue.");
+        logout();
+        navigate("/login", { replace: true });
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Invalid or expired verification code.");
@@ -139,11 +139,6 @@ export default function VerifyEmailPage() {
     }
   };
 
-  const handleLaunchDemo = () => {
-    enterDemoMode("student");
-    toast.success("Demo mode active: Explore Campus Coin's UI & UX freely!");
-    navigate("/app", { replace: true });
-  };
 
   const handleBackToLogin = () => {
     logout();
@@ -272,18 +267,7 @@ export default function VerifyEmailPage() {
           </button>
         </div>
 
-        {/* Instant UI/UX Demo Bypass Escape Hatch */}
-        <div className="mt-6 pt-6 border-t border-white/15 text-center">
-          <p className="text-xs text-white/60 mb-3">Just evaluating the UI and UX?</p>
-          <button
-            type="button"
-            onClick={handleLaunchDemo}
-            className="w-full min-h-[44px] rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_15px_rgba(52,211,153,0.15)]"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            Explore Free Demo Mode (Skip Verification & Preview UI)
-          </button>
-        </div>
+
       </motion.div>
     </div>
   );

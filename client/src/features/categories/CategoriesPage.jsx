@@ -15,7 +15,10 @@ import {
   updateCategory,
   deleteCategory,
 } from "./categoryApi";
+import { getCategoryIcon } from "../../core/categoryIcons";
 import toast from "react-hot-toast";
+import Portal from "../../components/ui/Portal";
+import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 
 const PRESET_COLORS = [
   "#6366F1", "#10B981", "#F59E0B", "#F43F5E",
@@ -35,6 +38,7 @@ export default function CategoriesPage() {
   const [type, setType] = useState("expense");
   const [color, setColor] = useState("#6366F1");
   const [saving, setSaving] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const fetchCats = useCallback(async () => {
     setLoading(true);
@@ -102,16 +106,22 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this category?")) return;
+  const handleDelete = (id) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      const res = await deleteCategory(id);
+      const res = await deleteCategory(itemToDelete);
       if (res.success) {
         toast.success("Category removed.");
         fetchCats();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete category.");
+    } finally {
+      setItemToDelete(null);
     }
   };
 
@@ -131,7 +141,7 @@ export default function CategoriesPage() {
 
         <button
           onClick={() => handleOpenModal()}
-          className="self-start sm:self-auto py-2 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white text-xs font-semibold shadow-lg shadow-brand-primary/30 transition-all flex items-center gap-2 cursor-pointer"
+          className="self-start sm:self-auto min-h-[44px] py-2 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white text-xs font-semibold shadow-lg shadow-brand-primary/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
         >
           <Plus className="w-4 h-4" />
           <span>New Category</span>
@@ -139,27 +149,27 @@ export default function CategoriesPage() {
       </div>
 
       {/* Type Filter Tabs */}
-      <div className="flex p-1 rounded-xl bg-black/40 border border-white/10 w-fit text-xs font-medium">
+      <div className="flex flex-wrap p-1 rounded-2xl bg-black/40 border border-white/10 w-fit text-xs font-medium gap-1">
         <button
           onClick={() => setActiveTab("all")}
-          className={`py-1.5 px-3.5 rounded-lg transition-all cursor-pointer ${
-            activeTab === "all" ? "bg-brand-primary text-brand-dark shadow-sm" : "text-zinc-400 hover:text-white"
+          className={`min-h-[40px] py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+            activeTab === "all" ? "bg-brand-primary text-brand-dark font-bold shadow-sm" : "text-zinc-400 hover:text-white"
           }`}
         >
           All Categories ({categories.length})
         </button>
         <button
           onClick={() => setActiveTab("expense")}
-          className={`py-1.5 px-3.5 rounded-lg transition-all cursor-pointer ${
-            activeTab === "expense" ? "bg-brand-primary text-brand-dark shadow-sm" : "text-zinc-400 hover:text-white"
+          className={`min-h-[40px] py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+            activeTab === "expense" ? "bg-brand-primary text-brand-dark font-bold shadow-sm" : "text-zinc-400 hover:text-white"
           }`}
         >
           Expenses ({categories.filter((c) => c.type === "expense").length})
         </button>
         <button
           onClick={() => setActiveTab("income")}
-          className={`py-1.5 px-3.5 rounded-lg transition-all cursor-pointer ${
-            activeTab === "income" ? "bg-brand-primary text-brand-dark shadow-sm" : "text-zinc-400 hover:text-white"
+          className={`min-h-[40px] py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+            activeTab === "income" ? "bg-brand-primary text-brand-dark font-bold shadow-sm" : "text-zinc-400 hover:text-white"
           }`}
         >
           Incomes ({categories.filter((c) => c.type === "income").length})
@@ -173,37 +183,37 @@ export default function CategoriesPage() {
           Loading categories...
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {filteredCategories.map((cat) => {
             const isDefault = cat.isDefault;
             return (
               <div
                 key={cat._id}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-5 shadow-xl transition-all duration-300 flex items-center justify-between group"
+                className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 sm:p-5 shadow-xl transition-all duration-300 flex items-center justify-between gap-3 group min-w-0"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md"
                     style={{ backgroundColor: `${cat.color}25`, border: `1px solid ${cat.color}66` }}
                   >
-                    ₵
+                    {getCategoryIcon(cat.name, "w-5 h-5")}
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white group-hover:text-brand-primary/80 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm md:text-base font-bold text-white group-hover:text-brand-primary/90 transition-colors truncate">
                       {cat.name}
                     </h4>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <span
-                        className={`text-3xs uppercase font-bold px-1.5 py-0.2 rounded ${
+                        className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
                           cat.type === "income"
-                            ? "bg-brand-mint/10 text-brand-mint"
-                            : "bg-brand-coral/10 text-brand-coral"
+                            ? "bg-brand-mint/15 text-brand-mint border border-brand-mint/30"
+                            : "bg-brand-coral/15 text-brand-coral border border-brand-coral/30"
                         }`}
                       >
                         {cat.type}
                       </span>
-                      <span className="text-3xs text-zinc-500">•</span>
-                      <span className="text-3xs text-zinc-400">
+                      <span className="text-xs text-zinc-500">•</span>
+                      <span className="text-[11px] text-zinc-400 font-medium">
                         {isDefault ? "Default" : "Custom"}
                       </span>
                     </div>
@@ -211,20 +221,22 @@ export default function CategoriesPage() {
                 </div>
 
                 {!isDefault && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 shrink-0 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleOpenModal(cat)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
+                      className="min-h-[44px] min-w-[44px] rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
                       title="Edit"
+                      aria-label={`Edit ${cat.name}`}
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(cat._id)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-brand-coral hover:bg-brand-coral/10"
+                      className="min-h-[44px] min-w-[44px] rounded-xl text-zinc-400 hover:text-brand-coral hover:bg-brand-coral/10 flex items-center justify-center transition-colors cursor-pointer"
                       title="Delete"
+                      aria-label={`Delete ${cat.name}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -236,14 +248,15 @@ export default function CategoriesPage() {
 
       {/* Modal: Create or Edit Category */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-          <div
-            className="w-full max-w-md bg-brand-dark/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Portal>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div
+              className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white/[0.03] backdrop-blur-[64px] border border-white/10 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Tag className="w-4 h-4 text-brand-primary" />
+              <h3 className="text-xl font-bold text-white flex items-center gap-2 drop-shadow-sm">
+                <Tag className="w-5 h-5 text-brand-primary" />
                 {editingCat ? "Edit Category" : "New Custom Category"}
               </h3>
               <button
@@ -256,7 +269,7 @@ export default function CategoriesPage() {
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">
+                <label className="block text-xs font-bold text-white/70 mb-1">
                   Category Name
                 </label>
                 <input
@@ -265,28 +278,28 @@ export default function CategoriesPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Lab Supplies, Gym, Tech Gear"
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
+                  className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
                 />
               </div>
 
               {!editingCat && (
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  <label className="block text-xs font-bold text-white/70 mb-1">
                     Category Type
                   </label>
                   <select
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
+                    className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs outline-none focus:border-brand-primary transition-colors"
                   >
-                    <option value="expense" className="bg-brand-obsidian">Expense</option>
-                    <option value="income" className="bg-brand-obsidian">Income</option>
+                    <option value="expense" className="bg-[#0B0F19]">Expense</option>
+                    <option value="income" className="bg-[#0B0F19]">Income</option>
                   </select>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-2">
+                <label className="block text-xs font-bold text-white/70 mb-2">
                   Category Color Accent
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -306,18 +319,18 @@ export default function CategoriesPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-3">
+              <div className="flex gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="flex-1 py-2 rounded-xl bg-white/5 text-zinc-300 text-xs border border-white/10 cursor-pointer"
+                  className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold text-xs border border-white/10 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2 rounded-xl bg-brand-primary text-brand-dark hover:bg-brand-primary text-brand-dark text-xs font-semibold cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl bg-white/20 hover:bg-white/30 border border-white/40 text-white font-bold text-xs shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] transition-all cursor-pointer disabled:opacity-50"
                 >
                   {saving ? "Saving..." : editingCat ? "Update Category" : "Create Category"}
                 </button>
@@ -325,7 +338,17 @@ export default function CategoriesPage() {
             </form>
           </div>
         </div>
+        </Portal>
       )}
+
+      <GlassConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message="Are you sure you want to delete this category?"
+        confirmText="Delete"
+      />
     </div>
   );
 }

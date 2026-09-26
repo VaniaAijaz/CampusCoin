@@ -22,6 +22,7 @@ const {
   loginSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  currencyPreferenceSchema,
 } = require("../../core/validate");
 
 router.post("/register", validate(registerSchema), register);
@@ -33,6 +34,7 @@ router.post("/google/login", googleLogin);
 router.post("/google/register", googleRegister);
 router.get("/me", protect, getMe);
 router.put("/profile", protect, updateProfile);
+router.put("/profile/currency", protect, validate(currencyPreferenceSchema), require("../users/user.controller").updateCurrencyPreference);
 router.put("/change-password", protect, changePassword);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);

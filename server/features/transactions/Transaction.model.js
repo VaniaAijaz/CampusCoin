@@ -7,16 +7,19 @@ const transactionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
       index: true,
+      alias: "user_id",
     },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: [true, "Category is required"],
+      index: true,
+      alias: "category_id",
     },
     amount: {
       type: Number,
       required: [true, "Amount is required"],
-      min: [0.01, "Amount must be greater than 0"],
+      min: [0.000001, "Amount must be greater than 0"],
     },
     type: {
       type: String,
@@ -34,16 +37,17 @@ const transactionSchema = new mongoose.Schema(
       required: [true, "Date is required"],
       default: Date.now,
     },
-    // AI-suggested category (category id as string, overridable)
-    aiSuggestedCategoryId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      default: null,
+    paymentMethod: {
+      type: String,
+      enum: ["Cash", "Digital Bank", "Digital"],
+      default: "Digital Bank",
+      required: true,
     },
-    // Whether the AI suggestion was accepted or overridden
-    aiSuggestionAccepted: {
-      type: Boolean,
-      default: null,
+    transactionId: {
+      type: String,
+      default: () => `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      index: true,
+      alias: "transaction_id",
     },
     isRecurring: {
       type: Boolean,
@@ -57,6 +61,7 @@ const transactionSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false,
+      alias: "is_deleted",
     },
     isFlagged: {
       type: Boolean,
@@ -67,10 +72,30 @@ const transactionSchema = new mongoose.Schema(
       default: "",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
-// Only return non-deleted transactions by default
+// Virtuals for explicit snake_case compatibility
+transactionSchema.virtual("created_at").get(function () {
+  return this.createdAt;
+});
+
+// Sanitize paymentMethod and ensure transactionId is set prior to save
+transactionSchema.pre("save", function (next) {
+  if (this.paymentMethod === "Digital") {
+    this.paymentMethod = "Digital Bank";
+  }
+  if (!this.transactionId) {
+    this.transactionId = `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
+  }
+  next();
+});
+
+// Exclude soft-deleted transactions by default in find queries
 transactionSchema.pre(/^find/, function (next) {
   if (!this.getOptions().includeDeleted) {
     this.where({ isDeleted: false });
@@ -81,5 +106,6 @@ transactionSchema.pre(/^find/, function (next) {
 transactionSchema.index({ userId: 1, date: -1 });
 transactionSchema.index({ userId: 1, categoryId: 1 });
 transactionSchema.index({ userId: 1, type: 1, date: -1 });
+transactionSchema.index({ userId: 1, isDeleted: 1 });
 
 module.exports = mongoose.model("Transaction", transactionSchema);

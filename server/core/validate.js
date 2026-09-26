@@ -29,8 +29,12 @@ const registerSchema = z.object({
   email: z.string().email("Please provide a valid email address").toLowerCase().trim(),
   password: z.string().min(6, "Password must be at least 6 characters"),
   academicYear: z.string().optional(),
+  academic_year: z.string().optional(),
   monthlyAllowanceBaseline: z.number().nonnegative().optional(),
   monthlySavingsGoal: z.number().nonnegative().optional(),
+  monthly_savings_goal: z.number().nonnegative().optional(),
+  currency: z.enum(["USD", "EUR", "PKR"]).optional(),
+  currency_preference: z.enum(["USD", "EUR", "PKR"]).optional(),
 });
 
 const loginSchema = z.object({
@@ -50,23 +54,63 @@ const resendVerificationSchema = z.object({
   email: z.string().email("Please provide a valid email address").optional(),
 });
 
+/* ── Currency Preference Validation Schema ── */
+const currencyPreferenceSchema = z.object({
+  currency_preference: z.enum(["USD", "EUR", "PKR"]).optional(),
+  currency: z.enum(["USD", "EUR", "PKR"]).optional(),
+}).refine((data) => data.currency_preference || data.currency, {
+  message: "Must provide currency or currency_preference with value 'USD', 'EUR', or 'PKR'.",
+});
+
 /* ── Transaction Validation Schemas ── */
 const transactionSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than zero"),
   type: z.enum(["income", "expense"], {
     errorMap: () => ({ message: "Type must be either income or expense" }),
   }),
-  categoryId: z.string().min(1, "Category ID is required"),
-  description: z.string().max(255, "Description cannot exceed 255 characters").optional().default(""),
+  categoryId: z.string().optional(),
+  category_id: z.string().optional(),
+  categoryName: z.string().optional(),
+  description: z.string().max(1000, "Description cannot exceed 1000 characters").optional().default(""),
   date: z.string().or(z.date()).optional(),
+  paymentMethod: z
+    .enum(["Cash", "Digital", "Digital Bank"])
+    .optional()
+    .default("Digital Bank")
+    .transform((val) => (val === "Cash" ? "Cash" : "Digital Bank")),
+  transactionId: z.string().optional(),
+  transaction_id: z.string().optional(),
   isRecurring: z.boolean().optional(),
+  recurringFrequency: z.enum(["daily", "weekly", "monthly", "yearly", null]).nullable().optional(),
+  isDeleted: z.boolean().optional(),
+  is_deleted: z.boolean().optional(),
+}).refine((data) => data.categoryId || data.category_id || data.categoryName, {
+  message: "Category ID or name is required",
 });
 
 /* ── Budget Validation Schemas ── */
 const budgetSchema = z.object({
-  categoryId: z.string().min(1, "Category ID is required"),
-  amount: z.coerce.number().positive("Budget cap must be greater than zero"),
+  categoryId: z.string().optional(),
+  category_id: z.string().optional(),
+  amount: z.coerce.number().positive("Budget cap must be greater than zero").optional(),
+  limitAmount: z.coerce.number().positive("Budget limit must be greater than zero").optional(),
+  limit_amount: z.coerce.number().positive("Budget limit must be greater than zero").optional(),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Month format must be YYYY-MM").optional(),
+}).refine((data) => data.categoryId || data.category_id, {
+  message: "Category ID is required",
+}).refine((data) => data.amount || data.limitAmount || data.limit_amount, {
+  message: "Budget limit amount must be greater than zero",
+});
+
+/* ── Khata (IOU / Debt) Validation Schema ── */
+const debtSchema = z.object({
+  counterparty_name: z.string().min(1, "Counterparty name is required").trim(),
+  direction: z.enum(["owed_to_me", "i_owe"], {
+    errorMap: () => ({ message: "Direction must be either owed_to_me or i_owe" }),
+  }),
+  amount: z.coerce.number().positive("Amount must be greater than zero"),
+  due_date: z.string().or(z.date()).optional().nullable(),
+  settlement_status: z.enum(["pending", "settled"]).optional().default("pending"),
 });
 
 module.exports = {
@@ -75,6 +119,8 @@ module.exports = {
   loginSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  currencyPreferenceSchema,
   transactionSchema,
   budgetSchema,
+  debtSchema,
 };

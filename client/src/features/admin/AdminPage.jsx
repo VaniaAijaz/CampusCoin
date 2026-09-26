@@ -1,46 +1,54 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Shield,
-  Users,
-  CreditCard,
-  Bell,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  Plus,
-  RefreshCw,
+  Clock,
+  KeyRound,
+  Copy,
+  Check,
   Search,
+  RefreshCw,
+  LogOut,
+  X,
+  ExternalLink,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../auth/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import Iridescence from "../../components/ui/Iridescence";
 import api from "../../core/api";
 import toast from "react-hot-toast";
+import Portal from "../../components/ui/Portal";
+
+// True Glass UI Recipe matching exact platform standard
+const glassRecipe =
+  "base-glass bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] transform-gpu backface-hidden";
 
 export default function AdminPage() {
+  const { user, logout } = useAuth();
+  const { color } = useTheme();
+
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // New announcement modal
-  const [annModal, setAnnModal] = useState(false);
-  const [annTitle, setAnnTitle] = useState("");
-  const [annMessage, setAnnMessage] = useState("");
-  const [annType, setAnnType] = useState("info");
-  const [postingAnn, setPostingAnn] = useState(false);
+  // Password Reset Link Modal State
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetData, setResetData] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [generatingForId, setGeneratingForId] = useState(null);
 
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, usersRes, annRes] = await Promise.all([
+      const [statsRes, usersRes] = await Promise.all([
         api.get("/admin/stats"),
         api.get("/admin/users", { params: { search } }),
-        api.get("/admin/announcements"),
       ]);
 
-      if (statsRes.data.success) setStats(statsRes.data.stats);
-      if (usersRes.data.success) setUsers(usersRes.data.users);
-      if (annRes.data.success) setAnnouncements(annRes.data.announcements);
-    } catch (err) {
+      if (statsRes.data?.success) setStats(statsRes.data.stats);
+      if (usersRes.data?.success) setUsers(usersRes.data.users);
+    } catch {
       toast.error("Failed to load admin controls.");
     } finally {
       setLoading(false);
@@ -51,322 +59,344 @@ export default function AdminPage() {
     fetchAdminData();
   }, [fetchAdminData]);
 
-  const handleToggleUser = async (id) => {
+  // Handle Generate Reset Link for Student
+  const handleGenerateResetLink = async (student) => {
+    setGeneratingForId(student._id);
     try {
-      const res = await api.put(`/admin/users/${id}/toggle`);
-      if (res.data.success) {
-        toast.success("User status updated.");
-        fetchAdminData();
+      const res = await api.post(`/admin/users/${student._id}/reset-link`);
+      if (res.data?.success) {
+        setResetData({
+          studentName: student.name,
+          studentEmail: student.email,
+          resetUrl: res.data.resetUrl,
+          token: res.data.token,
+        });
+        setCopied(false);
+        setResetModalOpen(true);
+        toast.success(`Reset link generated for ${student.name}`);
       }
-    } catch {
-      toast.error("Failed to update user status.");
-    }
-  };
-
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm("Permanently delete this student account?")) return;
-    try {
-      const res = await api.delete(`/admin/users/${id}`);
-      if (res.data.success) {
-        toast.success("User account deleted.");
-        fetchAdminData();
-      }
-    } catch {
-      toast.error("Failed to delete user.");
-    }
-  };
-
-  const handleCreateAnnouncement = async (e) => {
-    e.preventDefault();
-    if (!annTitle.trim() || !annMessage.trim()) return;
-    setPostingAnn(true);
-    try {
-      const res = await api.post("/admin/announcements", {
-        title: annTitle.trim(),
-        message: annMessage.trim(),
-        type: annType,
-      });
-      if (res.data.success) {
-        toast.success("Announcement broadcasted to campus header!");
-        setAnnModal(false);
-        setAnnTitle("");
-        setAnnMessage("");
-        fetchAdminData();
-      }
-    } catch {
-      toast.error("Failed to publish announcement.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to generate password reset link.");
     } finally {
-      setPostingAnn(false);
+      setGeneratingForId(null);
     }
   };
 
-  const handleDeleteAnnouncement = async (id) => {
+  const handleCopyLink = async () => {
+    if (!resetData?.resetUrl) return;
     try {
-      const res = await api.delete(`/admin/announcements/${id}`);
-      if (res.data.success) {
-        toast.success("Announcement removed.");
-        fetchAdminData();
-      }
+      await navigator.clipboard.writeText(resetData.resetUrl);
+      setCopied(true);
+      toast.success("Password reset link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Failed to delete announcement.");
+      toast.error("Failed to copy link.");
     }
   };
+
+  const averageSessionMinutes = stats?.averageUserSessionTime ?? 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Shield className="w-6 h-6 text-brand-primary" />
-            Campus Administrator Portal
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            System health, active student users, broadcast ticker announcements, and default categories.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setAnnModal(true)}
-            className="py-2 px-3.5 rounded-xl bg-brand-primary text-brand-dark hover:bg-brand-primary text-brand-dark text-xs font-semibold shadow-md shadow-brand-primary/30 transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span>Broadcast Notice</span>
-          </button>
-          <button
-            onClick={() => fetchAdminData()}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
+    <div className="min-h-screen text-white relative overflow-x-hidden p-4 sm:p-6 lg:p-10 flex flex-col justify-between selection:bg-brand-primary/30">
+      {/* Background WebGL Iridescence */}
+      <div className="fixed inset-0 -z-20 pointer-events-none">
+        <Iridescence color={color || [0.06, 0.23, 0.44]} speed={0.8} amplitude={0.12} mouseReact={false} />
       </div>
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] -z-10 pointer-events-none" />
 
-      {/* KPI Stats Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs text-zinc-400 font-medium">Registered Students</span>
-            <Users className="w-4 h-4 text-brand-primary" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{stats?.totalUsers || 0}</div>
-          <p className="text-3xs text-brand-mint mt-1">{stats?.activeUsers || 0} active accounts</p>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs text-zinc-400 font-medium">System Ledger Volume</span>
-            <CreditCard className="w-4 h-4 text-brand-primary" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{stats?.totalTransactions || 0}</div>
-          <p className="text-3xs text-zinc-400 mt-1">Total recorded student transactions</p>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs text-zinc-400 font-medium">Broadcast Notices</span>
-            <Bell className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{announcements.length}</div>
-          <p className="text-3xs text-zinc-400 mt-1">Live campus announcement banners</p>
-        </div>
-      </div>
-
-      {/* Announcements Manager */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-        <h3 className="text-base font-bold text-white flex items-center gap-2 pb-4 border-b border-white/10 mb-4">
-          <Bell className="w-4 h-4 text-brand-primary" />
-          Active Campus Header Broadcasts
-        </h3>
-
-        {announcements.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {announcements.map((ann) => (
-              <div
-                key={ann._id}
-                className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all flex items-start justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold text-white">{ann.title}</span>
-                    <span className="text-3xs uppercase font-bold px-1.5 py-0.2 rounded bg-brand-primary text-brand-dark/20 text-brand-primary/80">
-                      {ann.type}
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-300">{ann.message}</p>
-                </div>
-                <button
-                  onClick={() => handleDeleteAnnouncement(ann._id)}
-                  className="p-1 rounded-lg text-zinc-500 hover:text-brand-coral cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+      <div className="max-w-7xl w-full mx-auto space-y-8">
+        {/* Dedicated Admin Header */}
+        <header className={`${glassRecipe} rounded-[28px] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-[20px] bg-white/15 border border-white/30 flex items-center justify-center shadow-inner shrink-0">
+              <Shield className="w-6 h-6 text-amber-300 drop-shadow-sm" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Admin Command Center
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black uppercase tracking-wider">
+                  Isolated Admin View
+                </span>
               </div>
-            ))}
+              <p className="text-xs text-white/70 font-medium mt-0.5">
+                Logged in as <span className="text-white font-bold">{user?.name || "Administrator"}</span> ({user?.email})
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="py-6 text-center text-xs text-zinc-400">
-            No campus broadcasts active. Click "Broadcast Notice" to push a tip to students.
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchAdminData}
+              disabled={loading}
+              className="min-h-[44px] px-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
+            </button>
+
+            <button
+              onClick={async () => {
+                try { await api.post("/users/logout-session"); } catch (_) {}
+                logout();
+                window.location.href = "/login";
+              }}
+              className="min-h-[44px] px-4 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 active:scale-95 shadow-sm"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
+            </button>
           </div>
-        )}
-      </div>
+        </header>
 
-      {/* Student Directory Table */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Users className="w-4 h-4 text-brand-primary" />
-            Student Directory
-          </h3>
+        {/* SECTION 1: Prominent Global Metric Card (Average User Session Time) */}
+        <div className="w-full">
+          <div className={`${glassRecipe} rounded-[32px] p-6 sm:p-8 relative overflow-hidden`}>
+            {/* Luminous Glow Accent */}
+            <div className="absolute top-0 right-0 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search students..."
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-black/20 border border-white/10 text-xs text-white placeholder-zinc-500"
-            />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-2 max-w-xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white/80">
+                  <Clock className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="uppercase tracking-wider">Global Student Engagement Metric</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Average User Session Time
+                </h2>
+                <p className="text-sm text-white/70 font-medium leading-relaxed">
+                  Real aggregate session duration spent by students interacting with budgeting, ledger records, and transactions across Campus Coin.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-[24px] bg-white/10 border border-white/20 flex flex-col items-center md:items-end justify-center min-w-[220px] shadow-inner text-center md:text-right">
+                <div className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-sm flex items-baseline gap-1.5">
+                  <span>{averageSessionMinutes}</span>
+                  <span className="text-lg sm:text-xl font-bold text-sky-300">min</span>
+                </div>
+                <p className="text-xs text-emerald-300 font-bold mt-1.5 flex items-center gap-1">
+                  <span>Average Time Per Session</span>
+                </p>
+                <p className="text-[10px] text-white/50 font-medium mt-1">
+                  Based on active verified student sessions
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-white/10 text-zinc-400 uppercase text-3xs font-semibold">
-                <th className="pb-3 pl-2">Student</th>
-                <th className="pb-3">Academic Year</th>
-                <th className="pb-3">Allowance</th>
-                <th className="pb-3">Savings Goal</th>
-                <th className="pb-3">Status</th>
-                <th className="pb-3 text-right pr-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {users.map((u) => (
-                <tr key={u._id} className="hover:bg-white/[0.02]">
-                  <td className="py-3 pl-2">
-                    <div className="font-semibold text-white">{u.name}</div>
-                    <div className="text-2xs text-zinc-400">{u.email}</div>
-                  </td>
-                  <td className="py-3 text-zinc-300">{u.academicYear || "—"}</td>
-                  <td className="py-3 text-zinc-300">${u.monthlyAllowanceBaseline || 0}</td>
-                  <td className="py-3 text-zinc-300">${u.monthlySavingsGoal || 0}</td>
-                  <td className="py-3">
-                    <span
-                      className={`text-3xs uppercase font-bold px-2 py-0.5 rounded-full border ${
-                        u.isActive
-                          ? "bg-brand-mint/10 text-brand-mint border-brand-mint/20"
-                          : "bg-brand-coral/10 text-brand-coral border-brand-coral/20"
-                      }`}
-                    >
-                      {u.isActive ? "Active" : "Disabled"}
-                    </span>
-                  </td>
-                  <td className="py-3 text-right pr-2">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleToggleUser(u._id)}
-                        className={`p-1.5 rounded-lg text-xs cursor-pointer ${
-                          u.isActive
-                            ? "text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10"
-                            : "text-zinc-400 hover:text-brand-mint hover:bg-brand-mint/10"
-                        }`}
-                        title={u.isActive ? "Deactivate" : "Activate"}
-                      >
-                        {u.isActive ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(u._id)}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-brand-coral hover:bg-brand-coral/10 cursor-pointer"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Broadcast Notice Modal */}
-      {annModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
-          <div
-            className="w-full max-w-md bg-brand-dark/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Bell className="w-4 h-4 text-brand-primary" />
-                Publish Campus Notice
+        {/* SECTION 2: Clean, Responsive Student Management Table */}
+        <div className={`${glassRecipe} rounded-[32px] p-6 sm:p-8 space-y-6`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Student Directory & Accounts
               </h3>
-              <button onClick={() => setAnnModal(false)} className="text-zinc-400 hover:text-white">✕</button>
+              <p className="text-xs sm:text-sm text-white/60 font-medium mt-0.5">
+                Manage registered students and generate password reset links.
+              </p>
             </div>
 
-            <form onSubmit={handleCreateAnnouncement} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Headline</label>
-                <input
-                  type="text"
-                  required
-                  value={annTitle}
-                  onChange={(e) => setAnnTitle(e.target.value)}
-                  placeholder="e.g., Financial Aid Deadline"
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Message</label>
-                <textarea
-                  rows="3"
-                  required
-                  value={annMessage}
-                  onChange={(e) => setAnnMessage(e.target.value)}
-                  placeholder="Submit all scholarship documentation by Friday 5 PM."
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Notice Type</label>
-                <select
-                  value={annType}
-                  onChange={(e) => setAnnType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                >
-                  <option value="info" className="bg-brand-obsidian">General Info</option>
-                  <option value="tip" className="bg-brand-obsidian">Budgeting Tip</option>
-                  <option value="warning" className="bg-brand-obsidian">Important Warning</option>
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setAnnModal(false)}
-                  className="flex-1 py-2 rounded-xl bg-white/5 text-zinc-300 text-xs border border-white/10 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={postingAnn}
-                  className="flex-1 py-2 rounded-xl bg-brand-primary text-brand-dark hover:bg-brand-primary text-brand-dark text-xs font-semibold cursor-pointer disabled:opacity-50"
-                >
-                  {postingAnn ? "Broadcasting..." : "Broadcast"}
-                </button>
-              </div>
-            </form>
+            <div className="relative min-w-[240px] sm:min-w-[280px]">
+              <Search className="w-4 h-4 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search students by name or email..."
+                className="w-full min-h-[44px] pl-10 pr-4 rounded-full bg-black/20 border border-white/15 text-xs text-white placeholder-white/40 focus:outline-none focus:border-white/40 transition-colors"
+              />
+            </div>
           </div>
+
+          {/* Table Container with Mobile Overflow Protection */}
+          {loading ? (
+            <div className="py-20 text-center text-xs text-white/60 flex items-center justify-center gap-2.5">
+              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Loading student accounts...</span>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="py-16 text-center text-sm text-white/60 font-medium">
+              No registered students found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-[20px] bg-white/[0.02] border border-white/10">
+              <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/60 uppercase text-[10px] sm:text-xs font-bold tracking-wider">
+                    <th className="py-4 px-6">Student Name</th>
+                    <th className="py-4 px-6">Email</th>
+                    <th className="py-4 px-6">Time Spent Today</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 font-medium">
+                  {users.map((student) => (
+                    <tr
+                      key={student._id}
+                      className="hover:bg-white/[0.04] transition-colors"
+                    >
+                      {/* Column 1: Student Name */}
+                      <td className="py-4 px-6">
+                        <div className="font-bold text-white text-sm sm:text-base">
+                          {student.name}
+                        </div>
+                        <div className="text-[11px] text-white/50">
+                          {student.academicYear || "Registered Student"}
+                        </div>
+                      </td>
+
+                      {/* Column 2: Email */}
+                      <td className="py-4 px-6 font-mono text-xs sm:text-sm text-white/90">
+                        {student.email}
+                      </td>
+
+                      {/* Column 3: Time Spent Today */}
+                      <td className="py-4 px-6">
+                        <div className="font-bold text-sky-300 text-sm">
+                          {student.today_minutes_active || 0} min
+                        </div>
+                        <div className="text-[11px] text-white/50">
+                          {student.today_hours_active || 0} hrs
+                        </div>
+                      </td>
+
+                      {/* Column 4: Actions (Generate Reset Link) */}
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          onClick={() => handleGenerateResetLink(student)}
+                          disabled={generatingForId === student._id}
+                          className="min-h-[44px] px-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-xs font-bold text-white hover:text-sky-300 transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95 disabled:opacity-50"
+                        >
+                          <KeyRound className="w-3.5 h-3.5 text-sky-400" />
+                          <span>
+                            {generatingForId === student._id ? "Generating..." : "Generate Reset Link"}
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Glass Modal: Generated Password Reset Link & Copy to Clipboard */}
+      <Portal>
+        <AnimatePresence>
+          {resetModalOpen && resetData && (
+            <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+            onClick={() => setResetModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg p-6 sm:p-7 rounded-[32px]
+                         bg-white/[0.04] backdrop-blur-[80px] backdrop-saturate-[180%]
+                         border border-white/20 border-t-white/30 border-l-white/30
+                         shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)]
+                         space-y-5 overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-white tracking-tight">
+                      Password Reset Link Generated
+                    </h4>
+                    <p className="text-xs text-white/60">
+                      Generated for {resetData.studentName}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setResetModalOpen(false)}
+                  className="min-h-[44px] min-w-[44px] rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Recipient Details */}
+              <div className="p-3.5 rounded-2xl bg-black/20 border border-white/10 text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-white/60">Student:</span>
+                  <span className="font-bold text-white">{resetData.studentName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Email:</span>
+                  <span className="font-mono text-white/90">{resetData.studentEmail}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/60">Validity:</span>
+                  <span className="text-emerald-400 font-bold">1 Hour</span>
+                </div>
+              </div>
+
+              {/* Link Input & Copy Action */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-white/80 uppercase tracking-wider">
+                  Direct Password Reset URL
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={resetData.resetUrl}
+                    className="flex-1 min-h-[46px] px-3.5 rounded-xl bg-black/30 border border-white/20 text-xs font-mono text-white/90 select-all focus:outline-none"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className={`min-h-[46px] px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs font-black transition-all cursor-pointer active:scale-95 shadow-md ${
+                      copied
+                        ? "bg-emerald-500 text-slate-950 font-bold"
+                        : "bg-white text-slate-950 hover:bg-white/90"
+                    }`}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                You can now share this link directly with the student via secure channel. Opening this URL will allow them to set a new password without needing their current password.
+              </p>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setResetModalOpen(false)}
+                  className="w-full min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-all cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }

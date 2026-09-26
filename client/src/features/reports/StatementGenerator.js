@@ -5,18 +5,16 @@ import { getTransactions } from "../transactions/transactionApi";
 import { getSubscriptions } from "../subscriptions/subscriptionApi";
 import toast from "react-hot-toast";
 
-export const generateStatementPDF = async (user) => {
+export const generateStatementPDF = async (user, endDateStr) => {
   const loadingToast = toast.loading("Generating Official Statement...");
   
   try {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(`${endDateStr}T23:59:59.999Z`);
     
-    // 1. Fetch transactions within the current month up to now
+    // 1. Fetch transactions all time up to endDate
     const txRes = await getTransactions({
-      startDate: startOfMonth.toISOString(),
-      endDate: now.toISOString(),
-      limit: 1000 // Fetch up to 1000 to ensure we capture all for the month
+      endDate: endDate.toISOString(),
+      limit: 5000 // Fetch up to 5000 to ensure we capture history
     });
     
     const transactions = txRes.success ? txRes.transactions : [];
@@ -36,13 +34,13 @@ export const generateStatementPDF = async (user) => {
 
     const netBalance = totalInflow - totalOutflow;
 
-    // 4. Calculate Subscription Radar (Next 15 days)
-    const next15Days = addDays(now, 15);
+    // 4. Calculate Subscription Radar (Next 30 days from endDate)
+    const next30Days = addDays(endDate, 30);
     const upcomingSubscriptions = subscriptions.filter(sub => {
-      if (!sub.next_due_date) return false;
-      const nextDate = new Date(sub.next_due_date);
-      return isWithinInterval(nextDate, { start: now, end: next15Days });
-    }).sort((a, b) => new Date(a.next_due_date) - new Date(b.next_due_date));
+      if (!sub.renewal_date) return false;
+      const nextDate = new Date(sub.renewal_date);
+      return isWithinInterval(nextDate, { start: endDate, end: next30Days });
+    }).sort((a, b) => new Date(a.renewal_date) - new Date(b.renewal_date));
 
     // 5. Initialize jsPDF
     const doc = new jsPDF();
@@ -73,11 +71,11 @@ export const generateStatementPDF = async (user) => {
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    const dateRangeStr = `${format(startOfMonth, "MMMM d, yyyy")} - ${format(now, "MMMM d, yyyy")}`;
+    const dateRangeStr = `Up to ${format(endDate, "MMMM d, yyyy")}`;
     doc.text(dateRangeStr, pageWidth - 14, 26, { align: "right" });
     
     doc.text(`Prepared for: ${user?.name || "Student"}`, 14, 40);
-    doc.text(`Generated on: ${format(now, "MMMM d, yyyy 'at' h:mm a")}`, pageWidth - 14, 40, { align: "right" });
+    doc.text(`Generated on: ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}`, pageWidth - 14, 40, { align: "right" });
 
     doc.setDrawColor(226, 232, 240); // Slate-200
     doc.line(14, 44, pageWidth - 14, 44);
@@ -164,18 +162,18 @@ export const generateStatementPDF = async (user) => {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(textColor);
-    doc.text("Subscription Radar (Next 15 Days)", 14, finalY);
+    doc.text("Subscription Radar (Next 30 Days)", 14, finalY);
 
     if (upcomingSubscriptions.length === 0) {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(subtleColor);
-      doc.text("No subscriptions or bills are due in the next 15 days.", 14, finalY + 8);
+      doc.text("No subscriptions or bills are due in the next 30 days.", 14, finalY + 8);
     } else {
       const radarRows = upcomingSubscriptions.map(sub => [
-        sub.service_name,
+        sub.name || "Subscription",
         sub.billing_cycle,
-        format(new Date(sub.next_due_date), "MMM d, yyyy"),
+        format(new Date(sub.renewal_date), "MMM d, yyyy"),
         `$${sub.amount.toFixed(2)}`
       ]);
 
@@ -219,7 +217,7 @@ export const generateStatementPDF = async (user) => {
     }
 
     // Save PDF
-    const filename = `CampusCoin_Statement_${format(now, "yyyy-MM")}.pdf`;
+    const filename = `CampusCoin_Statement_${endDateStr}.pdf`;
     doc.save(filename);
     
     toast.success("Statement downloaded successfully!", { id: loadingToast });

@@ -4,35 +4,62 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, Sparkles,
   BarChart3, Tag, User, Shield, LogOut, Plus, Coins, Calendar,
-  Palette, Check,
+  Palette, Check, BookOpen, Sun, Moon, Bell, X, AlertCircle, Repeat
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import Iridescence from "../components/ui/Iridescence";
 import TransactionModal from "../features/transactions/TransactionModal";
+import DemoNoticeModal from "../components/ui/DemoNoticeModal";
 import api from "./api";
 
-// Apple visionOS Extreme Liquid Glass Standard Recipe
+// Video-Accurate Physical Spatial Glass Standard Recipe
 const glassRecipe =
-  "bg-white/10 backdrop-blur-[64px] backdrop-saturate-[150%] border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]";
+  "base-glass bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] transform-gpu backface-hidden";
+
+export const SPRING_CONFIG = {
+  type: "spring",
+  stiffness: 400,
+  damping: 35,
+  mass: 0.8,
+  bounce: 0,
+};
+
+const PAGE_VARIANTS = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
 
 const PAGE_TRANSITION = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.2, ease: "easeIn" } },
+  duration: 0.2,
+  ease: "easeOut",
 };
 
 export default function Layout() {
   const { user, logout, isAdmin, isAuthenticated, isLoading: authLoading, loading } = useAuth();
   const isAuthLoading = authLoading !== undefined ? authLoading : loading;
-  const { color, themeId, selectTheme, themes } = useTheme();
+  const { color, themeId, selectTheme, themes, mode, toggleMode, isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
   const [activeAnnouncement, setActiveAnnouncement] = useState(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Global listener for intercepted Demo Mode mutation attempts
+  useEffect(() => {
+    const handleDemoBlocked = () => {
+      setDemoModalOpen(true);
+    };
+    window.addEventListener("campuscoin:demoBlocked", handleDemoBlocked);
+    return () => window.removeEventListener("campuscoin:demoBlocked", handleDemoBlocked);
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -41,30 +68,63 @@ export default function Layout() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // Fetch active announcements for Student Dashboard Notification Bell & Top Banner
   useEffect(() => {
     if (!isAuthenticated) return;
     api.get("/announcements")
       .then(({ data }) => {
         if (data.success && data.announcements?.length) {
+          setAnnouncements(data.announcements);
           setActiveAnnouncement(data.announcements[0]);
         }
       })
       .catch(() => {});
   }, [isAuthenticated]);
 
+  // Real Average Time Tracking: Lightweight Activity-Based Session Heartbeat (60 seconds)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let wasActive = false;
+    const registerEngagement = () => {
+      wasActive = true;
+    };
+
+    window.addEventListener("mousemove", registerEngagement, { passive: true });
+    window.addEventListener("scroll", registerEngagement, { passive: true });
+    window.addEventListener("keydown", registerEngagement, { passive: true });
+    window.addEventListener("touchstart", registerEngagement, { passive: true });
+
+    // Initial mount heartbeat
+    api.post("/users/heartbeat").catch(() => {});
+
+    // Every 60 seconds ping heartbeat ONLY if user engaged
+    const heartbeatTimer = setInterval(() => {
+      if (wasActive) {
+        api.post("/users/heartbeat").catch(() => {});
+        wasActive = false;
+      }
+    }, 60000);
+
+    return () => {
+      clearInterval(heartbeatTimer);
+      window.removeEventListener("mousemove", registerEngagement);
+      window.removeEventListener("scroll", registerEngagement);
+      window.removeEventListener("keydown", registerEngagement);
+      window.removeEventListener("touchstart", registerEngagement);
+    };
+  }, [isAuthenticated]);
+
   const navLinks = [
     { to: "/app", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/app/transactions", label: "Transactions", icon: ArrowLeftRight },
+    { to: "/app/khata", label: "Khata (Ledger)", icon: BookOpen },
     { to: "/app/budget", label: "Budget", icon: PieChart },
-    { to: "/app/insights", label: "AI Insights", icon: Sparkles, badge: "AI" },
+    { to: "/app/subscriptions", label: "Subscriptions", icon: Repeat },
     { to: "/app/reports", label: "Reports", icon: BarChart3 },
     { to: "/app/categories", label: "Categories", icon: Tag },
     { to: "/app/profile", label: "Profile", icon: User },
   ];
-
-  if (isAdmin) {
-    navLinks.push({ to: "/app/admin", label: "Admin", icon: Shield, badge: "Admin" });
-  }
 
   return (
     <div className="min-h-screen text-white flex flex-col relative overflow-x-hidden selection:bg-white/30 selection:text-white">
@@ -116,7 +176,7 @@ export default function Layout() {
             <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest px-3 py-1 mb-1">
               Menu
             </p>
-            {navLinks.slice(0, 3).map((item) => (
+            {navLinks.slice(0, 4).map((item) => (
               <SideNavItem key={item.to} item={item} />
             ))}
           </div>
@@ -125,38 +185,16 @@ export default function Layout() {
             <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest px-3 py-1 mb-1">
               Tools & Analytics
             </p>
-            {navLinks.slice(3).map((item) => (
+            {navLinks.slice(4).map((item) => (
               <SideNavItem key={item.to} item={item} />
             ))}
           </div>
         </div>
 
         {/* Bottom Actions: Theme Switcher & Logout */}
-        <div className="pt-4 border-t border-white/20 flex flex-col gap-2">
-          {/* Theme Palette Quick Selector */}
-          <div className="flex items-center justify-between px-3 py-1 text-xs text-white/70">
-            <span className="text-[10px] uppercase font-bold tracking-wider">Aura Theme</span>
-            <div className="flex gap-1.5 items-center">
-              {themes.map((th) => (
-                <button
-                  key={th.id}
-                  onClick={() => selectTheme(th.id)}
-                  title={th.name}
-                  className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
-                    themeId === th.id
-                      ? "scale-125 border-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
-                      : "border-white/40 opacity-70 hover:opacity-100"
-                  }`}
-                  style={{
-                    backgroundColor: `rgb(${Math.round(th.color[0] * 255)}, ${Math.round(th.color[1] * 255)}, ${Math.round(th.color[2] * 255)})`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
+        <div className="pt-4 border-t border-white/20 flex flex-col gap-2">          <button
+            onClick={async () => {
+              try { await api.post("/users/logout-session"); } catch (_) {}
               logout();
               navigate("/login");
             }}
@@ -187,53 +225,56 @@ export default function Layout() {
             </div>
 
             <div className="flex items-center gap-2.5">
-              {/* Quick Add Button */}
-              <button
-                onClick={() => setQuickAddOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 text-xs font-bold text-white transition-transform active:scale-95 cursor-pointer min-h-[44px] shadow-sm"
-              >
-                <Plus className="w-4 h-4 text-white" />
-                <span className="hidden sm:inline">Add Entry</span>
-              </button>
-
-              {/* Theme Palette Switcher Dropdown */}
+              {/* Frosted Glass Notification Bell Dropdown */}
               <div className="relative">
                 <button
-                  onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-                  title="Switch Fluid Theme"
-                  className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 flex items-center justify-center text-white transition-colors cursor-pointer min-h-[44px]"
+                  type="button"
+                  onClick={() => setBellOpen(!bellOpen)}
+                  title="Campus Announcements"
+                  className="relative w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 flex items-center justify-center text-white transition-colors cursor-pointer min-h-[44px]"
                 >
-                  <Palette className="w-4 h-4 text-white/90" />
+                  <Bell className="w-4 h-4 text-white/90" />
+                  {announcements.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-brand-primary rounded-full animate-pulse shadow-[0_0_8px_var(--color-brand-primary)]" />
+                  )}
                 </button>
 
-                {themeMenuOpen && (
+                {bellOpen && (
                   <div
-                    className={`absolute right-0 mt-2 w-48 p-2 rounded-[24px] ${glassRecipe} z-50 flex flex-col gap-1`}
+                    className="floating-glass absolute right-0 mt-2 w-80 max-w-[90vw] p-3.5 rounded-[24px] z-50 flex flex-col gap-2.5 shadow-2xl"
                   >
-                    <p className="text-[10px] uppercase font-bold text-white/60 px-3 py-1">Theme Palette</p>
-                    {themes.map((th) => (
-                      <button
-                        key={th.id}
-                        onClick={() => {
-                          selectTheme(th.id);
-                          setThemeMenuOpen(false);
-                        }}
-                        className={`flex items-center justify-between w-full px-3 py-2 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
-                          themeId === th.id ? "bg-white/25 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-3 h-3 rounded-full border border-white/40"
-                            style={{
-                              backgroundColor: `rgb(${Math.round(th.color[0] * 255)}, ${Math.round(th.color[1] * 255)}, ${Math.round(th.color[2] * 255)})`,
-                            }}
-                          />
-                          <span>{th.name}</span>
-                        </div>
-                        {themeId === th.id && <Check className="w-3.5 h-3.5 text-white" />}
-                      </button>
-                    ))}
+                    <div className="flex items-center justify-between pb-2 border-b border-white/20 px-1">
+                      <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-white">
+                        <Bell className="w-3.5 h-3.5 text-brand-primary" /> Campus Bulletins
+                      </span>
+                      <span className="text-[10px] text-white/60 font-semibold">{announcements.length} active</span>
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto space-y-2 pr-0.5">
+                      {announcements.length === 0 ? (
+                        <p className="text-xs text-center py-4 text-white/60">No active campus announcements.</p>
+                      ) : (
+                        announcements.map((ann) => (
+                          <div
+                            key={ann._id}
+                            className="p-3 rounded-2xl bg-white/10 border border-white/20 space-y-1"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-white truncate">{ann.title}</span>
+                              <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-full shrink-0 ${
+                                ann.priority === 'urgent' ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40' :
+                                ann.priority === 'high' ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40' :
+                                'bg-blue-500/25 text-blue-300 border border-blue-500/40'
+                              }`}>
+                                {ann.priority || 'info'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-white/80 leading-relaxed">{ann.message}</p>
+                            <p className="text-[9px] text-white/50">{new Date(ann.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -242,35 +283,61 @@ export default function Layout() {
               {isAuthLoading || !user ? (
                 <div className="w-10 h-10 rounded-full bg-white/15 animate-pulse min-h-[44px]" />
               ) : (
-                <NavLink
-                  to="/app/profile"
-                  className="flex items-center gap-2 p-1 rounded-full bg-white/15 border border-white/30 hover:bg-white/25 transition-transform active:scale-95 text-xs font-medium text-white shadow-sm min-h-[44px]"
-                >
-                  <div className="w-8 h-8 rounded-full bg-white/25 text-white border border-white/40 flex items-center justify-center text-sm font-bold shadow-inner">
-                    {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                  </div>
-                </NavLink>
+                <div className="flex items-center gap-2">
+                  <NavLink
+                    to="/app/profile"
+                    className="flex items-center gap-2 p-1 rounded-full bg-white/15 border border-white/30 hover:bg-white/25 transition-transform active:scale-95 text-xs font-medium text-white shadow-sm min-h-[44px]"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-white/25 text-white border border-white/40 flex items-center justify-center text-sm font-bold shadow-inner">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    </div>
+                  </NavLink>
+
+                  {/* Highly Visible Mobile Log Out Button */}
+                  <button
+                    onClick={async () => {
+                      try { await api.post("/users/logout-session"); } catch (_) {}
+                      logout();
+                      navigate("/login");
+                    }}
+                    title="Log Out"
+                    className="md:hidden flex items-center justify-center px-3 py-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer min-h-[38px] gap-1.5 shadow-sm active:scale-95"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
-
-          {/* Liquid Glass Header AI Banner */}
-          <div className="w-full flex items-center justify-between px-4 py-2 rounded-full bg-white/10 backdrop-blur-[30px] border border-white/25 shadow-sm text-xs text-white">
-            <div className="flex items-center gap-2 truncate pr-2">
-              <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-              <span className="font-bold text-white shrink-0">Insight:</span>
-              <span className="text-white/85 truncate">
-                {activeAnnouncement?.message || "You are on track to save $120 this month. Keep up the good work!"}
-              </span>
-            </div>
-            <NavLink
-              to="/app/insights"
-              className="px-3 py-1 bg-white/20 hover:bg-white/30 border border-white/30 rounded-full font-semibold text-white shrink-0 text-[11px] min-h-[28px] inline-flex items-center"
-            >
-              View
-            </NavLink>
-          </div>
         </header>
+
+        {/* Frosted Glass Top Announcement Banner (Student Dashboard Notification) */}
+        {activeAnnouncement && !bannerDismissed && (
+          <div className="mx-4 sm:mx-6 lg:mx-8 mt-3 p-3 rounded-2xl bg-white/10 backdrop-blur-[80px] border border-white/25 flex items-center justify-between gap-3 shadow-lg transform-gpu">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${
+                activeAnnouncement.priority === 'urgent' ? 'bg-rose-400 animate-ping' :
+                activeAnnouncement.priority === 'high' ? 'bg-amber-400 animate-pulse' :
+                'bg-brand-primary animate-pulse'
+              }`} />
+              <span className="text-[10px] font-black shrink-0 uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/15 border border-white/25 text-white">
+                {activeAnnouncement.priority || "Announcement"}
+              </span>
+              <p className="text-xs text-white truncate font-medium">
+                <span className="font-bold mr-1.5 text-white">{activeAnnouncement.title}:</span>
+                <span className="text-white/80">{activeAnnouncement.message}</span>
+              </p>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="p-1.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+              title="Dismiss banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Mobile Sticky Liquid Glass Bottom Navigation Bar */}
         <nav
@@ -280,28 +347,21 @@ export default function Layout() {
             {navLinks.slice(0, 4).map((item) => (
               <MobileNavItem key={item.to} item={item} />
             ))}
-            <button
-              onClick={() => setQuickAddOpen(true)}
-              className="flex flex-col items-center justify-center gap-1 p-2 rounded-full text-white/80 hover:text-white cursor-pointer min-h-[44px] min-w-[44px]"
-            >
-              <div className="w-7 h-7 rounded-full bg-white/25 border border-white/40 flex items-center justify-center shadow-sm">
-                <Plus className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-[10px] text-white font-semibold leading-none">Add</span>
-            </button>
           </div>
         </nav>
 
-        {/* Dynamic Route Container with AnimatePresence Cross-Fades */}
+        {/* Dynamic Route Container with AnimatePresence mode="wait" (Zero Flashing) */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              variants={PAGE_TRANSITION}
+              variants={PAGE_VARIANTS}
               initial="initial"
               animate="animate"
               exit="exit"
-              className="w-full"
+              transition={PAGE_TRANSITION}
+              className="w-full transform-gpu backface-hidden"
+              style={{ willChange: "transform, opacity" }}
             >
               <Outlet context={{ openQuickAdd: () => setQuickAddOpen(true) }} />
             </motion.div>
@@ -317,6 +377,12 @@ export default function Layout() {
           setQuickAddOpen(false);
           window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
         }}
+      />
+
+      {/* Interactive Demo Mode Mutation Interception Modal */}
+      <DemoNoticeModal
+        isOpen={demoModalOpen}
+        onClose={() => setDemoModalOpen(false)}
       />
     </div>
   );
@@ -336,8 +402,9 @@ function SideNavItem({ item }) {
           {isActive && (
             <motion.div
               layoutId="activeTab"
-              className="absolute inset-0 rounded-full bg-white/25 border border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.15)] z-0"
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute inset-0 rounded-full bg-white/25 border border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.15)] z-0 transform-gpu backface-hidden"
+              transition={SPRING_CONFIG}
+              style={{ willChange: "transform, opacity" }}
             />
           )}
           <div
@@ -374,8 +441,9 @@ function MobileNavItem({ item }) {
           {isActive && (
             <motion.div
               layoutId="activeMobileTab"
-              className="absolute inset-0 rounded-2xl bg-white/20 border border-white/30 z-0"
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute inset-0 rounded-2xl bg-white/20 border border-white/30 z-0 transform-gpu backface-hidden"
+              transition={SPRING_CONFIG}
+              style={{ willChange: "transform, opacity" }}
             />
           )}
           <Icon className={`relative z-10 w-5 h-5 transition-colors ${isActive ? "text-white" : "text-white/60"}`} />

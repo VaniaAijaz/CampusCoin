@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 
 const subscriptionSchema = new mongoose.Schema({
-  user: {
+  user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  service_name: {
+  name: {
     type: String,
     required: true,
   },
@@ -14,12 +14,17 @@ const subscriptionSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  currency: {
+    type: String,
+    required: true,
+    default: "USD",
+  },
   billing_cycle: {
     type: String,
     enum: ["monthly", "yearly"],
     default: "monthly",
   },
-  next_due_date: {
+  renewal_date: {
     type: Date,
     required: true,
   },

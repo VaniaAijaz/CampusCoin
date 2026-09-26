@@ -1,5 +1,5 @@
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './Iridescence.css';
 
 const vertexShader = `
@@ -45,9 +45,19 @@ export default function Iridescence({
 }) {
   const ctnDom = useRef(null);
   const mousePos = useRef({ x: 0.5, y: 0.5 });
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 768;
+  });
 
   useEffect(() => {
-    if (!ctnDom.current) return;
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobile || !ctnDom.current) return;
     const ctn = ctnDom.current;
     const renderer = new Renderer();
     const gl = renderer.gl;
@@ -85,15 +95,38 @@ export default function Iridescence({
     });
 
     const mesh = new Mesh(gl, { geometry, program });
-    let animateId;
+    let animateId = null;
+    let isVisible = true;
 
     function update(t) {
+      if (!isVisible) {
+        animateId = null;
+        return;
+      }
       animateId = requestAnimationFrame(update);
       program.uniforms.uTime.value = t * 0.001;
       renderer.render({ scene: mesh });
     }
+
     animateId = requestAnimationFrame(update);
     ctn.appendChild(gl.canvas);
+
+    // Desktop optimization: Pause WebGL rendering loop when scrolled out of view or tab inactive
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = Boolean(entry?.isIntersecting) && !document.hidden;
+      if (isVisible && !animateId) {
+        animateId = requestAnimationFrame(update);
+      }
+    }, { threshold: 0.05 });
+    observer.observe(ctn);
+
+    const handleVisibility = () => {
+      isVisible = !document.hidden;
+      if (isVisible && !animateId) {
+        animateId = requestAnimationFrame(update);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     function handleMouseMove(e) {
       const rect = ctn.getBoundingClientRect();
@@ -107,13 +140,31 @@ export default function Iridescence({
     if (mouseReact) ctn.addEventListener('mousemove', handleMouseMove);
 
     return () => {
-      cancelAnimationFrame(animateId);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (animateId) cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
       if (mouseReact) ctn.removeEventListener('mousemove', handleMouseMove);
       if (ctn.contains(gl.canvas)) ctn.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [color, speed, amplitude, mouseReact]); // eslint-disable-line
+  }, [color, speed, amplitude, mouseReact, isMobile]);
+
+  // Mobile Graceful Degradation: High-resolution static CSS radial gradient
+  if (isMobile) {
+    const r = Math.round((color[0] || 0.04) * 255);
+    const g = Math.round((color[1] || 0.15) * 255);
+    const b = Math.round((color[2] || 0.28) * 255);
+    return (
+      <div
+        className="iridescence-container"
+        style={{
+          background: `radial-gradient(ellipse at 50% 25%, rgba(${r}, ${g}, ${b}, 0.85) 0%, rgba(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)}, 0.45) 55%, #050914 100%)`,
+        }}
+        {...rest}
+      />
+    );
+  }
 
   return <div ref={ctnDom} className="iridescence-container" {...rest} />;
 }

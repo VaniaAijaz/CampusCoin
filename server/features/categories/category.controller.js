@@ -1,4 +1,6 @@
 const Category = require("./Category.model");
+const { redisClient } = require("../../core/redis");
+const { invalidateUserCache } = require("../../core/cacheMiddleware");
 
 // GET /api/categories — get default + user's own categories
 const getCategories = async (req, res) => {
@@ -8,8 +10,25 @@ const getCategories = async (req, res) => {
       $or: [{ isDefault: true }, { userId: req.user._id }],
     };
     if (type) filter.type = type;
+    const cacheKey = `campuscoin:user:${req.user._id}:categories:${type || 'all'}`;
+    
+    if (redisClient?.isOpen) {
+      try {
+        const cached = await redisClient.get(cacheKey);
+        if (cached) return res.json(JSON.parse(cached));
+      } catch (err) {}
+    }
+
     const categories = await Category.find(filter).sort({ isDefault: -1, name: 1 });
-    res.json({ success: true, categories });
+    const responseData = { success: true, categories };
+    
+    if (redisClient?.isOpen) {
+      try {
+        await redisClient.setEx(cacheKey, 3600, JSON.stringify(responseData));
+      } catch (err) {}
+    }
+    
+    res.json(responseData);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -33,6 +52,7 @@ const createCategory = async (req, res) => {
       color: color || "#0118A3",
       userId: req.user._id,
     });
+    await invalidateUserCache(req.user._id);
     res.status(201).json({ success: true, category });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -51,6 +71,7 @@ const updateCategory = async (req, res) => {
     if (icon) category.icon = icon;
     if (color) category.color = color;
     await category.save();
+    await invalidateUserCache(req.user._id);
     res.json({ success: true, category });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -65,6 +86,7 @@ const deleteCategory = async (req, res) => {
       return res.status(404).json({ success: false, message: "Category not found or you do not own it." });
     }
     await category.deleteOne();
+    await invalidateUserCache(req.user._id);
     res.json({ success: true, message: "Category deleted." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -12,13 +12,58 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// Interceptor: Attach JWT bearer token if available
+// Interceptor: Attach JWT bearer token if available and intercept demo mode mutations
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("cc_token") || localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Check if running in Demo Mode
+    let isDemo = false;
+    try {
+      const user = JSON.parse(localStorage.getItem("cc_user") || "{}");
+      isDemo = Boolean(user?.isDemo || token?.startsWith("demo-mock"));
+    } catch {
+      isDemo = false;
+    }
+
+    if (isDemo) {
+      const method = (config.method || "get").toLowerCase();
+      const url = config.url || "";
+      const isAuthExempt = url.includes("/auth/login") ||
+                           url.includes("/auth/register") ||
+                           url.includes("/auth/verify-email") ||
+                           url.includes("/users/heartbeat");
+
+      // Intercept any data mutation attempt: POST, PUT, PATCH, DELETE
+      if (["post", "put", "patch", "delete"].includes(method) && !isAuthExempt) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("campuscoin:demoBlocked", {
+              detail: {
+                message: "This is a demo environment. You can explore the UI freely, but data submission is disabled.",
+              },
+            })
+          );
+        }
+
+        // Cancel network mutation cleanly
+        return Promise.reject({
+          isDemoBlock: true,
+          message: "This is a demo environment. You can explore the UI freely, but data submission is disabled.",
+          response: {
+            status: 403,
+            data: {
+              success: false,
+              message: "This is a demo environment. You can explore the UI freely, but data submission is disabled.",
+            },
+          },
+        });
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

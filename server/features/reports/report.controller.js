@@ -1,4 +1,6 @@
 const Transaction = require("../transactions/Transaction.model");
+const Subscription = require("../subscriptions/Subscription.model");
+const CurrencyService = require("../../core/currency.service");
 const { redisClient } = require("../../core/redis");
 
 // Helper for caching
@@ -11,9 +13,9 @@ const cacheResponse = async (key, fetcher, ttl = 3600) => {
       // Ignore cache lookup errors if closed or failing
     }
   }
-  
+
   const data = await fetcher();
-  
+
   if (redisClient?.isOpen) {
     try {
       await redisClient.setEx(key, ttl, JSON.stringify(data));
@@ -21,37 +23,60 @@ const cacheResponse = async (key, fetcher, ttl = 3600) => {
       // Ignore cache set errors
     }
   }
-  
+
   return data;
 };
 
 // GET /api/reports/monthly-summary?month=YYYY-MM
 const monthlySummary = async (req, res) => {
   try {
-    const monthStr = req.query.month || new Date().toISOString().slice(0, 7);
-    const cacheKey = `reports:${req.user._id}:monthlySummary:${monthStr}`;
-    
-    const data = await cacheResponse(cacheKey, async () => {
-      const [year, month] = monthStr.split("-").map(Number);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 0, 23, 59, 59);
+    const endDateStr = req.query.month || new Date().toISOString().split("T")[0];
+    const userCurrency = CurrencyService.getUserCurrency(req.user);
+    const cacheKey = `reports:${req.user._id}:${userCurrency}:monthlySummary:${endDateStr}`;
 
-      const [income, expense] = await Promise.all([
+    const data = await cacheResponse(cacheKey, async () => {
+      const end = new Date(`${endDateStr}T23:59:59.999Z`);
+
+      const [income, expense, subscriptions] = await Promise.all([
         Transaction.aggregate([
-          { $match: { userId: req.user._id, type: "income", date: { $gte: start, $lte: end }, isDeleted: false } },
+          { $match: { userId: req.user._id, type: "income", date: { $lte: end }, isDeleted: false } },
           { $group: { _id: null, total: { $sum: "$amount" } } },
         ]),
         Transaction.aggregate([
-          { $match: { userId: req.user._id, type: "expense", date: { $gte: start, $lte: end }, isDeleted: false } },
+          { $match: { userId: req.user._id, type: "expense", date: { $lte: end }, isDeleted: false } },
           { $group: { _id: null, total: { $sum: "$amount" } } },
         ]),
+        Subscription.find({ user_id: req.user._id, createdAt: { $lte: end } }),
       ]);
+
+      const baseIncome = income[0]?.total || 0;
+      let baseExpense = expense[0]?.total || 0;
+
+      // Add subscription costs
+      let subsTotal = 0;
+      subscriptions.forEach(sub => {
+        // Calculate how many times this subscription was billed since creation up to endDate
+        const createdDate = new Date(sub.createdAt);
+        if (createdDate <= end) {
+          if (sub.billing_cycle === 'monthly') {
+            const monthsPassed = (end.getFullYear() - createdDate.getFullYear()) * 12 + (end.getMonth() - createdDate.getMonth()) + 1;
+            subsTotal += sub.amount * Math.max(0, monthsPassed);
+          } else if (sub.billing_cycle === 'yearly') {
+            const yearsPassed = end.getFullYear() - createdDate.getFullYear() + 1;
+            subsTotal += sub.amount * Math.max(0, yearsPassed);
+          }
+        }
+      });
+      baseExpense += subsTotal;
+
+      const baseBalance = baseIncome - baseExpense;
 
       return {
         success: true,
-        income: income[0]?.total || 0,
-        expense: expense[0]?.total || 0,
-        balance: (income[0]?.total || 0) - (expense[0]?.total || 0),
+        currency: userCurrency,
+        income: CurrencyService.fromBase(baseIncome, userCurrency),
+        expense: CurrencyService.fromBase(baseExpense, userCurrency),
+        balance: CurrencyService.fromBase(baseBalance, userCurrency),
       };
     });
 
@@ -64,24 +89,29 @@ const monthlySummary = async (req, res) => {
 // GET /api/reports/by-category?month=YYYY-MM&type=expense
 const byCategory = async (req, res) => {
   try {
-    const monthStr = req.query.month || new Date().toISOString().slice(0, 7);
+    const endDateStr = req.query.month || new Date().toISOString().split("T")[0];
     const type = req.query.type || "expense";
-    const cacheKey = `reports:${req.user._id}:byCategory:${type}:${monthStr}`;
+    const userCurrency = CurrencyService.getUserCurrency(req.user);
+    const cacheKey = `reports:${req.user._id}:${userCurrency}:byCategory:${type}:${endDateStr}`;
 
     const data = await cacheResponse(cacheKey, async () => {
-      const [year, month] = monthStr.split("-").map(Number);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 0, 23, 59, 59);
+      const end = new Date(`${endDateStr}T23:59:59.999Z`);
 
       const result = await Transaction.aggregate([
-        { $match: { userId: req.user._id, type, date: { $gte: start, $lte: end }, isDeleted: false } },
+        { $match: { userId: req.user._id, type, date: { $lte: end }, isDeleted: false } },
         { $group: { _id: "$categoryId", total: { $sum: "$amount" }, count: { $sum: 1 } } },
         { $lookup: { from: "categories", localField: "_id", foreignField: "_id", as: "category" } },
         { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
         { $project: { _id: 1, total: 1, count: 1, name: "$category.name", icon: "$category.icon", color: "$category.color" } },
         { $sort: { total: -1 } },
       ]);
-      return { success: true, data: result };
+
+      const formatted = result.map((r) => ({
+        ...r,
+        total: CurrencyService.fromBase(r.total, userCurrency),
+      }));
+
+      return { success: true, currency: userCurrency, data: formatted };
     });
 
     res.json(data);
@@ -94,7 +124,8 @@ const byCategory = async (req, res) => {
 const sixMonths = async (req, res) => {
   try {
     const now = new Date();
-    const cacheKey = `reports:${req.user._id}:sixMonths:${now.getFullYear()}-${now.getMonth()}`;
+    const userCurrency = CurrencyService.getUserCurrency(req.user);
+    const cacheKey = `reports:${req.user._id}:${userCurrency}:sixMonths:${now.getFullYear()}-${now.getMonth()}`;
 
     const data = await cacheResponse(cacheKey, async () => {
       const results = [];
@@ -102,7 +133,7 @@ const sixMonths = async (req, res) => {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const start = new Date(d.getFullYear(), d.getMonth(), 1);
         const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-        const [inc, exp] = await Promise.all([
+        const [inc, exp, subs] = await Promise.all([
           Transaction.aggregate([
             { $match: { userId: req.user._id, type: "income", date: { $gte: start, $lte: end }, isDeleted: false } },
             { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -111,15 +142,34 @@ const sixMonths = async (req, res) => {
             { $match: { userId: req.user._id, type: "expense", date: { $gte: start, $lte: end }, isDeleted: false } },
             { $group: { _id: null, total: { $sum: "$amount" } } },
           ]),
+          Subscription.find({ user_id: req.user._id }),
         ]);
+
+        const baseInc = inc[0]?.total || 0;
+        let baseExp = exp[0]?.total || 0;
+
+        let subsTotal = 0;
+        const subMonth = start.getMonth();
+        subs.forEach(sub => {
+          if (sub.billing_cycle === 'monthly') {
+            subsTotal += sub.amount;
+          } else if (sub.billing_cycle === 'yearly') {
+            const renewDate = new Date(sub.renewal_date);
+            if (renewDate.getMonth() === subMonth) {
+              subsTotal += sub.amount;
+            }
+          }
+        });
+        baseExp += subsTotal;
+
         results.push({
           month: start.toLocaleString("default", { month: "short" }),
           year: start.getFullYear(),
-          income: inc[0]?.total || 0,
-          expense: exp[0]?.total || 0,
+          income: CurrencyService.fromBase(baseInc, userCurrency),
+          expense: CurrencyService.fromBase(baseExp, userCurrency),
         });
       }
-      return { success: true, data: results };
+      return { success: true, currency: userCurrency, data: results };
     });
 
     res.json(data);
@@ -131,13 +181,13 @@ const sixMonths = async (req, res) => {
 // GET /api/reports/daily?month=YYYY-MM
 const dailySummary = async (req, res) => {
   try {
-    const monthStr = req.query.month || new Date().toISOString().slice(0, 7);
-    const cacheKey = `reports:${req.user._id}:dailySummary:${monthStr}`;
+    const endDateStr = req.query.month || new Date().toISOString().split("T")[0];
+    const userCurrency = CurrencyService.getUserCurrency(req.user);
+    const cacheKey = `reports:${req.user._id}:${userCurrency}:dailySummary:${endDateStr}`;
 
     const data = await cacheResponse(cacheKey, async () => {
-      const [year, month] = monthStr.split("-").map(Number);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 0, 23, 59, 59);
+      const end = new Date(`${endDateStr}T23:59:59.999Z`);
+      const start = new Date(end.getFullYear(), end.getMonth(), 1); // keep daily summary for the selected month to not overload UI
 
       const result = await Transaction.aggregate([
         { $match: { userId: req.user._id, date: { $gte: start, $lte: end }, isDeleted: false } },
@@ -149,7 +199,13 @@ const dailySummary = async (req, res) => {
         },
         { $sort: { "_id.day": 1 } },
       ]);
-      return { success: true, data: result };
+
+      const formatted = result.map((item) => ({
+        ...item,
+        total: CurrencyService.fromBase(item.total, userCurrency),
+      }));
+
+      return { success: true, currency: userCurrency, data: formatted };
     });
 
     res.json(data);
@@ -163,7 +219,8 @@ const topCategory = async (req, res) => {
   try {
     const now = new Date();
     const monthStr = `${now.getFullYear()}-${now.getMonth()}`;
-    const cacheKey = `reports:${req.user._id}:topCategory:${monthStr}`;
+    const userCurrency = CurrencyService.getUserCurrency(req.user);
+    const cacheKey = `reports:${req.user._id}:${userCurrency}:topCategory:${monthStr}`;
 
     const data = await cacheResponse(cacheKey, async () => {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -177,7 +234,15 @@ const topCategory = async (req, res) => {
         { $sort: { total: -1 } },
         { $limit: 1 },
       ]);
-      return { success: true, topCategory: result[0] || null };
+
+      if (!result[0]) return { success: true, currency: userCurrency, topCategory: null };
+
+      const top = {
+        ...result[0],
+        total: CurrencyService.fromBase(result[0].total, userCurrency),
+      };
+
+      return { success: true, currency: userCurrency, topCategory: top };
     });
 
     res.json(data);

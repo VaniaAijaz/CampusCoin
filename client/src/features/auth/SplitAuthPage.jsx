@@ -32,8 +32,8 @@ function AnimatedHeading({ text, className = "" }) {
   );
 }
 
-/* ── Floating Label Form Input ── */
-function FloatInput({ label, name, type = "text", value, onChange, required, autoComplete, icon: Icon }) {
+/* ── Floating Label Form Input with Reserved Error Space (Zero CLS) ── */
+function FloatInput({ label, name, type = "text", value, onChange, required, autoComplete, icon: Icon, error }) {
   const [focused, setFocused] = useState(false);
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
@@ -41,51 +41,64 @@ function FloatInput({ label, name, type = "text", value, onChange, required, aut
   const float = focused || filled;
 
   return (
-    <div className="relative">
-      {Icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
-          <Icon className="w-4 h-4" />
-        </div>
-      )}
-      <input
-        name={name}
-        type={isPassword ? (show ? "text" : "password") : type}
-        value={value}
-        onChange={onChange}
-        required={required}
-        autoComplete={autoComplete}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        className={`peer w-full min-h-[52px] ${Icon ? "pl-11" : "pl-4"} pr-4 pt-5 pb-2 rounded-[18px] bg-white/10
-                    border text-sm text-white outline-none transition-all duration-200
-                    placeholder-transparent
-                    ${focused
-                      ? "border-white/60 bg-white/15 shadow-[0_0_0_3px_rgba(255,255,255,0.08)]"
-                      : "border-white/20 hover:border-white/35"
-                    }
-                    ${isPassword ? "pr-12" : ""}`}
-        placeholder={label}
-      />
-      {/* Floating Label */}
-      <label
-        className={`absolute ${Icon ? "left-11" : "left-4"} pointer-events-none transition-all duration-200 font-medium
-                    ${float
-                      ? "top-1.5 text-[10px] text-white/60 tracking-wider uppercase"
-                      : "top-1/2 -translate-y-1/2 text-sm text-white/40"
-                    }`}
-      >
-        {label}
-      </label>
-      {/* Password Visibility Toggle */}
-      {isPassword && (
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
+    <div className="relative flex flex-col">
+      <div className="relative">
+        {Icon && (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+            <Icon className="w-4 h-4" />
+          </div>
+        )}
+        <input
+          name={name}
+          type={isPassword ? (show ? "text" : "password") : type}
+          value={value}
+          onChange={onChange}
+          required={required}
+          autoComplete={autoComplete}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className={`peer w-full min-h-[50px] ${Icon ? "pl-11" : "pl-4"} pr-4 pt-5 pb-1.5 rounded-[18px] bg-black/10 backdrop-blur-md
+                      border text-sm text-white outline-none transition-all duration-200
+                      placeholder-transparent shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]
+                      ${focused
+                        ? "border-white/30 bg-white/10 shadow-[0_0_0_3px_rgba(255,255,255,0.08)]"
+                        : error
+                        ? "border-rose-500/50 bg-rose-500/5"
+                        : "border-white/10 hover:border-white/25"
+                      }
+                      ${isPassword ? "pr-12" : ""}`}
+          placeholder={label}
+        />
+        {/* Floating Label */}
+        <label
+          className={`absolute ${Icon ? "left-11" : "left-4"} pointer-events-none transition-all duration-200 font-medium
+                      ${float
+                        ? "top-1.5 text-[10px] text-white/60 tracking-wider uppercase"
+                        : "top-1/2 -translate-y-1/2 text-sm text-white/40"
+                      }`}
         >
-          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        </button>
-      )}
+          {label}
+        </label>
+        {/* Password Visibility Toggle */}
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
+          >
+            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        )}
+      </div>
+
+      {/* Reserved Fixed Height (h-5 / min-h-[20px]) so validation errors NEVER push form fields down */}
+      <div className="h-5 min-h-[20px] px-2 pt-0.5 overflow-hidden">
+        {error ? (
+          <span className="text-[11px] font-medium text-rose-400 block truncate">
+            {error}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -94,7 +107,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading: authLoading, loading: contextLoading, login: setAuthSession, enterDemoMode } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, loading: contextLoading, login: setAuthSession } = useAuth();
   const { color } = useTheme();
   const isAuthLoading = authLoading !== undefined ? authLoading : contextLoading;
 
@@ -109,7 +122,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
 
   useEffect(() => {
     if (isAuthenticated && !isAuthLoading) {
-      navigate(user?.role === "admin" ? "/app/admin" : "/app", { replace: true });
+      navigate(user?.role === "admin" ? "/admin" : "/dashboard", { replace: true });
     }
   }, [isAuthenticated, isAuthLoading, user, navigate]);
 
@@ -121,187 +134,286 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
   const handleAuthSuccess = (userData, token, msg) => {
     setAuthSession(userData, token);
     toast.success(msg || `Welcome, ${userData.name}!`);
-    navigate(userData.role === "admin" ? "/app/admin" : "/app", { replace: true });
+    navigate(userData.role === "admin" ? "/admin" : "/dashboard", { replace: true });
   };
 
-  const handleQuickDemo = (role) => {
-    const demoUser = enterDemoMode(role);
-    toast.success(`Demo Mode Active: Welcome, ${demoUser.name}!`);
-    navigate(role === "admin" ? "/app/admin" : "/app", { replace: true });
-  };
 
-  useEffect(() => {
-    const d = searchParams.get("demo");
-    if (d === "student" || d === "admin") handleQuickDemo(d);
-  }, [searchParams]);
 
   const handleInput = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    let timeoutTimer = null;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutTimer = setTimeout(() => {
+        reject(new Error("Authentication request timed out after 40 seconds. Please verify your connection."));
+      }, 40000);
+    });
+
     try {
       const endpoint = isLogin ? "/auth/login" : "/auth/register";
-      const { data } = await api.post(endpoint, formData);
+      const { data } = await Promise.race([
+        api.post(endpoint, formData),
+        timeoutPromise,
+      ]);
       if (data.success) {
         handleAuthSuccess(data.user, data.token, `Welcome, ${data.user.name.split(" ")[0]}!`);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Authentication failed. Please verify your credentials.");
+      toast.error(err.response?.data?.message || err.message || "Authentication failed. Please verify your credentials.");
     } finally {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
       setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
     setLoading(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
+    let timeoutTimer = null;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutTimer = setTimeout(() => {
+        reject(new Error("Google login timed out after 40 seconds. Please check your popup settings or network connection and try again."));
+      }, 40000);
+    });
 
-      // Attempt login first, with auto-fallback to register
-      try {
-        const { data } = await api.post("/auth/google/login", { idToken });
-        if (data.success) {
-          handleAuthSuccess(data.user, data.token, `Welcome, ${data.user.name.split(" ")[0]}!`);
-          return;
-        }
-      } catch (loginErr) {
-        if (loginErr.response?.status === 404) {
-          const { data } = await api.post("/auth/google/register", { idToken });
-          if (data.success) {
-            handleAuthSuccess(data.user, data.token, `Welcome, ${data.user.name.split(" ")[0]}!`);
-            return;
+    try {
+      await Promise.race([
+        (async () => {
+          const result = await signInWithPopup(auth, googleProvider);
+          const idToken = await result.user.getIdToken();
+
+          // Attempt login first, with auto-fallback to register
+          try {
+            const { data } = await api.post("/auth/google/login", { idToken });
+            if (data.success) {
+              handleAuthSuccess(data.user, data.token, `Welcome, ${data.user.name.split(" ")[0]}!`);
+              return;
+            }
+          } catch (loginErr) {
+            if (loginErr.response?.status === 404) {
+              const { data } = await api.post("/auth/google/register", { idToken });
+              if (data.success) {
+                handleAuthSuccess(data.user, data.token, `Welcome, ${data.user.name.split(" ")[0]}!`);
+                return;
+              }
+            }
+            throw loginErr;
           }
-        }
-        throw loginErr;
-      }
+        })(),
+        timeoutPromise,
+      ]);
     } catch (err) {
       console.error("Google sign-in error:", err);
-      toast.error(err.response?.data?.message || err.message || "Google authentication failed.");
+      if (err.code === "auth/popup-closed-by-user") {
+        toast.error("Google sign-in popup was closed before completion.");
+      } else if (err.code === "auth/popup-blocked") {
+        toast.error("Popup was blocked by your browser. Please enable popups for this site.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        toast.error("Domain unauthorized in Firebase. Please add localhost to Authorized Domains in Firebase console.");
+      } else if (err.code === "auth/cancelled-popup-request") {
+        toast.error("Another sign-in popup is already open. Please try again.");
+      } else {
+        toast.error(err.response?.data?.message || err.message || "Google authentication failed.");
+      }
     } finally {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
       setLoading(false);
     }
   };
 
+  const [errors, setErrors] = useState({});
+
   const switchMode = (toLogin) => {
+    setErrors({});
     setIsLogin(toLogin);
     navigate(toLogin ? "/login" : "/register", { replace: true });
   };
 
+  const handleCustomInput = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: null });
+    }
+  };
+
+  const validateForm = () => {
+    const errs = {};
+    if (!isLogin && (!formData.name || formData.name.trim().length < 2)) {
+      errs.name = "Full name must be at least 2 characters.";
+    }
+    if (!formData.email || !formData.email.includes("@")) {
+      errs.email = "Please enter a valid student email address.";
+    }
+    if (!formData.password || formData.password.length < 6) {
+      errs.password = "Password must be at least 6 characters.";
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    setLoading(true);
+    let timeoutTimer = null;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutTimer = setTimeout(() => {
+        reject(new Error("Authentication request timed out after 40 seconds. Please verify your connection."));
+      }, 40000);
+    });
+
+    try {
+      const endpoint = isLogin ? "/auth/login" : "/auth/register";
+      const { data } = await Promise.race([
+        api.post(endpoint, formData),
+        timeoutPromise,
+      ]);
+      if (data.success) {
+        if (!isLogin) {
+          // Signup Interception: Do NOT automatically log them into the dashboard.
+          // Route user to dedicated Glass UI OTP entry screen
+          toast.success("Account created! A 6-digit verification code has been dispatched to your email.");
+          navigate(`/verify?email=${encodeURIComponent(formData.email)}`, { replace: true });
+        } else {
+          handleAuthSuccess(data.user, data.token, `Welcome back, ${data.user.name.split(" ")[0]}!`);
+        }
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Authentication failed.";
+      if (msg.toLowerCase().includes("password")) {
+        setErrors((prev) => ({ ...prev, password: msg }));
+      } else if (msg.toLowerCase().includes("email")) {
+        setErrors((prev) => ({ ...prev, email: msg }));
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      setLoading(false);
+    }
+  };
+
+  const videoUrl = import.meta.env.VITE_UNIVERSITY_VIDEO_URL;
+  const fallbackPoster = "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1920&q=80";
+
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row relative overflow-hidden bg-[#050914] text-white selection:bg-brand-primary/30">
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-2 relative overflow-hidden bg-[#050914] text-white selection:bg-brand-primary/30">
       {/* Dynamic Ambient Background */}
       <div className="fixed inset-0 -z-20 pointer-events-none">
         <Iridescence color={color || [0.06, 0.23, 0.44]} speed={0.8} amplitude={0.12} mouseReact={false} />
       </div>
       <div className="fixed inset-0 bg-black/40 -z-10 pointer-events-none" />
 
-      {/* ── LEFT PANE: Full-Page Cinematic Showcase (Desktop) ── */}
-      <div className="hidden lg:flex lg:w-1/2 min-h-screen flex-col justify-between p-12 xl:p-16 border-r border-white/10 relative z-10 backdrop-blur-2xl bg-white/[0.02]">
-        {/* Brand Header */}
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-[16px] bg-white/15 border border-white/30 flex items-center justify-center backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] group-hover:bg-white/25 transition-all">
-              <Coins className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <span className="text-xl font-black tracking-tight text-white block">Campus Coin</span>
-              <span className="text-[10px] text-white/60 font-semibold tracking-wider uppercase block">NextGen Student Finance</span>
-            </div>
-          </Link>
+      {/* ── LEFT COLUMN: Full-Bleed University Marketing Video (Desktop 50% Split) ── */}
+      <div className="relative hidden lg:block w-full h-full min-h-screen overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster={fallbackPoster}
+          src={videoUrl}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-          <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-bold tracking-wide flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            100% Free Demo Ready
-          </span>
-        </div>
+        {/* Video Overlay: Subtle gradient overlay blending seamlessly into dark theme */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/30 backdrop-blur-[1px]" />
 
-        {/* Central Visual Stage */}
-        <div className="my-auto py-12 max-w-lg">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-semibold text-white/80 mb-6">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Zero manual bank linking required</span>
-          </div>
-
-          <h2 className="text-4xl xl:text-5xl font-black tracking-tight leading-tight mb-6">
-            Master university finances without the stress.
-          </h2>
-
-          <p className="text-base text-white/70 leading-relaxed mb-8">
-            Effortlessly monitor living allowances, set category limits, and unlock automated AI spending tips with zero transaction fees.
-          </p>
-
-          {/* Frosted VisionOS Metric Card Mockup */}
-          <div className="rounded-[28px] bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-[64px] backdrop-saturate-[200%] border border-white/20 border-b-white/5 border-r-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_8px_32px_0_rgba(0,0,0,0.2)] p-6 space-y-4">
-            <div className="flex items-center justify-between">
+        {/* Foreground Content over Video */}
+        <div className="relative z-10 h-full flex flex-col justify-between p-12 xl:p-16">
+          {/* Brand Header */}
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-11 h-11 rounded-[16px] bg-white/15 border border-white/30 flex items-center justify-center backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] group-hover:bg-white/25 transition-all">
+                <Coins className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <p className="text-xs text-white/60 font-semibold uppercase tracking-wider">Monthly Student Budget</p>
-                <p className="text-2xl font-black text-white mt-0.5">$1,500.00</p>
+                <span className="text-xl font-black tracking-tight text-white block">Campus Coin</span>
+                <span className="text-[10px] text-white/60 font-semibold tracking-wider uppercase block">NextGen Student Finance</span>
               </div>
-              <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5" /> 72% Safe Burn Rate
-              </div>
+            </Link>
+
+            <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold tracking-wide flex items-center gap-2 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              University Portal
+            </span>
+          </div>
+
+          {/* Central Showcase Message */}
+          <div className="my-auto max-w-lg space-y-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/25 backdrop-blur-md text-xs font-semibold text-white/90">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Zero manual bank linking required</span>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-white/70">
-                <span>Campus Dining & Groceries</span>
-                <span className="font-semibold text-white">$435.50 / $600</span>
+            <h2 className="text-4xl xl:text-5xl font-black tracking-tight leading-tight text-white drop-shadow-md">
+              Master university finances without the stress.
+            </h2>
+
+            <p className="text-base text-white/80 leading-relaxed drop-shadow-sm">
+              Effortlessly monitor living allowances, set category limits, and unlock automated AI spending tips with zero transaction fees.
+            </p>
+
+            {/* Frosted Spatial Metric Card Mockup */}
+            <div className="rounded-3xl bg-black/40 backdrop-blur-[80px] border border-white/20 p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-white/60 font-semibold uppercase tracking-wider">Monthly Student Budget</p>
+                  <p className="text-2xl font-black text-white mt-0.5">$1,500.00</p>
+                </div>
+                <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-500/30">
+                  <TrendingUp className="w-3.5 h-3.5" /> 72% Safe Burn Rate
+                </div>
               </div>
-              <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-400 to-sky-400 rounded-full w-[72%]" />
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-white/70">
+                  <span>Campus Dining & Groceries</span>
+                  <span className="font-semibold text-white">$435.50 / $600</span>
+                </div>
+                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-emerald-400 to-sky-400 rounded-full w-[72%]" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Feature List Footer */}
-        <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10 text-xs text-white/70 font-medium">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Instant Free Student Demo</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Automated Statements</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>AI Spending Recommendations</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>256-Bit Encrypted Security</span>
+          {/* Feature List Footer */}
+          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/15 text-xs text-white/80 font-medium">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Automated Statements</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>AI Spending Recommendations</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>256-Bit Encrypted Security</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── RIGHT PANE: Full-Page Authentication Terminal ── */}
-      <div className="w-full lg:w-1/2 min-h-screen flex flex-col justify-between px-6 sm:px-12 xl:px-20 py-10 relative z-10 overflow-y-auto">
+      {/* ── RIGHT COLUMN: Centered True Glass Auth Form (Zero-Shift CLS Architecture) ── */}
+      <div className="w-full min-h-screen flex flex-col justify-between px-6 sm:px-12 xl:px-16 py-8 relative z-10 overflow-y-auto">
         {/* Top Navigation */}
-        <div className="flex items-center justify-between pb-6">
+        <div className="flex items-center justify-between pb-4">
           <Link
             to="/"
             className="min-h-[44px] px-4 flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all hover:bg-white/20"
           >
             <ChevronLeft className="w-4 h-4" /> Return to Home
           </Link>
-
-          <button
-            type="button"
-            onClick={() => handleQuickDemo("student")}
-            className="min-h-[44px] px-4 flex items-center gap-2 text-xs font-bold text-emerald-300 rounded-full bg-emerald-500/15 border border-emerald-400/30 hover:bg-emerald-500/25 transition-all cursor-pointer active:scale-95"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            Explore Free Demo
-          </button>
         </div>
 
-        {/* Auth Content Card */}
-        <div className="my-auto py-8 max-w-[460px] w-full mx-auto">
+        {/* Centered Auth Stage with Container Height Lock */}
+        <div className="my-auto py-4 max-w-[460px] w-full mx-auto">
           {/* Header Title */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">
               <AnimatePresence mode="wait">
                 <motion.span key={isLogin ? "login-title" : "reg-title"} className="block">
@@ -317,7 +429,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="relative flex p-1.5 min-h-[50px] rounded-full bg-white/10 border border-white/20 mb-6">
+          <div className="relative flex p-1.5 min-h-[50px] rounded-full bg-white/10 border border-white/20 mb-5">
             <motion.div
               layoutId="authTabBg"
               className="absolute inset-y-1.5 rounded-full bg-white/25 border border-white/30 shadow-sm"
@@ -344,124 +456,163 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
             </button>
           </div>
 
-          {/* Google Sign In Button */}
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handleGoogle}
-            className="w-full min-h-[50px] rounded-[18px] bg-white hover:bg-white/95 active:scale-[0.98] text-slate-900 text-sm font-bold shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all cursor-pointer flex items-center justify-center gap-3 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-            </svg>
-            <span>Continue with Google</span>
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-white/15" />
-            <span className="text-[11px] text-white/50 uppercase tracking-wider font-semibold">Or with student email</span>
-            <div className="flex-1 h-px bg-white/15" />
-          </div>
-
-          {/* Traditional Auth Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <FloatInput
-                label="Full Name"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleInput}
-                required
-                autoComplete="name"
-                icon={User}
-              />
-            )}
-
-            <FloatInput
-              label="Student Email Address"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInput}
-              required
-              autoComplete="email"
-              icon={Mail}
-            />
-
+          {/* Main True Glass Auth Card with Strict Container Height Lock (min-h-[500px]) */}
+          <div className="min-h-[500px] rounded-3xl bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] p-6 sm:p-7 flex flex-col justify-between">
+            {/* Google Sign In Button */}
             <div>
-              <FloatInput
-                label="Password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleInput}
-                required
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                icon={Lock}
-              />
-              {isLogin && (
-                <div className="flex justify-end mt-2">
-                  <Link to="/forgot-password" className="text-xs text-white/60 hover:text-white transition-colors">
-                    Forgot password?
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full min-h-[50px] mt-2 rounded-[18px] bg-white/90 hover:bg-white active:scale-[0.98] text-slate-900 text-sm font-black tracking-tight shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" />
-              ) : (
-                <>
-                  <span>{isLogin ? "Sign In" : "Create Account"}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Quick Demo Access Bar */}
-          <div className="mt-8 pt-6 border-t border-white/15 space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-                100% Free Demo Access
-              </span>
-              <span className="text-white/50 text-[11px]">Instant 0ms preview</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => handleQuickDemo("student")}
-                className="min-h-[46px] rounded-[16px] bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                disabled={loading}
+                onClick={handleGoogle}
+                className="w-full min-h-[48px] rounded-[18px] bg-white hover:bg-white/95 active:scale-[0.98] text-slate-900 text-sm font-bold shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all cursor-pointer flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                <UserCheck className="w-4 h-4 text-emerald-400" />
-                Student Demo
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>Continue with Google</span>
               </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("admin")}
-                className="min-h-[46px] rounded-[16px] bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
-              >
-                <Shield className="w-4 h-4 text-amber-400" />
-                Admin Demo
-              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-white/15" />
+                <span className="text-[11px] text-white/50 uppercase tracking-wider font-semibold">Or student email</span>
+                <div className="flex-1 h-px bg-white/15" />
+              </div>
             </div>
+
+            {/* Form Container with Smooth AnimatePresence mode="wait" (Zero CLS Morphing) */}
+            <div className="flex-1 flex flex-col justify-center">
+              <AnimatePresence mode="wait" initial={false}>
+                {isLogin ? (
+                  <motion.form
+                    key="login-form-view"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 8 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onSubmit={handleFormSubmit}
+                    className="space-y-0.5"
+                  >
+                    <FloatInput
+                      label="Student Email Address"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleCustomInput}
+                      required
+                      autoComplete="email"
+                      icon={Mail}
+                      error={errors.email}
+                    />
+
+                    <div>
+                      <FloatInput
+                        label="Password"
+                        name="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handleCustomInput}
+                        required
+                        autoComplete="current-password"
+                        icon={Lock}
+                        error={errors.password}
+                      />
+                      <div className="flex justify-end -mt-3 mb-3">
+                        <Link to="/forgot-password" className="text-2xs text-white/60 hover:text-white transition-colors">
+                          Forgot password?
+                        </Link>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full min-h-[48px] rounded-[18px] bg-white/90 hover:bg-white active:scale-[0.98] text-slate-900 text-sm font-black tracking-tight shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Sign In</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </motion.form>
+                ) : (
+                  <motion.form
+                    key="register-form-view"
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onSubmit={handleFormSubmit}
+                    className="space-y-0.5"
+                  >
+                    <FloatInput
+                      label="Full Name"
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleCustomInput}
+                      required
+                      autoComplete="name"
+                      icon={User}
+                      error={errors.name}
+                    />
+
+                    <FloatInput
+                      label="Student Email Address"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleCustomInput}
+                      required
+                      autoComplete="email"
+                      icon={Mail}
+                      error={errors.email}
+                    />
+
+                    <FloatInput
+                      label="Password"
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleCustomInput}
+                      required
+                      autoComplete="new-password"
+                      icon={Lock}
+                      error={errors.password}
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full min-h-[48px] mt-1 rounded-[18px] bg-white/90 hover:bg-white active:scale-[0.98] text-slate-900 text-sm font-black tracking-tight shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Create Account</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </div>
+
+
           </div>
         </div>
 
         {/* Bottom Security / Privacy Badge */}
-        <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
+        <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-2xs text-white/50">
           <p>© 2026 Campus Coin. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link to="/" className="hover:text-white transition-colors">Privacy</Link>

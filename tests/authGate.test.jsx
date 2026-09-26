@@ -75,7 +75,7 @@ describe("Frontend Auth Gate & Glass Skeleton Testing Suite", () => {
         </MemoryRouter>
       );
 
-      // Verify the visionOS frosted glass skeleton classes are mounted
+      // Verify the frosted glass skeleton classes are mounted
       const skeletonCard = container.querySelector(".glass-skeleton");
       expect(skeletonCard).toBeInTheDocument();
       expect(skeletonCard).toHaveClass("animate-pulse");

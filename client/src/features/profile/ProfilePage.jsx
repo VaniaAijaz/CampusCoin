@@ -1,11 +1,55 @@
-import { useState, useEffect } from "react";
-import { User, Lock, PiggyBank, GraduationCap, DollarSign, Save } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { User, Lock, PiggyBank, GraduationCap, DollarSign, Save, LogOut, Sun, Moon, Check, ChevronDown } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import api from "../../core/api";
 import toast from "react-hot-toast";
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const { toggleMode, isDark, themes, themeId, selectTheme } = useTheme();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
+  const currencyRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (currencyRef.current && !currencyRef.current.contains(e.target)) {
+        setCurrencyDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const currencies = [
+    { value: "USD", label: "USD ($)" },
+    { value: "EUR", label: "EUR (€)" },
+    { value: "PKR", label: "PKR (Rs)" },
+  ];
+
+  const handleCurrencyChange = async (val) => {
+    setCurrencyDropdownOpen(false);
+    if (form.currency === val) return;
+    
+    setForm(prev => ({ ...prev, currency: val }));
+    
+    try {
+      const { data } = await api.put("/users/profile/currency", { currency_preference: val });
+      if (data.success) {
+        updateUser(data.user);
+        queryClient.invalidateQueries();
+        toast.success(`Currency changed to ${val}`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update currency.");
+      setForm(prev => ({ ...prev, currency: user?.currency || "USD" }));
+    }
+  };
 
   const [form, setForm] = useState({
     name: user?.name || "",
@@ -121,6 +165,59 @@ export default function ProfilePage() {
               <span className="text-brand-primary font-semibold">${user?.monthlySavingsGoal || 0}</span>
             </div>
           </div>
+
+          {/* Theme Matrix Customization Card */}
+          <div className="w-full mt-6 pt-4 border-t border-white/10 space-y-3 text-xs text-left">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-white">Appearance Mode:</span>
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold flex items-center gap-1.5 cursor-pointer text-2xs transition-all shadow-sm"
+              >
+                {isDark ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-blue-400" />}
+                <span>{isDark ? "Dark Mode" : "Light Mode"}</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="font-semibold text-white">Color Palette:</span>
+              <div className="flex items-center gap-2">
+                {themes.map((th) => (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={() => selectTheme(th.id)}
+                    title={th.name}
+                    className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                      themeId === th.id
+                        ? "scale-110 border-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                        : "border-white/30 opacity-70 hover:opacity-100"
+                    }`}
+                    style={{
+                      backgroundColor: `rgb(${Math.round(th.color[0] * 255)}, ${Math.round(th.color[1] * 255)}, ${Math.round(th.color[2] * 255)})`,
+                    }}
+                  >
+                    {themeId === th.id && <Check className="w-3 h-3 text-white" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Highly Visible Log Out Action for Mobile & Desktop */}
+          <button
+            type="button"
+            onClick={async () => {
+              try { await api.post("/users/logout-session"); } catch (_) {}
+              logout();
+              navigate("/login");
+            }}
+            className="w-full mt-6 py-3 px-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 min-h-[44px]"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out / Log Out</span>
+          </button>
         </div>
 
         {/* Profile Edit Form */}
@@ -172,7 +269,7 @@ export default function ProfilePage() {
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1">
                   <PiggyBank className="w-3.5 h-3.5 text-zinc-400" />
-                  Monthly Savings Goal ($)
+                  Monthly Savings Goal (Base)
                 </label>
                 <input
                   type="number"
@@ -182,6 +279,34 @@ export default function ProfilePage() {
                   onChange={(e) => setForm({ ...form, monthlySavingsGoal: Number(e.target.value) })}
                   className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
                 />
+              </div>
+              
+              <div ref={currencyRef} className="relative sm:col-span-2">
+                <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1">
+                  Preferred Currency
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCurrencyDropdownOpen(!currencyDropdownOpen)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/10 border border-white/10 text-white text-xs flex items-center justify-between transition-colors hover:bg-black/20"
+                >
+                  <span>{currencies.find(c => c.value === form.currency)?.label || "Select Currency"}</span>
+                  <ChevronDown className="w-4 h-4 text-white/50" />
+                </button>
+                {currencyDropdownOpen && (
+                  <div className="absolute top-full mt-1 w-full rounded-xl bg-white/20 backdrop-blur-[80px] shadow-2xl border border-white/20 overflow-hidden z-50 flex flex-col">
+                    {currencies.map(c => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => handleCurrencyChange(c.value)}
+                        className={`px-3 py-2 text-left text-xs text-white transition-colors hover:bg-white/10 ${form.currency === c.value ? "bg-white/15 font-bold" : ""}`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

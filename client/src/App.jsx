@@ -17,12 +17,13 @@ const ResetPasswordPage = lazy(() => import("./pages/auth/ResetPasswordPage"));
 import DashboardPage from "./features/dashboard/DashboardPage";
 import TransactionsPage from "./features/transactions/TransactionsPage";
 import BudgetPage from "./features/budgets/BudgetPage";
-import InsightsPage from "./features/insights/InsightsPage";
+import KhataPage from "./features/khata/KhataPage";
 
 // Lazy loaded feature pages
 const ReportsPage = lazy(() => import("./features/reports/ReportsPage"));
 const CategoriesPage = lazy(() => import("./features/categories/CategoriesPage"));
 const ProfilePage = lazy(() => import("./features/profile/ProfilePage"));
+const SubscriptionsPage = lazy(() => import("./features/subscriptions/SubscriptionsPage"));
 const AdminPage = lazy(() => import("./features/admin/AdminPage"));
 
 const FallbackLoader = () => (
@@ -46,9 +47,9 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 function DemoRoute() {
   const { enterDemoMode } = useAuth();
   useEffect(() => {
-    enterDemoMode("student");
+    enterDemoMode();
   }, [enterDemoMode]);
-  return <Navigate to="/app" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 export default function App() {
@@ -57,8 +58,7 @@ export default function App() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <Routes location={location}>
       {/* 1. Public Landing Page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/demo" element={<DemoRoute />} />
@@ -75,18 +75,30 @@ export default function App() {
       <Route path="/transactions" element={<Navigate to="/app/transactions" replace />} />
       <Route path="/budget" element={<Navigate to="/app/budget" replace />} />
       <Route path="/budgets" element={<Navigate to="/app/budget" replace />} />
-      <Route path="/insights" element={<Navigate to="/app/insights" replace />} />
+      <Route path="/khata" element={<Navigate to="/app/khata" replace />} />
+      <Route path="/iou" element={<Navigate to="/app/khata" replace />} />
+      <Route path="/debts" element={<Navigate to="/app/khata" replace />} />
+      <Route path="/insights" element={<Navigate to="/app" replace />} />
       <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
       <Route path="/categories" element={<Navigate to="/app/categories" replace />} />
       <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
       <Route path="/settings" element={<Navigate to="/app/profile" replace />} />
-      <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
-      <Route path="/subscriptions" element={<Navigate to="/app/transactions" replace />} />
-      <Route path="/debts" element={<Navigate to="/app" replace />} />
-      <Route path="/iou" element={<Navigate to="/app" replace />} />
+      <Route path="/subscriptions" element={<Navigate to="/app/subscriptions" replace />} />
       <Route path="/sitemap" element={<Navigate to="/app/sitemap" replace />} />
 
-      {/* 4. App Workspace - Secured by Gatekeeper */}
+      {/* 4. Strict Dedicated Admin Workspace (Completely Isolated from Student Dashboard) */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute adminOnly>
+            <Suspense fallback={<FallbackLoader />}>
+              <AdminPage />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 5. Student App Workspace - Secured by Gatekeeper */}
       <Route path="/app" element={<Gatekeeper />}>
         {/* Main Dashboard */}
         <Route index element={<DashboardPage />} />
@@ -95,19 +107,20 @@ export default function App() {
         {/* Feature Sub-routes */}
         <Route path="verify" element={<VerifyEmailPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="khata" element={<KhataPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="budgets" element={<Navigate to="/app/budget" replace />} />
-        <Route path="insights" element={<InsightsPage />} />
-        <Route path="subscriptions" element={<Navigate to="/app/transactions" replace />} />
-        <Route path="debts" element={<Navigate to="/app" replace />} />
-        <Route path="iou" element={<Navigate to="/app" replace />} />
+        <Route path="insights" element={<Navigate to="/app" replace />} />
+        <Route path="subscriptions" element={<Suspense fallback={<FallbackLoader />}><SubscriptionsPage /></Suspense>} />
+        <Route path="debts" element={<Navigate to="/app/khata" replace />} />
+        <Route path="iou" element={<Navigate to="/app/khata" replace />} />
         
         {/* Lazy Loaded Routes */}
         <Route path="reports" element={<Suspense fallback={<FallbackLoader />}><ReportsPage /></Suspense>} />
         <Route path="categories" element={<Suspense fallback={<FallbackLoader />}><CategoriesPage /></Suspense>} />
         <Route path="profile" element={<Suspense fallback={<FallbackLoader />}><ProfilePage /></Suspense>} />
         <Route path="settings" element={<Navigate to="/app/profile" replace />} />
-        <Route path="admin" element={<ProtectedRoute adminOnly><Suspense fallback={<FallbackLoader />}><AdminPage /></Suspense></ProtectedRoute>} />
+        <Route path="admin" element={<Navigate to="/admin" replace />} />
         
         <Route path="sitemap" element={<SitemapPage />} />
       </Route>
@@ -115,6 +128,5 @@ export default function App() {
       {/* 5. Catch-all 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
-    </AnimatePresence>
   );
 }

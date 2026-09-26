@@ -8,7 +8,10 @@ import {
   Trash2,
   Edit2,
   AlertTriangle,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import {
   getTransactions,
   deleteTransaction,
@@ -16,10 +19,16 @@ import {
 } from "./transactionApi";
 import { getCategories } from "../categories/categoryApi";
 import TransactionModal from "./TransactionModal";
+import TransactionDetailModal from "../../components/ui/TransactionDetailModal";
 import toast from "react-hot-toast";
 import Papa from "papaparse";
+import Portal from "../../components/ui/Portal";
+import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
+import { useAuth } from "../auth/AuthContext";
+import { formatCurrency } from "../../utils/currencyUtils";
 
 export default function TransactionsPage() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [total, setTotal] = useState(0);
@@ -37,6 +46,8 @@ export default function TransactionsPage() {
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -77,10 +88,14 @@ export default function TransactionsPage() {
     loadCats();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to remove this transaction?")) return;
+  const handleDelete = (id) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      const res = await deleteTransaction(id);
+      const res = await deleteTransaction(itemToDelete);
       if (res.success) {
         toast.success("Transaction deleted.");
         fetchTransactions();
@@ -88,6 +103,8 @@ export default function TransactionsPage() {
       }
     } catch {
       toast.error("Failed to delete transaction.");
+    } finally {
+      setItemToDelete(null);
     }
   };
 
@@ -97,29 +114,35 @@ export default function TransactionsPage() {
   };
 
   // CSV Export
-  const handleExportCSV = () => {
-    if (transactions.length === 0) {
-      toast.error("No transactions to export.");
-      return;
+  const handleExportCSV = async () => {
+    const loadingToast = toast.loading("Preparing CSV export...");
+    try {
+      const res = await getTransactions({ limit: 5000 }); // fetch a large limit to export all
+      if (!res.success || !res.transactions || res.transactions.length === 0) {
+        toast.error("No transactions to export.", { id: loadingToast });
+        return;
+      }
+      const csvRows = res.transactions.map((t) => ({
+        Date: new Date(t.date).toLocaleDateString(),
+        Category: t.categoryId?.name || "Other",
+        Type: t.type,
+        Amount: t.amount,
+        Description: t.description || "",
+        Recurring: t.isRecurring ? "Yes" : "No",
+      }));
+      const csvStr = Papa.unparse(csvRows);
+      const blob = new Blob([csvStr], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `campuscoin_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Transactions exported as CSV!", { id: loadingToast });
+    } catch (err) {
+      toast.error("Failed to export transactions.", { id: loadingToast });
     }
-    const csvRows = transactions.map((t) => ({
-      Date: new Date(t.date).toLocaleDateString(),
-      Category: t.categoryId?.name || "Other",
-      Type: t.type,
-      Amount: t.amount,
-      Description: t.description || "",
-      Recurring: t.isRecurring ? "Yes" : "No",
-    }));
-    const csvStr = Papa.unparse(csvRows);
-    const blob = new Blob([csvStr], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `campuscoin_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Transactions exported as CSV!");
   };
 
   // CSV Import
@@ -262,20 +285,22 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Main Ledger Table Card (Borderless, Generous Padding, Subtle Alternating Rows) */}
-      <div className="bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 rounded-[32px] p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] overflow-hidden">
+      {/* Main Ledger Table Card (Physical True Glass) */}
+      <div className="base-glass glass-card bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden transform-gpu backface-hidden" style={{ willChange: "transform, opacity" }}>
         {loading ? (
           <div className="py-16 text-center text-xs text-white/70 flex items-center justify-center gap-2">
             <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             Loading transactions...
           </div>
         ) : transactions.length > 0 ? (
-          <div className="overflow-x-auto rounded-[20px] bg-white/5 border border-white/20 p-2">
+          <div className="overflow-x-auto rounded-[20px] bg-white/5 border border-white/10 p-2">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="text-white/70 uppercase text-[10px] font-bold tracking-wider">
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Description</th>
+                  <th className="py-3 px-4">Method</th>
+                  <th className="py-3 px-4">Txn ID</th>
                   <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4">Type</th>
                   <th className="py-3 px-4 text-right">Amount</th>
@@ -287,7 +312,11 @@ export default function TransactionsPage() {
                   const isInc = tx.type === "income";
                   const catColor = tx.categoryId?.color || "#38BDF8";
                   return (
-                    <tr key={tx._id} className="even:bg-white/[0.04] hover:bg-white/15 transition-colors group rounded-[16px]">
+                    <tr
+                      key={tx._id}
+                      onClick={() => setSelectedTx(tx)}
+                      className="even:bg-white/[0.02] hover:bg-white/10 transition-colors group rounded-[16px] cursor-pointer"
+                    >
                       <td className="py-3.5 px-4 flex items-center gap-2.5">
                         <span
                           className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
@@ -313,6 +342,20 @@ export default function TransactionsPage() {
                           </span>
                         )}
                       </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {tx.paymentMethod === "Cash" ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                            <Banknote className="w-3 h-3" /> Cash
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[10px] font-bold">
+                            <CreditCard className="w-3 h-3" /> Digital
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-white/60 font-mono text-[10px] whitespace-nowrap">
+                        {tx.transactionId || `TXN-${tx._id.slice(-6).toUpperCase()}`}
+                      </td>
                       <td className="py-3.5 px-4 text-white/70 whitespace-nowrap">
                         {new Date(tx.date).toLocaleDateString("en-US", {
                           month: "short",
@@ -337,20 +380,26 @@ export default function TransactionsPage() {
                             isInc ? "text-emerald-300" : "text-white"
                           }`}
                         >
-                          {isInc ? "+" : "-"}${Number(tx.amount).toFixed(2)}
+                          {isInc ? "+" : "-"}{formatCurrency(tx.amount, user?.currency || "USD")}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleEdit(tx)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(tx);
+                            }}
                             className="p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
                             title="Edit"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(tx._id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(tx._id);
+                            }}
                             className="p-1.5 rounded-full text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 transition-colors cursor-pointer"
                             title="Delete"
                           >
@@ -404,6 +453,27 @@ export default function TransactionsPage() {
           fetchTransactions();
           window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
         }}
+      />
+
+      {/* Physical Glass Transaction Detail Receipt Modal on click */}
+      <Portal>
+        <AnimatePresence>
+          {selectedTx && (
+            <TransactionDetailModal
+              tx={selectedTx}
+              onClose={() => setSelectedTx(null)}
+            />
+          )}
+        </AnimatePresence>
+      </Portal>
+
+      <GlassConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Transaction"
+        message="Are you sure you want to delete this transaction?"
+        confirmText="Delete"
       />
     </div>
   );

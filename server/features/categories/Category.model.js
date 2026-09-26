@@ -24,16 +24,31 @@ const categorySchema = new mongoose.Schema(
     isDefault: {
       type: Boolean,
       default: false,
+      alias: "is_default",
     },
     // null means it's a system/default category; otherwise belongs to a user
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
+      alias: "user_id",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+// Virtual for explicit category_id representation
+categorySchema.virtual("category_id").get(function () {
+  return this._id;
+});
+
+categorySchema.virtual("created_at").get(function () {
+  return this.createdAt;
+});
 
 categorySchema.index({ name: 1, type: 1, userId: 1 }, { unique: true });
 

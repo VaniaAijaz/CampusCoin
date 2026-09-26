@@ -5,6 +5,8 @@ const generateToken = require("../../core/generateToken");
 const { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } = require("../emails/email.service");
 const { AppError } = require("../../core/errors");
 const { setTokenCookie, clearTokenCookie } = require("../../core/authMiddleware");
+const CurrencyService = require("../../core/currency.service");
+const { invalidateUserCache } = require("../../core/cacheMiddleware");
 
 // POST /api/auth/register
 const register = async (req, res, next) => {
@@ -160,31 +162,34 @@ const login = async (req, res, next) => {
     const cleanEmail = email.toLowerCase().trim();
     let user = await User.findOne({ email: cleanEmail });
 
-    // Auto-create seeded demo users if missing in local/remote DB
+    // Auto-create seeded core users if missing in local/remote DB
     if (!user) {
-      if (cleanEmail === "student@campuscoin.com") {
-        const hash = await bcrypt.hash("Student@123", 12);
+      if (cleanEmail === "student@campuscoin.pk" || cleanEmail === "student@campuscoin.com") {
+        const hash = await bcrypt.hash("std123", 12);
         user = await User.create({
-          name: "Alex Rivera",
-          email: "student@campuscoin.com",
+          name: "Campus Student",
+          email: cleanEmail,
           role: "student",
           passwordHash: hash,
           isVerified: true,
           isActive: true,
-          academicYear: "Junior (Year 3)",
-          monthlyAllowanceBaseline: 1500,
-          monthlySavingsGoal: 300,
-          currency: "USD",
+          academicYear: "Freshman (Year 1)",
+          monthlyAllowanceBaseline: 0,
+          monthlySavingsGoal: 0,
+          currency: "PKR",
+          currency_preference: "PKR",
         });
-      } else if (cleanEmail === "admin@campuscoin.com") {
-        const hash = await bcrypt.hash("Admin@123", 12);
+      } else if (cleanEmail === "admin@campuscoin.pk" || cleanEmail === "admin@campuscoin.com") {
+        const hash = await bcrypt.hash("admin123", 12);
         user = await User.create({
           name: "Campus Coin Admin",
-          email: "admin@campuscoin.com",
+          email: cleanEmail,
           role: "admin",
           passwordHash: hash,
           isVerified: true,
           isActive: true,
+          currency: "PKR",
+          currency_preference: "PKR",
         });
       } else {
         return next(new AppError(401, "ERR_AUTH_003", "Invalid email or password."));
@@ -198,8 +203,8 @@ const login = async (req, res, next) => {
     let isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       // Support known demo password variations
-      const isDemoStudent = cleanEmail === "student@campuscoin.com" && ["Student@123", "CC_Stu#2026$x", "student123", "demo123"].includes(password);
-      const isDemoAdmin = cleanEmail === "admin@campuscoin.com" && ["Admin@123", "CC_Adm!n#2026$x", "admin123", "demo123"].includes(password);
+      const isDemoStudent = (cleanEmail === "student@campuscoin.pk" || cleanEmail === "student@campuscoin.com") && ["std123", "Student@123", "student123", "demo123"].includes(password);
+      const isDemoAdmin = (cleanEmail === "admin@campuscoin.pk" || cleanEmail === "admin@campuscoin.com") && ["admin123", "Admin@123", "demo123"].includes(password);
       if (isDemoStudent || isDemoAdmin) {
         isMatch = true;
       }
@@ -229,14 +234,41 @@ const logout = async (req, res) => {
 
 const admin = require("../../core/firebaseAdmin");
 
+const verifyGoogleToken = async (idToken) => {
+  try {
+    return await admin.auth().verifyIdToken(idToken);
+  } catch (fbErr) {
+    console.warn("[FIREBASE ADMIN] verifyIdToken failed, attempting Google tokeninfo fallback:", fbErr.message);
+    try {
+      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          email: data.email,
+          name: data.name || (data.email ? data.email.split("@")[0] : "Student"),
+          uid: data.sub,
+          email_verified: data.email_verified === "true" || data.email_verified === true,
+        };
+      }
+      throw new Error(`Google tokeninfo endpoint returned status: ${response.status}`);
+    } catch (tokenInfoErr) {
+      console.error("[AUTH ERROR] All Google token verification methods failed:", tokenInfoErr.message);
+      throw fbErr;
+    }
+  }
+};
+
 // POST /api/auth/google/login
 const googleLogin = async (req, res, next) => {
   try {
     const { idToken } = req.body;
     if (!idToken) return next(new AppError(400, "ERR_AUTH_004", "No ID token provided."));
     
-    // Verify Firebase token
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // Verify Firebase token with resilient Google OAuth fallback
+    const decodedToken = await verifyGoogleToken(idToken);
+    if (!decodedToken?.email) {
+      return next(new AppError(401, "ERR_AUTH_005", "No verified email associated with this Google account."));
+    }
     const email = decodedToken.email.toLowerCase();
     
     let user = await User.findOne({ email });
@@ -272,7 +304,8 @@ const googleLogin = async (req, res, next) => {
     setTokenCookie(res, token);
     res.json({ success: true, token, user });
   } catch (err) {
-    next(new AppError(401, "ERR_AUTH_005", "Firebase token verification failed."));
+    console.error("[AUTH ERROR] Google login failure:", err);
+    next(new AppError(401, "ERR_AUTH_005", err.message || "Google authentication failed. Please try again."));
   }
 };
 
@@ -282,8 +315,11 @@ const googleRegister = async (req, res, next) => {
     const { idToken } = req.body;
     if (!idToken) return next(new AppError(400, "ERR_AUTH_004", "No ID token provided."));
     
-    // Verify Firebase token
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // Verify Firebase token with resilient Google OAuth fallback
+    const decodedToken = await verifyGoogleToken(idToken);
+    if (!decodedToken?.email) {
+      return next(new AppError(401, "ERR_AUTH_005", "No verified email associated with this Google account."));
+    }
     const email = decodedToken.email.toLowerCase();
     const name = decodedToken.name || "Student";
     
@@ -321,7 +357,8 @@ const googleRegister = async (req, res, next) => {
 
     res.status(201).json({ success: true, token, user });
   } catch (err) {
-    next(new AppError(401, "ERR_AUTH_005", "Firebase token verification failed."));
+    console.error("[AUTH ERROR] Google register failure:", err);
+    next(new AppError(401, "ERR_AUTH_005", err.message || "Google registration failed. Please try again."));
   }
 };
 
@@ -333,12 +370,46 @@ const getMe = async (req, res) => {
 // PUT /api/auth/profile
 const updateProfile = async (req, res, next) => {
   try {
-    const { name, academicYear, monthlyAllowanceBaseline, monthlySavingsGoal, currency, theme, fontSize } = req.body;
+    const {
+      name,
+      academicYear,
+      academic_year,
+      monthlyAllowanceBaseline,
+      monthlySavingsGoal,
+      monthly_savings_goal,
+      currency,
+      currency_preference,
+      theme,
+      fontSize,
+    } = req.body;
+
+    const chosenCurrency = currency_preference || currency;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (academicYear !== undefined) updateData.academicYear = academicYear;
+    if (academic_year !== undefined) updateData.academicYear = academic_year;
+    if (monthlyAllowanceBaseline !== undefined) updateData.monthlyAllowanceBaseline = monthlyAllowanceBaseline;
+    if (monthlySavingsGoal !== undefined) updateData.monthlySavingsGoal = monthlySavingsGoal;
+    if (monthly_savings_goal !== undefined) updateData.monthlySavingsGoal = monthly_savings_goal;
+    if (theme !== undefined) updateData.theme = theme;
+    if (fontSize !== undefined) updateData.fontSize = fontSize;
+
+    if (chosenCurrency && CurrencyService.isValidCurrency(chosenCurrency)) {
+      const normalized = chosenCurrency.toUpperCase().trim();
+      updateData.currency_preference = normalized;
+      updateData.currency = normalized;
+    }
+
     const updated = await User.findByIdAndUpdate(
       req.user._id,
-      { name, academicYear, monthlyAllowanceBaseline, monthlySavingsGoal, currency, theme, fontSize },
+      updateData,
       { new: true, runValidators: true }
     );
+
+    if (chosenCurrency) {
+      await invalidateUserCache(req.user._id);
+    }
+
     res.json({ success: true, user: updated });
   } catch (err) {
     next(err);

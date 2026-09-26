@@ -1,36 +1,39 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
 /**
- * Normalized RGB palettes (0 - 1) for Iridescence WebGL Shader
+ * Strict 3-Color Theme System: Red, Blue, Green
+ * Mapped to CSS variables and theme glow while maintaining true glass transparency.
  */
 export const THEMES = {
-  aurora: {
-    id: "aurora",
-    name: "Aurora Sapphire",
-    color: [0.06, 0.23, 0.44],
+  blue: {
+    id: "blue",
+    name: "Blue",
+    color: [0.05, 0.18, 0.42],
+    accent: "#3B82F6",
+    primary: "#3B82F6",
+    hover: "#2563EB",
+    glow: "rgba(59, 130, 246, 0.35)",
     mode: "dark",
-    accent: "#38BDF8",
   },
-  silver: {
-    id: "silver",
-    name: "Silver Glaze", // White-labeled, zero third-party branding in UI
-    color: [0.85, 0.88, 0.92],
-    mode: "light",
-    accent: "#64748B",
-  },
-  rose: {
-    id: "rose",
-    name: "Midnight Rose",
-    color: [0.35, 0.05, 0.15],
+  green: {
+    id: "green",
+    name: "Green",
+    color: [0.03, 0.38, 0.22],
+    accent: "#10B981",
+    primary: "#10B981",
+    hover: "#059669",
+    glow: "rgba(16, 185, 129, 0.35)",
     mode: "dark",
-    accent: "#FB7185",
   },
-  emerald: {
-    id: "emerald",
-    name: "Emerald Wealth",
-    color: [0.02, 0.47, 0.34],
+  red: {
+    id: "red",
+    name: "Red",
+    color: [0.45, 0.05, 0.08],
+    accent: "#EF4444",
+    primary: "#EF4444",
+    hover: "#DC2626",
+    glow: "rgba(239, 68, 68, 0.35)",
     mode: "dark",
-    accent: "#34D399",
   },
 };
 
@@ -39,35 +42,70 @@ const ThemeContext = createContext(null);
 export const ThemeProvider = ({ children }) => {
   const [themeId, setThemeId] = useState(() => {
     const saved = localStorage.getItem("cc_theme_id");
-    return THEMES[saved] ? saved : "aurora";
+    return THEMES[saved] ? saved : "blue";
   });
 
-  const activeTheme = THEMES[themeId] || THEMES.aurora;
+  const [mode, setMode] = useState(() => {
+    const saved = localStorage.getItem("cc_theme_mode");
+    return saved === "light" ? "light" : "dark";
+  });
+
+  const activeTheme = THEMES[themeId] || THEMES.blue;
 
   useEffect(() => {
     localStorage.setItem("cc_theme_id", themeId);
+    localStorage.setItem("cc_theme_mode", mode);
     const root = document.documentElement;
 
-    if (activeTheme.mode === "light") {
-      root.classList.add("theme-light");
-      root.classList.remove("dark");
-    } else {
-      root.classList.remove("theme-light");
+    // Remove any previous theme classes and apply current theme
+    root.classList.remove("theme-red", "theme-blue", "theme-green");
+    root.classList.add(`theme-${themeId}`);
+    root.setAttribute("data-theme", themeId);
+    root.setAttribute("data-mode", mode);
+
+    // Apply strict CSS variables dynamically
+    root.style.setProperty("--color-brand-primary", activeTheme.primary);
+    root.style.setProperty("--color-brand-hover", activeTheme.hover);
+    root.style.setProperty("--color-brand-accent", activeTheme.accent);
+    root.style.setProperty("--theme-glow", activeTheme.glow);
+
+    // Strictly apply Dark vs Light mode
+    if (mode === "dark") {
       root.classList.add("dark");
+      root.classList.remove("theme-light");
+    } else {
+      root.classList.remove("dark");
+      root.classList.add("theme-light");
     }
-  }, [themeId, activeTheme]);
+  }, [themeId, mode, activeTheme]);
 
   const selectTheme = (id) => {
     if (THEMES[id]) setThemeId(id);
+  };
+
+  const toggleTheme = () => {
+    const keys = ["blue", "green", "red"];
+    const nextIdx = (keys.indexOf(themeId) + 1) % keys.length;
+    setThemeId(keys[nextIdx]);
+  };
+
+  const toggleMode = () => {
+    setMode((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   return (
     <ThemeContext.Provider
       value={{
         themeId,
+        theme: themeId,
         activeTheme,
         color: activeTheme.color,
+        mode,
+        isDark: mode === "dark",
+        setMode,
+        toggleMode,
         selectTheme,
+        toggleTheme,
         themes: Object.values(THEMES),
       }}
     >

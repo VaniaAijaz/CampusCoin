@@ -15,16 +15,6 @@ export const DEMO_STUDENT = {
   isActive: true,
 };
 
-export const DEMO_ADMIN = {
-  _id: "demo-admin-id",
-  name: "Campus Coin Admin",
-  email: "admin@campuscoin.com",
-  role: "admin",
-  isVerified: true,
-  isDemo: true,
-  isActive: true,
-};
-
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -80,14 +70,14 @@ export const AuthProvider = ({ children }) => {
     return () => { cancelled = true; };
   }, []); // ← empty array: runs ONCE on mount only
 
-  const enterDemoMode = useCallback((role = "student") => {
-    const demoUser = role === "admin" ? DEMO_ADMIN : DEMO_STUDENT;
-    setUser(demoUser);
+  // Demo Mode strictly restricted to student role only (Admin is strictly off-limits to demo users)
+  const enterDemoMode = useCallback(() => {
+    setUser(DEMO_STUDENT);
     setToken("demo-mock-jwt-token");
     setLoading(false);
     localStorage.setItem("cc_token", "demo-mock-jwt-token");
-    localStorage.setItem("cc_user", JSON.stringify(demoUser));
-    return demoUser;
+    localStorage.setItem("cc_user", JSON.stringify(DEMO_STUDENT));
+    return DEMO_STUDENT;
   }, []);
 
   const login = useCallback((userData, authToken) => {

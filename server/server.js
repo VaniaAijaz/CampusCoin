@@ -22,7 +22,13 @@ connectDB().then(async (conn) => {
 });
 
 // Initialize Redis
-connectRedis();
+connectRedis().then(() => {
+  // Sync live market currency exchange rates via Redis
+  const CurrencyService = require("./core/currency.service");
+  CurrencyService.syncRates();
+  // Refresh rates every 12 hours
+  setInterval(() => CurrencyService.syncRates(), 12 * 60 * 60 * 1000);
+});
 
 const app = express();
 
@@ -56,10 +62,10 @@ app.use(cookieParser());
 
 // Domain-driven Feature Routes
 app.use("/api/auth", require("./features/auth/auth.routes"));
+app.use("/api/users", require("./features/users/user.routes"));
 app.use("/api/transactions", require("./features/transactions/transaction.routes"));
 app.use("/api/budgets", require("./features/budgets/budget.routes"));
 app.use("/api/categories", require("./features/categories/category.routes"));
-app.use("/api/insights", require("./features/insights/insight.routes"));
 app.use("/api/reports", require("./features/reports/report.routes"));
 app.use("/api/tips", require("./features/tips/tip.routes"));
 app.use("/api/admin", require("./features/admin/admin.routes"));
@@ -77,7 +83,10 @@ const Announcement = require("./features/admin/Announcement.model");
 const { protect } = require("./core/authMiddleware");
 app.get("/api/announcements", protect, async (req, res) => {
   try {
-    const announcements = await Announcement.find({ isActive: true }).sort({ createdAt: -1 }).limit(5);
+    const announcements = await Announcement.find({ isActive: true })
+      .populate("created_by_admin_id", "name email")
+      .sort({ createdAt: -1 })
+      .limit(10);
     res.json({ success: true, announcements });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -32,7 +32,7 @@ export default function LoginForm() {
       if (data.success) {
         login(data.user, data.token);
         toast.success(`Welcome back, ${data.user.name}!`);
-        navigate(data.user.role === "admin" ? "/app/admin" : "/app", { replace: true });
+        navigate(data.user.role === "admin" ? "/admin" : "/dashboard", { replace: true });
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Invalid credentials. Please verify your email and password.");
@@ -41,32 +41,7 @@ export default function LoginForm() {
     }
   };
 
-  const handleQuickDemo = async (role) => {
-    const creds = role === "admin"
-      ? { email: "admin@campuscoin.com", password: "Admin@123" }
-      : { email: "student@campuscoin.com", password: "Student@123" };
-    setForm(creds);
-    setLoading(true);
-    try {
-      const { data } = await api.post("/auth/login", creds);
-      if (data.success) {
-        login(data.user, data.token);
-        toast.success(`Welcome to Campus Coin Demo, ${data.user.name}!`);
-        navigate("/app", { replace: true });
-        return;
-      }
-    } catch {
-      // Fallback
-      const fallbackUser = role === "admin"
-        ? { _id: "demo-admin", name: "Campus Coin Admin", email: "admin@campuscoin.com", role: "admin" }
-        : { _id: "demo-student", name: "Alex Rivera", email: "student@campuscoin.com", role: "student" };
-      login(fallbackUser, "demo-token");
-      toast.success(`Welcome to Campus Coin Demo, ${fallbackUser.name}!`);
-      navigate("/app", { replace: true });
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className="w-full bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 rounded-[32px] p-6 sm:p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] text-white">
@@ -78,35 +53,11 @@ export default function LoginForm() {
           </span>
         </h2>
         <p className="text-xs text-white/70 mt-1">
-          Enter your student credentials or use 1-click instant demo.
+          Enter your student credentials.
         </p>
       </div>
 
-      {/* Demo Credentials Quick Fill Pills */}
-      <div className="mb-6 p-3.5 rounded-[20px] bg-white/10 border border-white/20 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-        <span className="text-xs text-white/80 flex items-center gap-1.5 font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-          1-Click Instant Demo:
-        </span>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleQuickDemo("student")}
-            className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
-          >
-            <UserCheck className="w-3 h-3 text-emerald-300" /> Student
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => handleQuickDemo("admin")}
-            className="flex-1 sm:flex-initial text-xs px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
-          >
-            <Shield className="w-3 h-3 text-amber-300" /> Admin
-          </button>
-        </div>
-      </div>
+
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div>
@@ -120,7 +71,7 @@ export default function LoginForm() {
               setForm({ ...form, email: e.target.value });
               setErrors({ ...errors, email: "" });
             }}
-            placeholder="student@campuscoin.com"
+            placeholder="student@campuscoin.pk"
             autoComplete="email"
             className="w-full px-4 py-2.5 rounded-full bg-white/10 border border-white/25 text-white placeholder:text-white/40 text-xs focus:outline-none focus:border-white/50 transition-colors"
           />

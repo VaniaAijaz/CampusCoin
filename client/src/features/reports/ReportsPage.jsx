@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import MonthPicker from "../../components/ui/MonthPicker";
 import {
   BarChart3,
   Calendar,
@@ -42,8 +41,8 @@ import { useAuth } from "../auth/AuthContext";
 
 export default function ReportsPage() {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState(() =>
-    new Date().toISOString().slice(0, 7)
+  const [endDate, setEndDate] = useState(() =>
+    new Date().toISOString().split("T")[0]
   );
   const [summary, setSummary] = useState(null);
   const [categoryData, setCategoryData] = useState([]);
@@ -56,10 +55,10 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const [sumRes, catRes, sixRes, dailyRes, topRes] = await Promise.all([
-        getMonthlySummary(selectedMonth),
-        getReportByCategory(selectedMonth, "expense"),
+        getMonthlySummary(endDate),
+        getReportByCategory(endDate, "expense"),
         getSixMonthsTrends(),
-        getDailyReport(selectedMonth),
+        getDailyReport(endDate),
         getTopCategory(),
       ]);
 
@@ -73,7 +72,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth]);
+  }, [endDate]);
 
   useEffect(() => {
     fetchReports();
@@ -101,7 +100,7 @@ export default function ReportsPage() {
   }, [categoryData]);
 
   const handleDownloadPDF = () => {
-    generateStatementPDF(user);
+    generateStatementPDF(user, endDate);
   };
 
   return (
@@ -119,7 +118,13 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+          <input
+            type="date"
+            max={new Date().toISOString().split("T")[0]}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+          />
           <button
             onClick={handleDownloadPDF}
             className="py-2 px-4 rounded-xl bg-brand-primary hover:bg-brand-hover text-white text-xs font-semibold shadow-lg transition-colors flex items-center gap-2 cursor-pointer"
@@ -134,7 +139,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-2xs text-zinc-400 font-medium">Monthly Inflow</span>
+            <span className="text-2xs text-zinc-400 font-medium">Total Inflow</span>
             <div className="p-1.5 rounded-lg bg-brand-mint/10 text-brand-mint">
               <ArrowUpRight className="w-4 h-4" />
             </div>
@@ -147,7 +152,7 @@ export default function ReportsPage() {
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-2xs text-zinc-400 font-medium">Monthly Outflow</span>
+            <span className="text-2xs text-zinc-400 font-medium">Total Outflow</span>
             <div className="p-1.5 rounded-lg bg-brand-coral/10 text-brand-coral">
               <ArrowDownRight className="w-4 h-4" />
             </div>
@@ -160,7 +165,7 @@ export default function ReportsPage() {
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-2xs text-zinc-400 font-medium">Net Monthly Margin</span>
+            <span className="text-2xs text-zinc-400 font-medium">Net Margin</span>
             <span
               className={`text-2xs font-semibold px-2 py-0.5 rounded-full border ${
                 (summary?.balance || 0) >= 0
@@ -239,7 +244,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="py-16 text-center text-xs text-zinc-400">
-              No expense records found for {selectedMonth}.
+              No expense records found up to this date.
             </div>
           )}
         </div>
@@ -282,7 +287,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="py-16 text-center text-xs text-zinc-400">
-              No category data available for this month.
+              No category data available up to this date.
             </div>
           )}
         </div>

@@ -39,6 +39,11 @@ export default function Gatekeeper() {
     return <Navigate to="/app" replace />;
   }
 
-  // 4. Authenticated & Verified: render app layout
+  // 4. Role-based isolation: If user is an admin, strictly redirect to isolated /admin workspace
+  if (user?.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // 5. Authenticated & Verified student: render student app layout
   return <Layout />;
 }

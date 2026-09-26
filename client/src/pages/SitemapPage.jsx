@@ -4,7 +4,7 @@ import {
   Tag, Lightbulb, Settings, Shield, Map,
   LogIn, UserPlus, KeyRound, Mail,
   TrendingUp, TrendingDown, PieChart, Calendar,
-  Wallet, Bookmark, Pin, Upload, Users, Megaphone
+  Wallet, Bookmark, Pin, Upload, Users, Megaphone, BookOpen
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/ui/PageHeader";
@@ -14,13 +14,13 @@ const SITEMAP = [
     section: "Main Application",
     color: "var(--color-brand)",
     pages: [
-      { path: "/app",              icon: LayoutDashboard, label: "Dashboard",    desc: "Overview of income, expenses, balance, charts, recent transactions and saving tips." },
+      { path: "/app",              icon: LayoutDashboard, label: "Dashboard",    desc: "Overview of income, expenses, balance, charts, and recent transactions." },
       { path: "/app/transactions", icon: ArrowLeftRight,  label: "Transactions", desc: "Add, edit, delete income and expense transactions. Filter, search, import CSV." },
+      { path: "/app/khata",         icon: BookOpen,        label: "Khata (Ledger)", desc: "Lending and borrowing ledger with counterparty debt tracking and status checkmarks." },
       { path: "/app/reports",      icon: BarChart2,       label: "Reports",      desc: "Monthly reports, category breakdown, 6-month trends, daily summaries. PDF export." },
       { path: "/app/budget",       icon: Target,          label: "Budget Goals", desc: "Set monthly budgets per category, track spending in real time, receive alerts." },
       { path: "/app/categories",   icon: Tag,             label: "Categories",   desc: "Manage personal income and expense categories with custom names and colors." },
-      { path: "/app/insights",     icon: Lightbulb,       label: "AI Insights",  desc: "AI-generated monthly summaries, flagged spending patterns, saving tips and recommendations." },
-      { path: "/app/profile",      icon: Settings,        label: "Settings",     desc: "Edit profile, change password, toggle dark mode, adjust font size, import data." },
+      { path: "/app/profile",      icon: Settings,        label: "Settings",     desc: "Edit profile, change password, baseline allowance, and savings goals." },
       { path: "/app/sitemap",      icon: Map,             label: "Sitemap",      desc: "This page — visual overview of all application pages and features." },
     ],
   },

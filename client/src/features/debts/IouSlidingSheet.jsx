@@ -3,10 +3,11 @@ import { X, Coins, Check, ArrowRight, ArrowLeft } from "lucide-react";
 import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDebts, updateDebt } from "./debtApi";
 import toast from "react-hot-toast";
+import Portal from "../../components/ui/Portal";
 
-// Apple visionOS Extreme Liquid Glass Standard Recipe
+// Video-Accurate Physical Spatial Glass Standard Recipe
 const glassRecipe =
-  "bg-white/10 backdrop-blur-[64px] backdrop-saturate-[150%] border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]";
+  "bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-3xl transform-gpu backface-hidden";
 
 export default function IouSlidingSheet({ isOpen, onClose }) {
   const queryClient = useQueryClient();
@@ -33,8 +34,9 @@ export default function IouSlidingSheet({ isOpen, onClose }) {
   const iOwe = pendingDebts.filter((d) => d.direction === "i_owe");
 
   return (
-    <AnimatePresence>
-      {isOpen && (
+    <Portal>
+      <AnimatePresence>
+        {isOpen && (
         <>
           <motion.div
             initial={{ opacity: 0 }}
@@ -150,6 +152,7 @@ export default function IouSlidingSheet({ isOpen, onClose }) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </Portal>
   );
 }

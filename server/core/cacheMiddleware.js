@@ -1,17 +1,29 @@
 const { redisClient } = require("./redis");
 
-const clearUserCache = async (req, res, next) => {
-  if (!req.user || !req.user._id) return next();
+/**
+ * Invalidate all redis cache keys belonging to a user
+ * @param {string|mongoose.Types.ObjectId} userId
+ */
+const invalidateUserCache = async (userId) => {
+  if (!userId) return;
   if (redisClient?.isOpen) {
     try {
-      const userId = req.user._id.toString();
-      await redisClient.del(`ai_insight:${userId}`);
-      await redisClient.del(`dashboard_metrics:${userId}`);
+      const uId = userId.toString();
+      const keysToClear = await redisClient.keys(`campuscoin:user:${uId}:*`);
+      if (keysToClear && keysToClear.length > 0) {
+        await redisClient.del(keysToClear);
+      }
     } catch (err) {
       // Ignore cache invalidation error if redis is down
     }
   }
+};
+
+const clearUserCache = async (req, res, next) => {
+  if (req.user?._id) {
+    await invalidateUserCache(req.user._id);
+  }
   next();
 };
 
-module.exports = { clearUserCache };
+module.exports = { clearUserCache, invalidateUserCache };

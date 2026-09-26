@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import Portal from "./Portal";
 
 export default function Modal({ open, onClose, title, children, maxWidth = 480, footer }) {
   // Close on Escape key
@@ -20,8 +21,9 @@ export default function Modal({ open, onClose, title, children, maxWidth = 480, 
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
+    <Portal>
+      <div className="modal-backdrop" onClick={onClose}>
+        <div
         className="modal-box"
         style={{ maxWidth }}
         onClick={e => e.stopPropagation()}
@@ -62,7 +64,8 @@ export default function Modal({ open, onClose, title, children, maxWidth = 480, 
             {footer}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </Portal>
   );
 }

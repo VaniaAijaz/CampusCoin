@@ -1,13 +1,13 @@
 /**
- * Frosted Glass Skeleton — Exact Apple visionOS Standard
- * Formula: animate-pulse bg-white/5 backdrop-blur-3xl border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]
- * Continuous Squircle Curves: rounded-[32px] for major cards, rounded-[16px] for inner elements, rounded-full for pills.
+ * Frosted Glass Skeleton — Production Spatial Standard
+ * Formula: animate-pulse bg-white/[0.03] backdrop-blur-[64px] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]
+ * Continuous Curves: rounded-3xl for major cards, rounded-2xl for inner elements, rounded-full for pills.
  * Perfectly mirrors dashboard CSS grid for zero Cumulative Layout Shift (CLS).
  */
 
 const SkeletonCard = ({ className = "", children }) => (
   <div
-    className={`glass-skeleton animate-pulse bg-white/5 backdrop-blur-3xl border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)] rounded-[32px] ${className}`}
+    className={`glass-skeleton animate-pulse bg-white/[0.03] backdrop-blur-[64px] backdrop-blur-3xl border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-3xl ${className}`}
   >
     {children}
   </div>
