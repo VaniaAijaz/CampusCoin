@@ -64,6 +64,13 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: String,
+    verificationOtp: String,
+    verificationExpires: Date,
     resetPasswordToken: String,
     resetPasswordExpires: Date,
     lastLogin: Date,
@@ -71,10 +78,13 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Remove passwordHash from JSON responses
+// Remove passwordHash and sensitive security tokens from JSON responses
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.passwordHash;
+  delete user.verificationToken;
+  delete user.verificationOtp;
+  delete user.verificationExpires;
   delete user.resetPasswordToken;
   delete user.resetPasswordExpires;
   return user;

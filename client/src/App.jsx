@@ -2,11 +2,12 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { useAuth } from "./features/auth/AuthContext";
 import LoadingScreen from "./components/ui/LoadingScreen";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 // Public Landing & Split Auth Pages
 import LandingPage from "./features/landing/LandingPage";
 import SplitAuthPage from "./features/auth/SplitAuthPage";
+import VerifyEmailPage from "./features/auth/VerifyEmailPage";
 import Gatekeeper from "./pages/Gatekeeper";
 
 const ForgotPasswordPage = lazy(() => import("./pages/auth/ForgotPasswordPage"));
@@ -42,6 +43,14 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   return children;
 };
 
+function DemoRoute() {
+  const { enterDemoMode } = useAuth();
+  useEffect(() => {
+    enterDemoMode("student");
+  }, [enterDemoMode]);
+  return <Navigate to="/app" replace />;
+}
+
 export default function App() {
   const { loading } = useAuth();
   const location = useLocation();
@@ -52,10 +61,12 @@ export default function App() {
       <Routes location={location} key={location.pathname}>
       {/* 1. Public Landing Page */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/demo" element={<DemoRoute />} />
       
       {/* 2. Public Direct Auth Routes */}
       <Route path="/login" element={<SplitAuthPage defaultMode="login" />} />
       <Route path="/register" element={<SplitAuthPage defaultMode="register" />} />
+      <Route path="/verify" element={<VerifyEmailPage />} />
       <Route path="/forgot-password" element={<Suspense fallback={<FallbackLoader />}><ForgotPasswordPage /></Suspense>} />
       <Route path="/reset-password/:token" element={<Suspense fallback={<FallbackLoader />}><ResetPasswordPage /></Suspense>} />
 
@@ -82,6 +93,7 @@ export default function App() {
         <Route path="dashboard" element={<Navigate to="/app" replace />} />
 
         {/* Feature Sub-routes */}
+        <Route path="verify" element={<VerifyEmailPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="budgets" element={<Navigate to="/app/budget" replace />} />

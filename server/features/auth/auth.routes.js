@@ -3,6 +3,9 @@ const router = express.Router();
 const {
   register,
   login,
+  logout,
+  verifyEmail,
+  resendVerification,
   googleLogin,
   googleRegister,
   getMe,
@@ -13,9 +16,19 @@ const {
   togglePinTip,
 } = require("./auth.controller");
 const { protect } = require("../../core/authMiddleware");
+const {
+  validate,
+  registerSchema,
+  loginSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+} = require("../../core/validate");
 
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", validate(registerSchema), register);
+router.post("/login", validate(loginSchema), login);
+router.post("/logout", logout);
+router.post("/verify-email", validate(verifyEmailSchema), verifyEmail);
+router.post("/resend-verification", validate(resendVerificationSchema), resendVerification);
 router.post("/google/login", googleLogin);
 router.post("/google/register", googleRegister);
 router.get("/me", protect, getMe);

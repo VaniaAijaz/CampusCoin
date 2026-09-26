@@ -105,7 +105,7 @@ const seedAdmin = async () => {
           role: "admin",
           isActive: true,
         },
-        $set: { passwordHash },
+        $set: { passwordHash, isVerified: true },
       },
       { upsert: true, new: true }
     );
@@ -134,7 +134,7 @@ const seedDemoStudent = async () => {
           currency: "USD",
           isActive: true,
         },
-        $set: { passwordHash },
+        $set: { passwordHash, isVerified: true },
       },
       { upsert: true, new: true }
     );

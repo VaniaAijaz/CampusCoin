@@ -1,6 +1,30 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import api from "../../core/api";
 
+export const DEMO_STUDENT = {
+  _id: "demo-student-id",
+  name: "Alex Rivera",
+  email: "student@campuscoin.com",
+  role: "student",
+  academicYear: "Junior (Year 3)",
+  monthlyAllowanceBaseline: 1500,
+  monthlySavingsGoal: 300,
+  currency: "USD",
+  isVerified: true,
+  isDemo: true,
+  isActive: true,
+};
+
+export const DEMO_ADMIN = {
+  _id: "demo-admin-id",
+  name: "Campus Coin Admin",
+  email: "admin@campuscoin.com",
+  role: "admin",
+  isVerified: true,
+  isDemo: true,
+  isActive: true,
+};
+
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -30,7 +54,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedToken = initialToken.current;
 
-    if (!storedToken || storedToken === "demo-mock-jwt") {
+    if (!storedToken || storedToken.startsWith("demo-mock") || user?.isDemo) {
       setLoading(false);
       return;
     }
@@ -55,6 +79,16 @@ export const AuthProvider = ({ children }) => {
 
     return () => { cancelled = true; };
   }, []); // ← empty array: runs ONCE on mount only
+
+  const enterDemoMode = useCallback((role = "student") => {
+    const demoUser = role === "admin" ? DEMO_ADMIN : DEMO_STUDENT;
+    setUser(demoUser);
+    setToken("demo-mock-jwt-token");
+    setLoading(false);
+    localStorage.setItem("cc_token", "demo-mock-jwt-token");
+    localStorage.setItem("cc_user", JSON.stringify(demoUser));
+    return demoUser;
+  }, []);
 
   const login = useCallback((userData, authToken) => {
     setUser(userData);
@@ -82,6 +116,8 @@ export const AuthProvider = ({ children }) => {
       isLoading: loading,
       isAuthenticated: Boolean(user && token),
       isAdmin: user?.role === "admin",
+      isDemo: Boolean(user?.isDemo || user?._id?.startsWith("demo")),
+      enterDemoMode,
       login, logout, updateUser,
     }}>
       {children}

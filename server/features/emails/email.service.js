@@ -222,9 +222,6 @@ const sendMonthlyStatementEmail = async (email, monthName, totalIn, totalOut) =>
             <div style="color: #F43F5E; font-weight: bold; font-size: 18px;">-$${totalOut.toFixed(2)}</div>
           </td>
         </tr>
-      </table>
-    </div>
-
     <div style="text-align: center;">
       <a href="${process.env.CLIENT_URL}/app/reports" class="cta-button">Download PDF Statement</a>
     </div>
@@ -234,8 +231,36 @@ const sendMonthlyStatementEmail = async (email, monthName, totalIn, totalOut) =>
   await sendEmail(email, `Your ${monthName} Statement is Ready`, html);
 };
 
+// 5. Email Verification with OTP & One-Click Link
+const sendVerificationEmail = async (email, name, otp, link) => {
+  const content = `
+    <h1>Verify Your Account</h1>
+    <p>Hi ${name || "there"}, welcome to Campus Coin! Please confirm your email address to activate your student financial portal.</p>
+    
+    <div style="background-color: #0B0D0E; padding: 24px; border-radius: 16px; border: 1px solid #27272A; margin: 24px 0; text-align: center;">
+      <p style="margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #A1A1AA;">Your 6-Digit Verification Code</p>
+      <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #FFFFFF; font-family: monospace; padding: 12px 0;">
+        ${otp}
+      </div>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #71717A;">This code expires in 24 hours.</p>
+    </div>
+
+    <div style="text-align: center; margin: 28px 0 20px;">
+      <a href="${link}" class="cta-button">Verify Email Instantly</a>
+    </div>
+
+    <p style="font-size: 12px; color: #71717A; text-align: center; margin-top: 16px;">
+      If you did not register for a Campus Coin account, you can safely disregard this message.
+    </p>
+  `;
+
+  const html = generateBaseTemplate("Verify Your Campus Coin Account", content);
+  return await sendEmail(email, "Verify Your Campus Coin Account (OTP Inside)", html);
+};
+
 module.exports = {
   sendWelcomeEmail,
+  sendVerificationEmail,
   sendPasswordResetEmail,
   sendBudgetAlertEmail,
   sendMonthlyStatementEmail

@@ -48,8 +48,11 @@ app.use(
   })
 );
 
+const cookieParser = require("cookie-parser");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Domain-driven Feature Routes
 app.use("/api/auth", require("./features/auth/auth.routes"));
@@ -64,8 +67,10 @@ app.use("/api/subscriptions", require("./features/subscriptions/subscription.rou
 app.use("/api/debts", require("./features/debts/debt.routes"));
 app.use("/api/goals", require("./features/goals/goal.routes"));
 
-// Initialize scheduled background jobs
-require("./features/emails/cron.jobs");
+// Initialize scheduled background jobs (disabled in test mode)
+if (process.env.NODE_ENV !== "test") {
+  require("./features/emails/cron.jobs");
+}
 
 // Public announcements endpoint (accessible to all logged-in students)
 const Announcement = require("./features/admin/Announcement.model");
@@ -95,8 +100,10 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Campus Coin API Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Campus Coin API Server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;

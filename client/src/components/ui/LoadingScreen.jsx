@@ -1,18 +1,31 @@
 import { Coins } from "lucide-react";
 import Iridescence from "./Iridescence";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function LoadingScreen({ message = "Loading Campus Coin..." }) {
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
-      role="status" aria-live="polite" aria-label={message}>
-      {/* Iridescence bg */}
-      <div className="absolute inset-0 -z-20">
-        <Iridescence color={[1, 1, 1]} speed={1.0} amplitude={0.1} mouseReact={false} />
-      </div>
-      <div className="absolute inset-0 bg-black/20 -z-10" />
+  let themeColor = [0.06, 0.23, 0.44];
+  try {
+    const { color } = useTheme();
+    if (color) themeColor = color;
+  } catch {
+    // If mounted outside ThemeProvider fallback to default
+  }
 
-      {/* Floating Campus Coin Pod */}
-      <div className="flex flex-col items-center gap-6 px-10 py-8 rounded-[32px] bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] animate-in fade-in zoom-in-95 duration-500">
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+      role="status"
+      aria-live="polite"
+      aria-label={message}
+    >
+      {/* Iridescence Background */}
+      <div className="absolute inset-0 -z-20">
+        <Iridescence color={themeColor} speed={1.0} amplitude={0.12} mouseReact={false} />
+      </div>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] -z-10" />
+
+      {/* Floating Liquid Glass Pod */}
+      <div className="flex flex-col items-center gap-6 px-10 py-8 rounded-[32px] bg-white/10 backdrop-blur-[64px] backdrop-saturate-[150%] border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)] animate-in fade-in zoom-in-95 duration-500">
         {/* Sleek Thin Spinner with Campus Coin Centerpiece */}
         <div className="relative w-16 h-16 flex items-center justify-center">
           <svg
