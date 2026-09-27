@@ -355,3 +355,24 @@ html.theme-light[data-theme="red"] body {
 .theme-light .bg-black\/10 {
   background-color: rgba(255, 255, 255, 0.40) !important;
 }
+
+/* ────────────────────────────────────────────────
+   Google AdSense Frame & Container Dark Mode Rules
+   (Prevents Raw Blank White Boxes & Flashes)
+──────────────────────────────────────────────── */
+ins.adsbygoogle {
+  background: transparent !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+ins.adsbygoogle iframe,
+ins.adsbygoogle > div {
+  background-color: transparent !important;
+  color-scheme: dark !important;
+  border-radius: 12px !important;
+  max-width: 100% !important;
+}
+

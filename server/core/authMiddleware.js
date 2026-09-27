@@ -78,6 +78,54 @@ const protect = async (req, res, next) => {
   }
 };
 
+const optionalProtect = async (req, res, next) => {
+  try {
+    let token = null;
+
+    if (req.cookies && req.cookies[COOKIE_NAME]) {
+      token = req.cookies[COOKIE_NAME];
+    } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token) {
+      return next();
+    }
+
+    // Support instant demo mode tokens without rejection
+    if (token.startsWith("demo-mock")) {
+      let demoUser = await User.findOne({ email: "student@campuscoin.com" }).select("-passwordHash");
+      if (!demoUser) {
+        demoUser = {
+          _id: "demo-student-id",
+          name: "Alex Rivera",
+          email: "student@campuscoin.com",
+          role: "student",
+          academicYear: "Junior (Year 3)",
+          monthlyAllowanceBaseline: 1500,
+          monthlySavingsGoal: 300,
+          currency: "USD",
+          isVerified: true,
+          isActive: true,
+        };
+      }
+      req.user = demoUser;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_super_secret_jwt_key");
+    const user = await User.findById(decoded.id).select("-passwordHash -resetPasswordToken -resetPasswordExpires");
+    
+    if (user && user.isActive) {
+      req.user = user;
+    }
+    next();
+  } catch (err) {
+    // If token invalid, proceed unauthenticated without blocking
+    next();
+  }
+};
+
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") return next();
   return next(new AppError(403, "ERR_AUTH_006", "Admin access required."));
@@ -90,6 +138,7 @@ const verifiedOnly = (req, res, next) => {
 
 module.exports = {
   protect,
+  optionalProtect,
   adminOnly,
   verifiedOnly,
   setTokenCookie,

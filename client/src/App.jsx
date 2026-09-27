@@ -12,6 +12,7 @@ import Gatekeeper from "./pages/Gatekeeper";
 
 const ForgotPasswordPage = lazy(() => import("./pages/auth/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("./pages/auth/ResetPasswordPage"));
+import AIChatbot from "./components/chat/AIChatbot";
 
 // Domain-driven Feature Pages
 import DashboardPage from "./features/dashboard/DashboardPage";
@@ -57,7 +58,8 @@ export default function App() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <Routes location={location}>
+    <>
+      <Routes location={location}>
       {/* 1. Public Landing Page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/demo" element={<DemoRoute />} />
@@ -127,5 +129,9 @@ export default function App() {
       {/* 5. Catch-all 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+
+    {/* Floating Global CampusCoin AI Chatbot Assistant */}
+    <AIChatbot />
+    </>
   );
 }

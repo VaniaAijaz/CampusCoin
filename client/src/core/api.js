@@ -35,7 +35,8 @@ api.interceptors.request.use(
       const isAuthExempt = url.includes("/auth/login") ||
                            url.includes("/auth/register") ||
                            url.includes("/auth/verify-email") ||
-                           url.includes("/users/heartbeat");
+                           url.includes("/users/heartbeat") ||
+                           url.includes("/chat");
 
       // Intercept any data mutation attempt: POST, PUT, PATCH, DELETE
       if (["post", "put", "patch", "delete"].includes(method) && !isAuthExempt) {

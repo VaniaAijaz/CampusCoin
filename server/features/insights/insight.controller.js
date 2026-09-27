@@ -278,13 +278,14 @@ const generateAiTip = async (userId, temperature = 0.4) => {
     goals: savingsGoals.map(g => `${g.target_name}: $${g.current_saved} / $${g.target_amount}`)
   };
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "mock_key");
+  const apiKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const genAI = new GoogleGenerativeAI(apiKey || "mock_key");
   // Default to a fallback if no key is present to prevent crashes in local dev
-  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+  if (!apiKey) {
      return "No AI Key found: Pause discretionary spending and review your upcoming subscriptions this week to stay on track.";
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { temperature } });
+  const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash", generationConfig: { temperature } });
   
   const prompt = `You are an expert financial advisor for a university student. Based on this precise real-time spending snapshot:
 ${JSON.stringify(dataSnapshot)}

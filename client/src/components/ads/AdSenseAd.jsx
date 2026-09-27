@@ -1,11 +1,61 @@
 import { useState, useEffect, useRef } from "react";
-import { Info, Crown, X, AlertCircle, Sparkles } from "lucide-react";
+import { Info, Crown, X, Sparkles, ExternalLink, GraduationCap, Laptop, BookOpen, Music } from "lucide-react";
 import { useAuth } from "../../features/auth/AuthContext";
 import PremiumUpgradeModal from "./PremiumUpgradeModal";
 
 /**
+ * Curated Campus & Student Sponsor Creatives.
+ * Displayed dynamically when Google AdSense is unfilled (e.g., localhost, test mode, pending inventory).
+ */
+const STUDENT_SPONSOR_ADS = [
+  {
+    id: "github-pack",
+    badge: "Student Partner",
+    badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    title: "GitHub Student Developer Pack",
+    desc: "Get $200k+ in free developer tools, cloud hosting credits & GitHub Copilot with your student email.",
+    cta: "Claim Free Pack",
+    url: "https://education.github.com/pack",
+    icon: Laptop,
+    gradient: "from-purple-900/40 via-indigo-900/20 to-blue-900/40",
+  },
+  {
+    id: "coursera-tech",
+    badge: "Academic Deal",
+    badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    title: "Coursera Campus Learning Pass",
+    desc: "Level up your resume with 50% discount on Google, IBM & Meta professional certifications.",
+    cta: "Explore Courses",
+    url: "https://www.coursera.org/campus",
+    icon: BookOpen,
+    gradient: "from-blue-900/40 via-cyan-900/20 to-teal-900/40",
+  },
+  {
+    id: "spotify-student",
+    badge: "Campus Lifestyle",
+    badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    title: "Spotify Student + Hulu Bundle",
+    desc: "Stream unlimited music and TV shows ad-free for just $5.99/month with student verification.",
+    cta: "Get Student Plan",
+    url: "https://www.spotify.com/us/student/",
+    icon: Music,
+    gradient: "from-emerald-900/40 via-teal-900/20 to-cyan-900/40",
+  },
+  {
+    id: "campus-internships",
+    badge: "Career Hub",
+    badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    title: "Techwiz 2026 Student Innovators",
+    desc: "Connect with tech mentors, submit your fintech projects, and win global scholarship prizes.",
+    cta: "Learn More",
+    url: "https://techwiz.world",
+    icon: GraduationCap,
+    gradient: "from-amber-900/40 via-orange-900/20 to-rose-900/40",
+  },
+];
+
+/**
  * Singleton Script Loader for Google AdSense SDK.
- * Ensures the official adsbygoogle.js script is loaded exactly once in document.head.
  */
 let adSenseScriptPromise = null;
 
@@ -36,7 +86,6 @@ function loadAdSenseScriptOnce(publisherId) {
     script.crossOrigin = "anonymous";
 
     script.onload = () => {
-      console.log(`[AdSense Diagnostics] Google AdSense SDK loaded for ${publisherId}`);
       resolve();
     };
 
@@ -51,9 +100,6 @@ function loadAdSenseScriptOnce(publisherId) {
   return adSenseScriptPromise;
 }
 
-/**
- * Resolves ad slot ID based on prop or environment variables.
- */
 function resolveSlotId(slot, explicitSlotId) {
   if (explicitSlotId) return String(explicitSlotId);
 
@@ -75,30 +121,30 @@ function resolveSlotId(slot, explicitSlotId) {
   }
 }
 
-/**
- * Reusable Production-Ready Google AdSense Component.
- * Dynamically loads and presents the ad after 3 seconds for Free users.
- * Premium users ($2/month) remain 100% ad-free.
- */
 export default function AdSenseAd({
   slot = "dashboard",
   slotId: explicitSlotId,
   adFormat = "auto",
   fullWidthResponsive = true,
   className = "",
-  delayMs = 3000,
+  delayMs = 2000,
 }) {
   const { user } = useAuth();
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-  const [adError, setAdError] = useState(null);
   const [isReadyToShow, setIsReadyToShow] = useState(false);
+  const [isGoogleFilled, setIsGoogleFilled] = useState(false);
 
-  const adRef = useRef(null);
-  const adPushedRef = useRef(false);
+  // Randomize initial sponsor ad index for varied presentation
+  const [sponsorAdIndex] = useState(() => Math.floor(Math.random() * STUDENT_SPONSOR_ADS.length));
+  const activeSponsor = STUDENT_SPONSOR_ADS[sponsorAdIndex] || STUDENT_SPONSOR_ADS[0];
+  const SponsorIcon = activeSponsor.icon;
 
-  // 1. STRICT AD-FREE CHECK: Free users see real ads; Premium users ($2/month ≈ PKR 500) see NO ads anywhere!
+  const containerRef = useRef(null);
+  const observerRef = useRef(null);
+
+  // 1. STRICT AD-FREE CHECK: Free users see ads; Premium users ($2/month ≈ PKR 500) see NO ads!
   const isPremium = Boolean(user?.isPremium || user?.plan === "premium");
   if (isPremium || isDismissed) {
     return null;
@@ -113,7 +159,6 @@ export default function AdSenseAd({
     env.VITE_ADSENSE_PUBLISHER_ID ||
     "ca-pub-1234567890123456";
 
-  // Auto-format publisher ID (ensure ca-pub- prefix if user pastes plain number or pub-)
   const formatPublisherId = (key) => {
     if (!key) return "ca-pub-1234567890123456";
     const cleaned = String(key).trim();
@@ -127,46 +172,83 @@ export default function AdSenseAd({
   const slotId = resolveSlotId(slot, explicitSlotId);
   const isTestMode = env.VITE_ADSENSE_TEST_MODE === "on";
 
-  // 3. 3-Second Timed Activation & Safe Ad Push
+  // 3. Isolated DOM Insertion & Safe Cleanup to Prevent React Reconciliation Collisions
   useEffect(() => {
     let isMounted = true;
 
-    // Show ad after 3 seconds (3000ms)
     const showTimer = setTimeout(() => {
       if (!isMounted) return;
       setIsReadyToShow(true);
 
       loadAdSenseScriptOnce(publisherId)
         .then(() => {
-          if (!isMounted) return;
+          if (!isMounted || !containerRef.current) return;
 
-          requestAnimationFrame(() => {
-            if (adRef.current && !adPushedRef.current) {
-              try {
-                const status = adRef.current.getAttribute("data-adsbygoogle-status");
-                if (!status) {
-                  (window.adsbygoogle = window.adsbygoogle || []).push({});
-                  adPushedRef.current = true;
-                  console.log(`[AdSense Diagnostics] Pushed ad unit (Slot: ${slotId}, Publisher: ${publisherId}) after ${delayMs}ms delay.`);
-                }
-              } catch (err) {
-                console.warn(`[AdSense Diagnostics] Notice on push for slot ${slotId}:`, err?.message || err);
-              }
+          try {
+            // Safely clear previous unmanaged nodes before injecting
+            containerRef.current.innerHTML = "";
+
+            const ins = document.createElement("ins");
+            ins.className = "adsbygoogle";
+            ins.style.display = "block";
+            ins.style.width = "100%";
+            ins.style.minHeight = "90px";
+            ins.style.textAlign = "center";
+            ins.style.backgroundColor = "transparent";
+
+            ins.setAttribute("data-ad-client", publisherId);
+            ins.setAttribute("data-ad-slot", slotId);
+            ins.setAttribute("data-ad-format", adFormat);
+            ins.setAttribute("data-full-width-responsive", fullWidthResponsive ? "true" : "false");
+            if (isTestMode) {
+              ins.setAttribute("data-adtest", "on");
             }
-          });
-        })
-        .catch((err) => {
-          if (isMounted) {
-            setAdError("AdSense SDK unavailable (AdBlocker or network offline).");
+
+            containerRef.current.appendChild(ins);
+
+            // Push to AdSense queue
+            try {
+              (window.adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (_) {}
+
+            // Observe fill status
+            if (observerRef.current) {
+              observerRef.current.disconnect();
+            }
+
+            const observer = new MutationObserver(() => {
+              if (!isMounted) return;
+              const adStatus = ins.getAttribute("data-ad-status");
+              if (adStatus === "filled") {
+                setIsGoogleFilled(true);
+              } else if (adStatus === "unfilled") {
+                setIsGoogleFilled(false);
+              }
+            });
+
+            observer.observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
+            observerRef.current = observer;
+          } catch (err) {
+            console.warn("[AdSense Diagnostics] Safe mount fallback:", err);
           }
+        })
+        .catch(() => {
+          // Fall back to student sponsor banner
         });
     }, delayMs);
 
     return () => {
       isMounted = false;
       clearTimeout(showTimer);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
     };
-  }, [publisherId, slotId, delayMs]);
+  }, [publisherId, slotId, delayMs, isTestMode, adFormat, fullWidthResponsive]);
 
   if (!isReadyToShow) {
     return null;
@@ -177,7 +259,7 @@ export default function AdSenseAd({
       <div
         className={`relative w-full rounded-2xl bg-[#0a0f1d]/90 backdrop-blur-xl border border-white/10 shadow-lg text-white transition-all overflow-hidden p-3.5 sm:p-4 animate-in fade-in slide-in-from-bottom-2 duration-500 ${className}`}
       >
-        {/* Subtle Advertisement Header Label & Attribution */}
+        {/* Advertisement Header Label & Actions */}
         <div className="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-white/10 text-[11px] text-white/50 font-medium">
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -223,40 +305,60 @@ export default function AdSenseAd({
           <div className="mb-3 p-3 rounded-xl bg-white/10 border border-white/15 text-xs text-white/80 space-y-1 animate-in fade-in slide-in-from-top-1">
             <p className="font-bold text-white flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              Google AdSense Network Integration
+              Google AdSense & Student Sponsorship
             </p>
             <p className="text-[11px] text-white/70 leading-relaxed">
-              This official Google AdSense unit supports CampusCoin’s free tier for students. You can eliminate all advertisements across the platform at any time by upgrading to{" "}
+              This ad space supports CampusCoin’s free tier for students. You can eliminate all advertisements across the platform at any time by upgrading to{" "}
               <strong className="text-amber-300">CampusCoin Premium ($2/month ≈ PKR 500)</strong>.
             </p>
             <div className="pt-1 text-[10px] text-white/50 font-mono">
-              Publisher ID: {publisherId} • Ad Slot: {slotId} • Status: {adError ? "Blocked/Offline" : "Active"}
+              Publisher ID: {publisherId} • Ad Slot: {slotId} • Status: {isGoogleFilled ? "Google Live Creative" : "Sponsor Creative Active"}
             </div>
           </div>
         )}
 
-        {/* Real Google AdSense <ins> Unit Container */}
-        <div className="w-full flex items-center justify-center min-h-[90px] sm:min-h-[100px] overflow-hidden rounded-xl bg-black/20 border border-white/5 relative">
-          <ins
-            ref={adRef}
-            className="adsbygoogle"
-            style={{
-              display: "block",
-              width: "100%",
-              minHeight: "90px",
-              textAlign: "center",
-            }}
-            data-ad-client={publisherId}
-            data-ad-slot={slotId}
-            data-ad-format={adFormat}
-            data-full-width-responsive={fullWidthResponsive ? "true" : "false"}
-            data-adtest={isTestMode ? "on" : undefined}
+        {/* Ad Container: Never Shows Raw White Boxes and Prevents React DOM Conflicts */}
+        <div className="w-full relative rounded-xl overflow-hidden min-h-[90px] flex items-center justify-center bg-black/25 border border-white/5">
+          {/* Isolated Container for Imperatively Mounted Google Ad (Zero React Node Reconciliation Error) */}
+          <div
+            ref={containerRef}
+            className={`w-full ${isGoogleFilled ? "block" : "hidden"}`}
+            style={{ minHeight: isGoogleFilled ? "90px" : "0" }}
           />
 
-          {adError && (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40 gap-1.5 p-2 text-center">
-              <AlertCircle className="w-3.5 h-3.5 text-amber-400/60" />
-              <span>Ad space active (AdBlocker or network offline detected)</span>
+          {/* High-Converting Glassmorphic Student Sponsor Banner (Shown if Google is unfilled, testing, or offline) */}
+          {!isGoogleFilled && (
+            <div
+              className={`w-full p-3.5 sm:p-4 rounded-xl bg-gradient-to-r ${activeSponsor.gradient} border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left`}
+            >
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 text-white shadow-inner">
+                  <SponsorIcon className="w-5 h-5 text-amber-300" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-white truncate">{activeSponsor.title}</span>
+                    <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${activeSponsor.badgeColor}`}>
+                      {activeSponsor.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/70 mt-1 line-clamp-2 leading-relaxed">
+                    {activeSponsor.desc}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                <a
+                  href={activeSponsor.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95"
+                >
+                  <span>{activeSponsor.cta}</span>
+                  <ExternalLink className="w-3 h-3 text-white/80" />
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -270,3 +372,4 @@ export default function AdSenseAd({
     </>
   );
 }
+
