@@ -7,74 +7,142 @@ import {
   Send,
   Minimize2,
   Maximize2,
-  RefreshCw,
+  RotateCcw,
   Copy,
   Check,
   TrendingUp,
-  AlertCircle,
+  CreditCard,
+  Split,
+  GraduationCap,
+  ChevronRight,
+  MessageSquare,
   HelpCircle,
-  Zap,
-  ArrowRight,
 } from "lucide-react";
-import { useAuth } from "../../features/auth/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
-import api from "../../core/api";
 
-const INITIAL_MESSAGE = {
-  id: "welcome-msg",
-  role: "assistant",
-  content:
-    "Hey! 👋 I'm **CampusCoin AI**. I can help you understand your spending, budgeting, saving, and CampusCoin features.\n\nAsk me anything about your finances or pick a suggested topic below!",
-  timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+/* ─── CampusCoin Design Tokens (matching LandingPage) ─── */
+const C = {
+  hero: "oklch(0.115 0.018 255)",
+  heroSurface: "oklch(0.15 0.022 255)",
+  heroFg: "oklch(0.985 0.003 250)",
+  heroMuted: "oklch(0.73 0.018 252)",
+  heroLine: "oklch(0.28 0.025 255)",
+  brand: "oklch(0.59 0.22 262)",
+  brandHover: "oklch(0.52 0.23 262)",
+  highlight: "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth: "oklch(0.64 0.17 157)",
+  growthSoft: "oklch(0.94 0.05 158)",
+  background: "oklch(0.99 0.003 250)",
+  foreground: "oklch(0.16 0.025 260)",
+  muted: "oklch(0.5 0.025 255)",
+  border: "oklch(0.9 0.012 255)",
+  cardOrbit: "oklch(0.61 0.23 290)",
+  cardSun: "oklch(0.83 0.17 70)",
 };
 
-const DEFAULT_SUGGESTIONS_AUTH = [
-  { label: "📊 Month Spending", prompt: "How much did I spend this month?" },
-  { label: "🍕 Food Spending", prompt: "What is my food spending this month?" },
-  { label: "🎯 Budget Status", prompt: "How do my budgets look right now?" },
-  { label: "💡 How to Save", prompt: "How can I save more money as a student?" },
+const MANROPE = { fontFamily: "'Manrope', 'Cabinet Grotesk', ui-sans-serif, system-ui, sans-serif" };
+
+/* ─── CampusCoin BrandMark Component ─── */
+function BrandMark({ size = 26, stroke = 5 }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        width: size,
+        height: size,
+        flexShrink: 0,
+        border: `${stroke}px solid ${C.brand}`,
+        borderRightColor: "transparent",
+        borderRadius: 999,
+        transform: "rotate(-12deg)",
+      }}
+    >
+      {/* Core highlight dot */}
+      <span
+        style={{
+          position: "absolute",
+          width: size * 0.23,
+          height: size * 0.23,
+          borderRadius: 999,
+          background: C.highlight,
+          left: size * 0.14,
+          top: size * 0.14,
+        }}
+      />
+      {/* Growth accent dot */}
+      <span
+        style={{
+          position: "absolute",
+          width: size * 0.28,
+          height: size * 0.28,
+          borderRadius: 999,
+          background: C.growth,
+          right: -size * 0.18,
+          top: -size * 0.14,
+        }}
+      />
+    </span>
+  );
+}
+
+/* ─── Static Demonstration Messages (Pure UI Only) ─── */
+const INITIAL_DEMO_MESSAGES = [
+  {
+    id: "msg-1",
+    role: "assistant",
+    content: "Hey! 👋 I'm **CampusCoin AI**. How can I help you manage your student budget?",
+    timestamp: "10:30 AM",
+  },
+  {
+    id: "msg-2",
+    role: "user",
+    content: "How can I save more this month?",
+    timestamp: "10:31 AM",
+  },
+  {
+    id: "msg-3",
+    role: "assistant",
+    content:
+      "Let's take a look at your spending and find some easy ways to save:\n\n• **Campus Dining & Café**: Preparing lunch twice a week saves ~$45/month.\n• **Subscriptions**: Review active streaming or music memberships for student discount rates.\n• **Khata Split Bills**: Instantly log shared rent and study trips so you never lose track of reimbursements.\n\nWould you like me to recommend a weekly spending cap?",
+    timestamp: "10:31 AM",
+  },
 ];
 
-const DEFAULT_SUGGESTIONS_GUEST = [
-  { label: "✨ What is CampusCoin?", prompt: "What is CampusCoin and how does it help students?" },
-  { label: "💡 College Budget Tips", prompt: "What are the best budgeting tips for college students?" },
-  { label: "🎯 How Budgets Work", prompt: "How do category budgets work in CampusCoin?" },
-  { label: "🤝 What is Khata?", prompt: "How does the Khata peer ledger work?" },
+/* ─── Static Interactive Demonstration Responses (UI Only) ─── */
+const MOCK_REPLIES = {
+  "How to save more this month?":
+    "Here are 3 student-tested saving tips for this semester:\n\n1. **Use the 50/30/20 student rule**: 50% essentials (rent/books), 30% campus life, 20% savings buffer.\n2. **Group Groceries**: Split bulk orders with roommates on CampusCoin Khata.\n3. **Campus Shuttle**: Skip ride shares during peak campus transit hours.",
+  "What is CampusCoin?":
+    "**CampusCoin** is the modern financial OS built specifically for university life! 🎓\n\nIt combines smart student budgeting, one-tap bill splitting with friends (Khata), real-time spending insights, and zero bank linking hassle.",
+  "Check my food budget":
+    "📊 **Food & Dining Overview**:\n• Monthly Target: **$250.00**\n• Spent so far: **$142.30** (57%)\n• Safe daily allowance remaining: **$12.50/day**\n\nYou're on pace for a green month! 🥗",
+  "How does bill splitting work?":
+    "🤝 **CampusCoin Khata** makes splitting effortless:\n\n1. Select transaction or enter amount\n2. Add your roommates or classmates\n3. CampusCoin calculates exact shares and tracks who has settled with zero awkward reminders!",
+};
+
+/* ─── Quick Suggestion Chips ─── */
+const SUGGESTIONS = [
+  { label: "💡 How to save?", prompt: "How to save more this month?", icon: TrendingUp },
+  { label: "🎓 What is CampusCoin?", prompt: "What is CampusCoin?", icon: GraduationCap },
+  { label: "🍕 Food budget", prompt: "Check my food budget", icon: CreditCard },
+  { label: "🤝 Split bills", prompt: "How does bill splitting work?", icon: Split },
 ];
 
 export default function AIChatbot() {
-  const { user, isAuthenticated } = useAuth();
-  const { color } = useTheme();
-
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState(INITIAL_DEMO_MESSAGES);
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState(
-    isAuthenticated ? DEFAULT_SUGGESTIONS_AUTH : DEFAULT_SUGGESTIONS_GUEST
-  );
+  const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
-  const [hasUnread, setHasUnread] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Fetch dynamic suggestions on mount or auth change
-  useEffect(() => {
-    api
-      .get("/chat/suggestions")
-      .then(({ data }) => {
-        if (data.success && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-          setSuggestions(data.suggestions);
-        }
-      })
-      .catch(() => {
-        setSuggestions(isAuthenticated ? DEFAULT_SUGGESTIONS_AUTH : DEFAULT_SUGGESTIONS_GUEST);
-      });
-  }, [isAuthenticated]);
-
-  // Scroll to bottom when messages update
+  // Auto-scroll on message updates
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -84,82 +152,51 @@ export default function AIChatbot() {
       scrollToBottom("auto");
       setHasUnread(false);
     }
-  }, [isOpen, messages]);
+  }, [isOpen, messages, isTyping]);
 
-  // Focus input when chat opens
+  // Focus input when opened
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 250);
+      }, 200);
     }
   }, [isOpen]);
 
-  const handleSendMessage = async (textToSend) => {
+  // Handle Send in UI Mode (Simulated UI demo response, no network calls)
+  const handleSendMessage = (textToSend) => {
     const text = (textToSend || inputValue).trim();
-    if (!text || isLoading) return;
+    if (!text || isTyping) return;
 
-    const userMessageId = `user-${Date.now()}`;
+    const currentTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
     const userMessage = {
-      id: userMessageId,
+      id: `user-${Date.now()}`,
       role: "user",
       content: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: currentTime,
     };
-
-    // Prepare history payload (last 6 turns excluding welcome)
-    const historyPayload = messages
-      .filter((m) => m.id !== "welcome-msg")
-      .slice(-6)
-      .map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
-    setIsLoading(true);
+    setIsTyping(true);
 
-    try {
-      const { data } = await api.post("/chat/message", {
-        message: text,
-        history: historyPayload,
-      });
-
-      const botReply =
-        data.reply ||
-        "I received your question but couldn't generate a full answer. Please try asking again.";
+    // Simulate realistic friendly typing delay (UI visual only)
+    setTimeout(() => {
+      const replyContent =
+        MOCK_REPLIES[text] ||
+        `Thanks for asking about "${text}"! 💡\n\nCampusCoin AI analyzes your student habits in real-time to suggest optimized budget limits, smart savings targets, and stress-free spending schedules.`;
 
       const botMessage = {
         id: `bot-${Date.now()}`,
         role: "assistant",
-        content: botReply,
+        content: replyContent,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isConfigured: data.isConfigured,
       };
 
       setMessages((prev) => [...prev, botMessage]);
-
-      if (!isOpen) {
-        setHasUnread(true);
-      }
-    } catch (err) {
-      const errorMsg =
-        err.response?.data?.message ||
-        "Sorry, I couldn't reach the AI service right now. Please verify your connection or server configuration.";
-
-      const errorMessage = {
-        id: `err-${Date.now()}`,
-        role: "assistant",
-        isError: true,
-        content: `⚠️ **Connection Error**\n\n${errorMsg}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+      setIsTyping(false);
+    }, 850);
   };
 
   const handleKeyDown = (e) => {
@@ -170,196 +207,339 @@ export default function AIChatbot() {
   };
 
   const handleResetChat = () => {
-    setMessages([
-      {
-        ...INITIAL_MESSAGE,
-        id: `welcome-${Date.now()}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      },
-    ]);
+    setMessages(INITIAL_DEMO_MESSAGES);
+    setIsTyping(false);
   };
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    setTimeout(() => setCopiedId(null), 1800);
   };
 
   return (
-    <div className="fixed z-50 bottom-20 md:bottom-6 right-4 md:right-6 pointer-events-none">
-      {/* Floating Chat Trigger Button */}
+    <div
+      style={MANROPE}
+      className="fixed z-50 bottom-6 right-4 sm:right-6 pointer-events-none select-none"
+    >
+      {/* ─── FLOATING CHAT BUTTON ─── */}
       <motion.button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="pointer-events-auto relative group flex items-center justify-center w-14 h-14 rounded-full bg-[#0E131F]/90 backdrop-blur-2xl border border-white/20 shadow-[0_10px_35px_rgba(0,0,0,0.5),0_0_25px_var(--color-brand-primary,rgba(59,130,246,0.3))] hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
-        whileHover={{ y: -2 }}
-        whileTap={{ scale: 0.92 }}
+        className="pointer-events-auto relative group flex items-center justify-center w-14 h-14 rounded-full cursor-pointer focus:outline-none"
+        style={{
+          background: isOpen ? C.heroSurface : C.hero,
+          border: `1.5px solid ${isOpen ? C.highlight : C.heroLine}`,
+          boxShadow: `0 12px 32px -4px rgba(0,0,0,0.5), 0 0 24px ${isOpen ? "oklch(0.88 0.18 157 / 0.35)" : "oklch(0.59 0.22 262 / 0.3)"}`,
+        }}
+        whileHover={{ scale: 1.08, y: -2 }}
+        whileTap={{ scale: 0.94 }}
         title={isOpen ? "Close CampusCoin AI" : "Open CampusCoin AI Assistant"}
         aria-label="CampusCoin AI Chatbot"
       >
-        {/* Iridescent Accent Ring Glow */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-brand-primary/40 via-white/10 to-brand-accent/30 opacity-75 group-hover:opacity-100 transition-opacity blur-[2px]" />
+        {/* Soft Animated Glow Halo */}
+        <span
+          className="absolute inset-0 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(circle, ${C.brand} 0%, transparent 70%)`,
+            filter: "blur(6px)",
+          }}
+        />
 
-        {/* Dynamic Icon */}
-        <div className="relative z-10 flex items-center justify-center text-white">
-          {isOpen ? (
-            <X className="w-6 h-6 text-white/90 group-hover:rotate-90 transition-transform duration-200" />
-          ) : (
-            <div className="relative flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
-              <Sparkles className="w-3 h-3 text-amber-300 absolute -top-1 -right-1 animate-pulse" />
-            </div>
-          )}
+        {/* Dynamic Icon Switch */}
+        <div className="relative z-10 flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            {isOpen ? (
+              <motion.div
+                key="close-icon"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+              >
+                <X style={{ width: 22, height: 22, color: C.heroFg }} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="ai-icon"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="relative flex items-center justify-center"
+              >
+                <BrandMark size={24} stroke={4.5} />
+                <Sparkles
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -6,
+                    width: 12,
+                    height: 12,
+                    color: C.highlight,
+                  }}
+                  className="animate-pulse"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Unread Message Notification Dot */}
         {hasUnread && !isOpen && (
-          <span className="absolute top-0 right-0 w-4 h-4 bg-rose-500 rounded-full border-2 border-[#07090E] animate-bounce" />
+          <span
+            className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full border-2 animate-bounce"
+            style={{
+              background: C.highlight,
+              borderColor: C.hero,
+            }}
+          />
         )}
 
-        {/* Floating Tooltip (Desktop only) */}
+        {/* Cute Floating Tooltip (Desktop) */}
         {!isOpen && (
-          <div className="hidden md:block absolute right-16 px-3 py-1.5 rounded-xl bg-black/80 backdrop-blur-md border border-white/15 text-white text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-lg">
-            <span>Ask CampusCoin AI ✨</span>
+          <div
+            className="hidden md:flex items-center gap-1.5 absolute right-16 px-3 py-1.5 rounded-full border text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 shadow-xl"
+            style={{
+              background: C.hero,
+              borderColor: C.heroLine,
+              color: C.heroFg,
+              transform: "translateX(0)",
+            }}
+          >
+            <span>Ask CampusCoin AI</span>
+            <span style={{ color: C.highlight }}>✨</span>
           </div>
         )}
       </motion.button>
 
-      {/* Floating Chat Modal Window */}
+      {/* ─── CHAT PANEL / WINDOW ─── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 25, scale: 0.92 }}
+            initial={{ opacity: 0, y: 20, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            className={`pointer-events-auto absolute bottom-16 right-0 rounded-[28px] bg-[#0A0E18]/95 backdrop-blur-[64px] backdrop-saturate-[140%] border border-white/20 border-t-white/30 border-l-white/30 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_40px_rgba(59,130,246,0.15)] flex flex-col overflow-hidden text-white transition-all duration-300 ${
+            exit={{ opacity: 0, y: 16, scale: 0.94 }}
+            transition={{ type: "spring", stiffness: 360, damping: 28 }}
+            className={`pointer-events-auto absolute bottom-18 right-0 rounded-[24px] flex flex-col overflow-hidden text-white transition-all duration-300 ${
               isExpanded
-                ? "w-[calc(100vw-32px)] sm:w-[540px] md:w-[620px] h-[calc(100vh-120px)] max-h-[720px]"
-                : "w-[calc(100vw-32px)] sm:w-[380px] md:w-[420px] h-[520px] max-h-[calc(100vh-130px)]"
+                ? "w-[calc(100vw-32px)] sm:w-[500px] md:w-[560px] h-[calc(100vh-120px)] max-h-[680px]"
+                : "w-[calc(100vw-32px)] sm:w-[380px] md:w-[410px] h-[540px] max-h-[calc(100vh-110px)]"
             }`}
+            style={{
+              background: C.hero,
+              border: `1.5px solid ${C.heroLine}`,
+              boxShadow: "0 28px 70px -15px rgba(0,0,0,0.75), 0 0 40px oklch(0.59 0.22 262 / 0.18)",
+            }}
           >
-            {/* Top Liquid Glass Header */}
-            <div className="p-4 border-b border-white/10 bg-white/[0.04] flex items-center justify-between shrink-0 select-none">
+            {/* ── Chat Header ── */}
+            <div
+              className="px-4 py-3.5 flex items-center justify-between shrink-0 select-none"
+              style={{
+                background: C.heroSurface,
+                borderBottom: `1px solid ${C.heroLine}`,
+              }}
+            >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="relative w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-primary to-brand-accent p-0.5 shadow-md shrink-0 flex items-center justify-center">
-                  <div className="w-full h-full rounded-[14px] bg-[#0A0E18] flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-brand-primary" />
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#0A0E18] rounded-full" />
+                {/* AI Avatar with Live Status Dot */}
+                <div
+                  className="relative w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                  style={{
+                    background: C.hero,
+                    border: `1.5px solid ${C.heroLine}`,
+                  }}
+                >
+                  <BrandMark size={20} stroke={3.8} />
+                  {/* Glowing active indicator */}
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
+                    style={{
+                      background: C.highlight,
+                      borderColor: C.heroSurface,
+                    }}
+                  />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-white tracking-tight truncate">
-                      CampusCoin AI
-                    </h3>
-                    <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-brand-primary/20 text-brand-accent border border-brand-primary/30">
-                      Assistant
+                    <span
+                      style={{
+                        ...MANROPE,
+                        fontSize: 14,
+                        fontWeight: 800,
+                        color: C.heroFg,
+                        letterSpacing: "-0.01em",
+                      }}
+                      className="truncate"
+                    >
+                      Campus<span style={{ color: C.brand }}>Coin</span> AI
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+                      style={{
+                        background: C.highlight,
+                        color: C.highlightFg,
+                      }}
+                    >
+                      Copilot
                     </span>
                   </div>
-                  <p className="text-[11px] text-white/60 truncate flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                    {isAuthenticated ? (user?.name ? `${user.name}'s context active` : "Connected to CampusCoin") : "Student Money Guide"}
+                  <p
+                    style={{ ...MANROPE, fontSize: 11, color: C.heroMuted }}
+                    className="truncate flex items-center gap-1.5 mt-0.5"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full inline-block animate-pulse"
+                      style={{ background: C.growth }}
+                    />
+                    Online · Student Money Guide
                   </p>
                 </div>
               </div>
 
-              {/* Action Controls */}
+              {/* Header Action Controls */}
               <div className="flex items-center gap-1 shrink-0">
+                {/* Reset Demo History */}
                 <button
                   type="button"
                   onClick={handleResetChat}
-                  title="Clear chat history"
-                  className="p-1.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Reset conversation demo"
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                  style={{ color: C.heroMuted }}
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RotateCcw style={{ width: 15, height: 15 }} />
                 </button>
 
+                {/* Expand / Collapse Window (Desktop) */}
                 <button
                   type="button"
                   onClick={() => setIsExpanded((prev) => !prev)}
-                  title={isExpanded ? "Collapse window" : "Expand window"}
-                  className="hidden sm:block p-1.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  title={isExpanded ? "Standard size" : "Expand window"}
+                  className="hidden sm:block p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                  style={{ color: C.heroMuted }}
                 >
-                  {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  {isExpanded ? (
+                    <Minimize2 style={{ width: 15, height: 15 }} />
+                  ) : (
+                    <Maximize2 style={{ width: 15, height: 15 }} />
+                  )}
                 </button>
 
+                {/* Close Panel */}
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
                   title="Close chat"
-                  className="p-1.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                  style={{ color: C.heroMuted }}
                 >
-                  <X className="w-4 h-4" />
+                  <X style={{ width: 16, height: 16 }} />
                 </button>
               </div>
             </div>
 
-            {/* Scrollable Conversation Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 scroll-smooth">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${
-                    msg.role === "user" ? "items-end" : "items-start"
-                  }`}
-                >
+            {/* ── Scrollable Message Area ── */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-3.5 scroll-smooth select-text"
+              style={{ background: C.hero }}
+            >
+              {messages.map((msg) => {
+                const isUser = msg.role === "user";
+                return (
                   <div
-                    className={`relative max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed transform-gpu transition-all ${
-                      msg.role === "user"
-                        ? "bg-brand-primary text-white rounded-br-xs shadow-[0_4px_16px_rgba(59,130,246,0.3)] font-medium"
-                        : msg.isError
-                        ? "bg-rose-500/15 border border-rose-500/30 text-rose-200 rounded-bl-xs shadow-sm"
-                        : "bg-white/[0.06] backdrop-blur-md border border-white/15 text-white/90 rounded-bl-xs shadow-sm"
-                    }`}
+                    key={msg.id}
+                    className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                   >
-                    {/* Assistant Message Header & Copy Tool */}
-                    {msg.role === "assistant" && (
-                      <div className="flex items-center justify-between mb-1.5 pb-1 border-b border-white/10">
-                        <span className="text-[10px] font-bold text-brand-accent flex items-center gap-1">
-                          <Bot className="w-3 h-3" /> CampusCoin AI
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(msg.content, msg.id)}
-                          className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-                          title="Copy response"
-                        >
-                          {copiedId === msg.id ? (
-                            <Check className="w-3 h-3 text-emerald-400" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Rich Formatted Markdown Content */}
-                    <FormattedMessage text={msg.content} isUser={msg.role === "user"} />
-
-                    {/* Timestamp */}
                     <div
-                      className={`text-[9px] mt-1.5 flex items-center gap-1 ${
-                        msg.role === "user" ? "text-white/70 justify-end" : "text-white/40 justify-start"
+                      className={`relative max-w-[88%] rounded-2xl p-3.5 text-xs leading-relaxed transition-all ${
+                        isUser
+                          ? "rounded-br-xs shadow-md font-medium"
+                          : "rounded-bl-xs shadow-sm"
                       }`}
+                      style={{
+                        background: isUser ? C.brand : C.heroSurface,
+                        color: isUser ? "#FFFFFF" : C.heroFg,
+                        border: isUser ? "none" : `1px solid ${C.heroLine}`,
+                      }}
                     >
-                      <span>{msg.timestamp}</span>
+                      {/* Assistant Tag & Copy Icon */}
+                      {!isUser && (
+                        <div
+                          className="flex items-center justify-between mb-1.5 pb-1 border-b"
+                          style={{ borderColor: C.heroLine }}
+                        >
+                          <span
+                            className="text-[10px] font-bold flex items-center gap-1"
+                            style={{ color: C.highlight }}
+                          >
+                            <Sparkles style={{ width: 11, height: 11 }} /> CampusCoin AI
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(msg.content, msg.id)}
+                            className="hover:text-white transition-colors cursor-pointer p-0.5"
+                            style={{ color: C.heroMuted }}
+                            title="Copy text"
+                          >
+                            {copiedId === msg.id ? (
+                              <Check style={{ width: 12, height: 12, color: C.growth }} />
+                            ) : (
+                              <Copy style={{ width: 12, height: 12 }} />
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Formatted Markdown Content */}
+                      <FormattedContent text={msg.content} isUser={isUser} />
+
+                      {/* Timestamp */}
+                      <div
+                        className={`text-[9px] mt-1.5 flex items-center gap-1 ${
+                          isUser ? "justify-end opacity-75" : "justify-start"
+                        }`}
+                        style={{ color: isUser ? "#FFFFFF" : C.heroMuted }}
+                      >
+                        <span>{msg.timestamp}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
-              {/* Typing / Loading Animation Bubble */}
-              {isLoading && (
+              {/* Typing / Loading Indicator */}
+              {isTyping && (
                 <div className="flex items-start">
-                  <div className="max-w-[85%] rounded-2xl rounded-bl-xs p-3.5 bg-white/[0.06] backdrop-blur-md border border-white/15 text-white/90 shadow-sm flex items-center gap-2">
-                    <Bot className="w-3.5 h-3.5 text-brand-accent animate-pulse" />
-                    <span className="text-xs text-white/60">CampusCoin AI is thinking</span>
-                    <div className="flex items-center gap-1 ml-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-bounce [animation-delay:-0.3s]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-bounce [animation-delay:-0.15s]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-bounce" />
+                  <div
+                    className="max-w-[85%] rounded-2xl rounded-bl-xs p-3 flex items-center gap-2.5 shadow-sm"
+                    style={{
+                      background: C.heroSurface,
+                      border: `1px solid ${C.heroLine}`,
+                      color: C.heroFg,
+                    }}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ background: C.hero }}
+                    >
+                      <BrandMark size={14} stroke={2.8} />
+                    </div>
+                    <span style={{ fontSize: 11, color: C.heroMuted }}>
+                      CampusCoin AI is thinking
+                    </span>
+                    <div className="flex items-center gap-1 ml-0.5">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s]"
+                        style={{ background: C.highlight }}
+                      />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s]"
+                        style={{ background: C.highlight }}
+                      />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full animate-bounce"
+                        style={{ background: C.highlight }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -368,25 +548,52 @@ export default function AIChatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Contextual Suggestions Tray */}
-            {suggestions.length > 0 && (
-              <div className="px-3 pt-2 pb-1 bg-white/[0.02] border-t border-white/5 flex gap-1.5 overflow-x-auto no-scrollbar">
-                {suggestions.map((item, idx) => (
+            {/* ── Quick Suggestions Tray ── */}
+            <div
+              className="px-3 pt-2.5 pb-1.5 flex gap-1.5 overflow-x-auto no-scrollbar"
+              style={{
+                background: C.heroSurface,
+                borderTop: `1px solid ${C.heroLine}`,
+              }}
+            >
+              {SUGGESTIONS.map((item, idx) => {
+                const IconComponent = item.icon;
+                return (
                   <button
                     key={idx}
                     type="button"
-                    disabled={isLoading}
+                    disabled={isTyping}
                     onClick={() => handleSendMessage(item.prompt)}
-                    className="shrink-0 px-2.5 py-1.5 rounded-full bg-white/8 hover:bg-white/15 border border-white/15 text-[11px] font-medium text-white/80 hover:text-white transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow-sm"
+                    className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                    style={{
+                      background: C.hero,
+                      border: `1px solid ${C.heroLine}`,
+                      color: C.heroMuted,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = C.heroFg;
+                      e.currentTarget.style.borderColor = C.highlight;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = C.heroMuted;
+                      e.currentTarget.style.borderColor = C.heroLine;
+                    }}
                   >
+                    <IconComponent style={{ width: 12, height: 12, color: C.growth }} />
                     <span>{item.label}</span>
                   </button>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
 
-            {/* Input & Send Bar */}
-            <div className="p-3 bg-white/[0.04] border-t border-white/10 shrink-0">
+            {/* ── Input & Send Bar ── */}
+            <div
+              className="p-3 shrink-0"
+              style={{
+                background: C.heroSurface,
+                borderTop: `1px solid ${C.heroLine}`,
+              }}
+            >
               <div className="relative flex items-center gap-2">
                 <input
                   ref={inputRef}
@@ -394,26 +601,48 @@ export default function AIChatbot() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about spending, budgets, savings..."
-                  disabled={isLoading}
-                  maxLength={1500}
-                  className="flex-1 bg-white/10 hover:bg-white/15 focus:bg-white/15 border border-white/20 focus:border-brand-primary rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/40 outline-none transition-all pr-10 shadow-inner"
+                  placeholder="Ask CampusCoin AI anything..."
+                  disabled={isTyping}
+                  maxLength={500}
+                  className="flex-1 rounded-full px-4 py-2.5 text-xs text-white placeholder-white/40 outline-none transition-all pr-10"
+                  style={{
+                    background: C.hero,
+                    border: `1px solid ${C.heroLine}`,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = C.brand;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = C.heroLine;
+                  }}
                 />
 
+                {/* Send Button */}
                 <button
                   type="button"
                   onClick={() => handleSendMessage()}
-                  disabled={!inputValue.trim() || isLoading}
-                  className="w-9 h-9 rounded-2xl bg-brand-primary hover:bg-brand-hover text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-md active:scale-95 shrink-0"
+                  disabled={!inputValue.trim() || isTyping}
+                  className="w-9 h-9 rounded-full text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-md active:scale-95 shrink-0"
+                  style={{
+                    background: inputValue.trim() ? C.brand : C.heroLine,
+                  }}
                   title="Send message"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send style={{ width: 15, height: 15 }} />
                 </button>
               </div>
 
-              {/* Educational Disclaimer Footer */}
-              <p className="text-[9px] text-white/40 text-center mt-2 font-medium tracking-tight">
-                CampusCoin AI provides general student educational guidance. Not certified financial advice.
+              {/* Disclaimer Subtext */}
+              <p
+                style={{
+                  ...MANROPE,
+                  fontSize: 10,
+                  color: C.heroMuted,
+                  textAlign: "center",
+                  marginTop: 8,
+                }}
+              >
+                CampusCoin Student AI • Instant Financial Guidance
               </p>
             </div>
           </motion.div>
@@ -423,30 +652,27 @@ export default function AIChatbot() {
   );
 }
 
-/**
- * Lightweight, robust renderer for formatted markdown chunks
- * (bold, bullets, code, headers, numbers).
- */
-function FormattedMessage({ text, isUser }) {
+/* ─── Lightweight Markdown Formatting Renderer (UI Only) ─── */
+function FormattedContent({ text, isUser }) {
   if (!text) return null;
-
-  // Split by double newline for paragraphs
   const paragraphs = text.split(/\n\n+/);
 
   return (
     <div className="space-y-2">
       {paragraphs.map((para, pIdx) => {
-        // Render markdown list items
-        if (para.includes("\n- ") || para.startsWith("- ") || para.startsWith("* ")) {
+        // Bullet list check
+        if (para.includes("\n• ") || para.startsWith("• ") || para.startsWith("- ")) {
           const lines = para.split("\n");
           return (
             <ul key={pIdx} className="space-y-1 my-1 pl-1 list-none">
               {lines.map((line, lIdx) => {
-                const cleaned = line.replace(/^[-*•]\s+/, "");
+                const cleaned = line.replace(/^[•\-\*]\s+/, "");
                 return (
                   <li key={lIdx} className="flex items-start gap-1.5 text-xs">
-                    <span className="text-brand-accent mt-0.5 shrink-0">•</span>
-                    <span>{parseInlineMarkdown(cleaned, isUser)}</span>
+                    <span style={{ color: isUser ? "#FFFFFF" : C.growth }} className="mt-0.5 shrink-0">
+                      •
+                    </span>
+                    <span>{parseBold(cleaned)}</span>
                   </li>
                 );
               })}
@@ -454,26 +680,13 @@ function FormattedMessage({ text, isUser }) {
           );
         }
 
-        // Render code blocks (e.g. ```env ... ```)
-        if (para.startsWith("```") && para.endsWith("```")) {
-          const codeContent = para.replace(/^```[a-z]*\n?/, "").replace(/\n?```$/, "");
-          return (
-            <pre
-              key={pIdx}
-              className="p-2.5 rounded-xl bg-black/50 border border-white/10 font-mono text-[11px] text-emerald-300 overflow-x-auto my-1.5"
-            >
-              <code>{codeContent}</code>
-            </pre>
-          );
-        }
-
-        // Render standard line with potential single line breaks
+        // Standard lines
         const subLines = para.split("\n");
         return (
           <p key={pIdx} className="leading-relaxed">
             {subLines.map((subLine, sIdx) => (
               <span key={sIdx}>
-                {parseInlineMarkdown(subLine, isUser)}
+                {parseBold(subLine)}
                 {sIdx < subLines.length - 1 && <br />}
               </span>
             ))}
@@ -484,36 +697,28 @@ function FormattedMessage({ text, isUser }) {
   );
 }
 
-/**
- * Simple inline formatter for bold (**text**), code (`code`), and currency values ($123.45)
- */
-function parseInlineMarkdown(text, isUser) {
-  if (!text) return text;
-
-  // Replace bold **words**
+function parseBold(str) {
+  if (!str) return str;
   const parts = [];
-  const boldRegex = /\*\*(.*?)\*\*/g;
-  let lastIndex = 0;
+  const regex = /\*\*(.*?)\*\*/g;
+  let lastIdx = 0;
   let match;
 
-  while ((match = boldRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.substring(lastIndex, match.index));
+  while ((match = regex.exec(str)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(str.substring(lastIdx, match.index));
     }
     parts.push(
-      <strong
-        key={`bold-${match.index}`}
-        className={isUser ? "font-bold text-white" : "font-bold text-white tracking-wide"}
-      >
+      <strong key={`b-${match.index}`} className="font-bold text-white">
         {match[1]}
       </strong>
     );
-    lastIndex = match.index + match[0].length;
+    lastIdx = match.index + match[0].length;
   }
 
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
+  if (lastIdx < str.length) {
+    parts.push(str.substring(lastIdx));
   }
 
-  return parts.length > 0 ? parts : text;
+  return parts.length > 0 ? parts : str;
 }
