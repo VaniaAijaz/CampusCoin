@@ -73,6 +73,19 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    plan: {
+      type: String,
+      enum: ["free", "premium"],
+      default: "free",
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    premiumExpiresAt: {
+      type: Date,
+      default: null,
+    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -100,13 +113,20 @@ userSchema.virtual("created_at").get(function () {
   return this.createdAt;
 });
 
-// Synchronize currency and currency_preference before save
+// Synchronize currency and currency_preference, and plan/isPremium before save
 userSchema.pre("save", function (next) {
   if (this.isModified("currency_preference") && !this.isModified("currency")) {
     this.currency = this.currency_preference;
   } else if (this.isModified("currency") && !this.isModified("currency_preference")) {
     this.currency_preference = this.currency;
   }
+
+  if (this.isModified("plan")) {
+    this.isPremium = this.plan === "premium";
+  } else if (this.isModified("isPremium")) {
+    this.plan = this.isPremium ? "premium" : "free";
+  }
+
   next();
 });
 

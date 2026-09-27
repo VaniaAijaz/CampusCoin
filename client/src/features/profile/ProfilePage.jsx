@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Lock, PiggyBank, GraduationCap, DollarSign, Save, LogOut, Sun, Moon, Check, ChevronDown } from "lucide-react";
+import { User, Lock, PiggyBank, GraduationCap, DollarSign, Save, LogOut, Sun, Moon, Check, ChevronDown, Crown, Ban, Zap, Shield } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -67,6 +67,39 @@ export default function ProfilePage() {
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [changingPass, setChangingPass] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+
+  const isPremium = Boolean(user?.isPremium || user?.plan === "premium");
+
+  const handleUpgradePremium = async () => {
+    setSubscribing(true);
+    try {
+      const { data } = await api.post("/users/upgrade-premium");
+      if (data.success) {
+        updateUser(data.user);
+        toast.success("Upgraded to CampusCoin Premium ($2/mo)! All ads removed.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to upgrade subscription.");
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const handleDowngradePremium = async () => {
+    setSubscribing(true);
+    try {
+      const { data } = await api.post("/users/cancel-premium");
+      if (data.success) {
+        updateUser(data.user);
+        toast.success("Downgraded to Free tier. Standard ads enabled.");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update subscription.");
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -321,6 +354,59 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
+
+          {/* Membership Tier & Monetization Section (Free with Ads vs Premium $2/mo Ad-Free) */}
+          <div className="pt-6 border-t border-white/10 space-y-4">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Crown className="w-4 h-4 text-amber-300" />
+              Membership & Monetization Tier
+            </h3>
+
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-sm text-white">
+                    {isPremium ? "CampusCoin Premium Tier" : "CampusCoin Free Tier"}
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                    isPremium
+                      ? "bg-amber-500/20 text-amber-300 border-amber-400/40"
+                      : "bg-white/10 text-white/70 border-white/20"
+                  }`}>
+                    {isPremium ? "Ad-Free Pro" : "Standard (Ad-Supported)"}
+                  </span>
+                </div>
+                <p className="text-xs text-white/70">
+                  {isPremium
+                    ? "Your account is 100% ad-free! Google AdSense banners are completely hidden."
+                    : "Free accounts display student-relevant Google AdSense ads. Upgrade for $2/mo (PKR 500) to remove all ads."}
+                </p>
+              </div>
+
+              <div className="shrink-0">
+                {isPremium ? (
+                  <button
+                    type="button"
+                    onClick={handleDowngradePremium}
+                    disabled={subscribing}
+                    className="min-h-[40px] px-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white/80 hover:text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {subscribing ? "Updating..." : "Downgrade to Free"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleUpgradePremium}
+                    disabled={subscribing}
+                    className="min-h-[40px] px-5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>{subscribing ? "Activating..." : "Upgrade ($2 / PKR 500)"}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Change Password Form */}
           <form onSubmit={handlePasswordSubmit} className="pt-6 border-t border-white/10 space-y-4">

@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import gsap from "gsap";
 import {
   Sparkles, Wallet, ArrowUpRight, ArrowDownRight, Target,
-  Calendar, FileText, Coins, PieChart,
+  Calendar, FileText, Coins, PieChart, Gift, Tag,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { getDashboardMetrics, getRecentTransactions } from "../transactions/transactionApi";
@@ -16,6 +16,8 @@ import CategoryIcon from "../../components/ui/CategoryIcon";
 import DashboardSkeleton from "../../components/ui/DashboardSkeleton";
 import NumberTicker from "../../components/ui/NumberTicker";
 import { formatCurrency } from "../../utils/currencyUtils";
+import AdSenseAd from "../../components/ads/AdSenseAd";
+
 
 // Recharts
 import {
@@ -367,6 +369,9 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* ─── Google AdSense Monetization Banner (Ad-Free for Premium $2/mo users) ─── */}
+      <AdSenseAd slot="dashboard" />
 
       {/* Physical Glass Transaction Detail Receipt Modal */}
       {selectedTx && (

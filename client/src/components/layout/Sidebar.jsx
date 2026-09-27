@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ArrowLeftRight, BarChart2, Target,
-  Tag, Lightbulb, Settings, Shield, LogOut, Map, X
+  Tag, Lightbulb, Settings, Shield, LogOut, Map, X, Sparkles
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";

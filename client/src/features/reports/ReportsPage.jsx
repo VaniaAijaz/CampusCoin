@@ -38,6 +38,9 @@ const COLORS = [
 
 import { generateStatementPDF } from "./StatementGenerator";
 import { useAuth } from "../auth/AuthContext";
+import AdSenseAd from "../../components/ads/AdSenseAd";
+
+
 
 export default function ReportsPage() {
   const { user } = useAuth();
@@ -321,6 +324,10 @@ export default function ReportsPage() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Google AdSense Unit for Reports/Analytics (Ad-Free for Premium $2/mo) */}
+      <AdSenseAd slot="reports" className="mt-6" />
     </div>
   );
 }
+

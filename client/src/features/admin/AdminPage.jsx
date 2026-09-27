@@ -9,7 +9,7 @@ import {
   RefreshCw,
   LogOut,
   X,
-  ExternalLink,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../auth/AuthContext";
@@ -128,6 +128,7 @@ export default function AdminPage() {
 
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={fetchAdminData}
               disabled={loading}
               className="min-h-[44px] px-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
@@ -137,6 +138,7 @@ export default function AdminPage() {
             </button>
 
             <button
+              type="button"
               onClick={async () => {
                 try { await api.post("/users/logout-session"); } catch (_) {}
                 logout();
@@ -265,6 +267,7 @@ export default function AdminPage() {
                       {/* Column 4: Actions (Generate Reset Link) */}
                       <td className="py-4 px-6 text-right">
                         <button
+                          type="button"
                           onClick={() => handleGenerateResetLink(student)}
                           disabled={generatingForId === student._id}
                           className="min-h-[44px] px-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-xs font-bold text-white hover:text-sky-300 transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95 disabled:opacity-50"
@@ -289,110 +292,113 @@ export default function AdminPage() {
         <AnimatePresence>
           {resetModalOpen && resetData && (
             <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
-            onClick={() => setResetModalOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg p-6 sm:p-7 rounded-[32px]
-                         bg-white/[0.04] backdrop-blur-[80px] backdrop-saturate-[180%]
-                         border border-white/20 border-t-white/30 border-l-white/30
-                         shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)]
-                         space-y-5 overflow-hidden"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+              onClick={() => setResetModalOpen(false)}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300">
-                    <KeyRound className="w-5 h-5" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-lg p-6 sm:p-7 rounded-[32px]
+                           bg-white/[0.04] backdrop-blur-[80px] backdrop-saturate-[180%]
+                           border border-white/20 border-t-white/30 border-l-white/30
+                           shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)]
+                           space-y-5 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-black text-white tracking-tight">
+                        Password Reset Link Generated
+                      </h4>
+                      <p className="text-xs text-white/60">
+                        Generated for {resetData.studentName}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-base font-black text-white tracking-tight">
-                      Password Reset Link Generated
-                    </h4>
-                    <p className="text-xs text-white/60">
-                      Generated for {resetData.studentName}
-                    </p>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => setResetModalOpen(false)}
-                  className="min-h-[44px] min-w-[44px] rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                  aria-label="Close"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Recipient Details */}
-              <div className="p-3.5 rounded-2xl bg-black/20 border border-white/10 text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-white/60">Student:</span>
-                  <span className="font-bold text-white">{resetData.studentName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-white/60">Email:</span>
-                  <span className="font-mono text-white/90">{resetData.studentEmail}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-white/60">Validity:</span>
-                  <span className="text-emerald-400 font-bold">1 Hour</span>
-                </div>
-              </div>
-
-              {/* Link Input & Copy Action */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-white/80 uppercase tracking-wider">
-                  Direct Password Reset URL
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={resetData.resetUrl}
-                    className="flex-1 min-h-[46px] px-3.5 rounded-xl bg-black/30 border border-white/20 text-xs font-mono text-white/90 select-all focus:outline-none"
-                  />
                   <button
-                    onClick={handleCopyLink}
-                    className={`min-h-[46px] px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs font-black transition-all cursor-pointer active:scale-95 shadow-md ${
-                      copied
-                        ? "bg-emerald-500 text-slate-950 font-bold"
-                        : "bg-white text-slate-950 hover:bg-white/90"
-                    }`}
+                    type="button"
+                    onClick={() => setResetModalOpen(false)}
+                    className="min-h-[44px] min-w-[44px] rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                    aria-label="Close"
                   >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        <span>Copy Link</span>
-                      </>
-                    )}
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
 
-              <p className="text-[11px] text-white/50 leading-relaxed">
-                You can now share this link directly with the student via secure channel. Opening this URL will allow them to set a new password without needing their current password.
-              </p>
+                {/* Recipient Details */}
+                <div className="p-3.5 rounded-2xl bg-black/20 border border-white/10 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Student:</span>
+                    <span className="font-bold text-white">{resetData.studentName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Email:</span>
+                    <span className="font-mono text-white/90">{resetData.studentEmail}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Validity:</span>
+                    <span className="text-emerald-400 font-bold">1 Hour</span>
+                  </div>
+                </div>
 
-              <div className="pt-2">
-                <button
-                  onClick={() => setResetModalOpen(false)}
-                  className="w-full min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-all cursor-pointer"
-                >
-                  Done
-                </button>
-              </div>
-            </motion.div>
+                {/* Link Input & Copy Action */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-white/80 uppercase tracking-wider">
+                    Direct Password Reset URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={resetData.resetUrl}
+                      className="flex-1 min-h-[46px] px-3.5 rounded-xl bg-black/30 border border-white/20 text-xs font-mono text-white/90 select-all focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className={`min-h-[46px] px-4 rounded-xl flex items-center justify-center gap-1.5 text-xs font-black transition-all cursor-pointer active:scale-95 shadow-md ${
+                        copied
+                          ? "bg-emerald-500 text-slate-950 font-bold"
+                          : "bg-white text-slate-950 hover:bg-white/90"
+                      }`}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy Link</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  You can now share this link directly with the student via secure channel. Opening this URL will allow them to set a new password without needing their current password.
+                </p>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setResetModalOpen(false)}
+                    className="w-full min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-all cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </motion.div>
             </div>
           )}
         </AnimatePresence>

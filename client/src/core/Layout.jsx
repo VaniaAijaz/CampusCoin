@@ -12,7 +12,9 @@ import CampusCoinLogo from "../components/ui/CampusCoinLogo";
 import Iridescence from "../components/ui/Iridescence";
 import TransactionModal from "../features/transactions/TransactionModal";
 import DemoNoticeModal from "../components/ui/DemoNoticeModal";
+import AdSenseInterstitialModal from "../components/ads/AdSenseInterstitialModal";
 import api from "./api";
+
 
 // Video-Accurate Physical Spatial Glass Standard Recipe
 const glassRecipe =
@@ -371,6 +373,9 @@ export default function Layout() {
         isOpen={demoModalOpen}
         onClose={() => setDemoModalOpen(false)}
       />
+
+      {/* Global 3-Second Timed AdSense Ad for Free Tier Users (Ad-Free for Premium $2/mo) */}
+      <AdSenseInterstitialModal />
     </div>
   );
 }

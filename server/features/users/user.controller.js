@@ -150,9 +150,100 @@ const endSession = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/users/membership
+ * Check user's current membership & ad status
+ */
+const getMembershipStatus = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return next(new AppError(404, "ERR_AUTH_001", "User not found."));
+    }
+
+    const isPremium = Boolean(user.isPremium || user.plan === "premium");
+
+    res.json({
+      success: true,
+      plan: isPremium ? "premium" : "free",
+      isPremium,
+      adFree: isPremium,
+      price: {
+        usd: "$2/month",
+        pkr: "PKR 500/month",
+      },
+      premiumExpiresAt: user.premiumExpiresAt,
+      user,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/users/upgrade-premium
+ * Upgrades user to Premium membership ($2/month / PKR 500)
+ */
+const upgradeToPremium = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return next(new AppError(404, "ERR_AUTH_001", "User not found."));
+    }
+
+    user.plan = "premium";
+    user.isPremium = true;
+    user.premiumExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Successfully upgraded to CampusCoin Premium! All advertisements are now removed.",
+      plan: "premium",
+      isPremium: true,
+      adFree: true,
+      user,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/users/cancel-premium
+ * Downgrades user back to Free tier
+ */
+const cancelPremium = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return next(new AppError(404, "ERR_AUTH_001", "User not found."));
+    }
+
+    user.plan = "free";
+    user.isPremium = false;
+    user.premiumExpiresAt = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Subscription downgraded to Free tier. Standard advertisements will be displayed.",
+      plan: "free",
+      isPremium: false,
+      adFree: false,
+      user,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   updateCurrencyPreference,
   getUserProfile,
   recordHeartbeat,
   endSession,
+  getMembershipStatus,
+  upgradeToPremium,
+  cancelPremium,
 };

@@ -19,7 +19,6 @@ import TransactionsPage from "./features/transactions/TransactionsPage";
 import BudgetPage from "./features/budgets/BudgetPage";
 import KhataPage from "./features/khata/KhataPage";
 
-// Lazy loaded feature pages
 const ReportsPage = lazy(() => import("./features/reports/ReportsPage"));
 const CategoriesPage = lazy(() => import("./features/categories/CategoriesPage"));
 const ProfilePage = lazy(() => import("./features/profile/ProfilePage"));

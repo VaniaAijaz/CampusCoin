@@ -26,6 +26,8 @@ import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../../utils/currencyUtils";
+import AdSenseAd from "../../components/ads/AdSenseAd";
+
 
 export default function TransactionsPage() {
   const { user } = useAuth();
@@ -444,6 +446,9 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      {/* Google AdSense Unit for Free Tier (Ad-Free for Premium $2/mo) */}
+      <AdSenseAd slot="transactions" className="mt-2" />
 
       <TransactionModal
         isOpen={modalOpen}
