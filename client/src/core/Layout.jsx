@@ -9,6 +9,7 @@ import {
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import CampusCoinLogo from "../components/ui/CampusCoinLogo";
+import Iridescence from "../components/ui/Iridescence";
 import TransactionModal from "../features/transactions/TransactionModal";
 import DemoNoticeModal from "../components/ui/DemoNoticeModal";
 import api from "./api";
@@ -334,15 +335,7 @@ export default function Layout() {
         )}
 
         {/* Mobile Sticky Liquid Glass Bottom Navigation Bar */}
-        <nav
-          className={`md:hidden fixed bottom-0 left-0 right-0 z-40 ${glassRecipe} rounded-t-[32px] border-b-0 shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-safe`}
-        >
-          <div className="flex justify-around items-center p-2">
-            {navLinks.slice(0, 4).map((item) => (
-              <MobileNavItem key={item.to} item={item} />
-            ))}
-          </div>
-        </nav>
+        <MobileBottomNav navLinks={navLinks} quickAdd={() => setQuickAddOpen(true)} />
 
         {/* Dynamic Route Container with AnimatePresence mode="wait" (Zero Flashing) */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
@@ -447,5 +440,130 @@ function MobileNavItem({ item }) {
         </>
       )}
     </NavLink>
+  );
+}
+
+/* ─── Mobile Bottom Nav with "More" sheet ─────────────────────────── */
+const GLASS_MOBILE =
+  "bg-white/[0.08] backdrop-blur-[48px] backdrop-saturate-[160%] border border-white/15";
+
+function MobileBottomNav({ navLinks, quickAdd }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const primary = navLinks.slice(0, 4);
+  const extra   = navLinks.slice(4);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <AnimatePresence>
+        {moreOpen && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            onClick={() => setMoreOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* More sheet — slides up */}
+      <AnimatePresence>
+        {moreOpen && (
+          <motion.div
+            key="sheet"
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className={`md:hidden fixed bottom-[72px] left-3 right-3 z-50 rounded-[28px] ${GLASS_MOBILE} shadow-[0_-8px_40px_rgba(0,0,0,0.35)] p-4`}
+          >
+            {/* Sheet handle */}
+            <div className="w-10 h-1 bg-white/25 rounded-full mx-auto mb-4" />
+
+            <div className="grid grid-cols-3 gap-2">
+              {extra.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <motion.div
+                    key={item.to}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <NavLink
+                      to={item.to}
+                      end={item.end}
+                      onClick={() => setMoreOpen(false)}
+                      className={({ isActive }) =>
+                        `flex flex-col items-center gap-1.5 p-3 rounded-[18px] transition-all
+                        ${isActive
+                          ? "bg-white/20 border border-white/30"
+                          : "bg-white/8 border border-white/10 hover:bg-white/15"
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-white/60"}`} />
+                          <span className={`text-[10px] font-semibold leading-none text-center
+                            ${isActive ? "text-white" : "text-white/55"}`}>
+                            {item.label}
+                          </span>
+                          {item.badge && (
+                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom bar */}
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 ${GLASS_MOBILE} rounded-t-[28px] shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-safe`}>
+        <div className="flex justify-around items-center px-2 py-2">
+          {primary.map((item) => (
+            <MobileNavItem key={item.to} item={item} />
+          ))}
+
+          {/* More */}
+          {extra.length > 0 && (
+            <button
+              onClick={() => setMoreOpen((o) => !o)}
+              className="relative flex flex-col items-center justify-center p-2 min-w-[48px] gap-0.5"
+            >
+              {moreOpen && (
+                <motion.div
+                  layoutId="moreActive"
+                  className="absolute inset-0 rounded-2xl bg-white/20 border border-white/30"
+                  transition={SPRING_CONFIG}
+                />
+              )}
+              <motion.div
+                animate={{ rotate: moreOpen ? 45 : 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className="relative z-10 w-5 h-5 flex flex-col justify-center items-center gap-[4px]"
+              >
+                <span className={`block h-0.5 w-4 rounded-full transition-colors ${moreOpen ? "bg-white" : "bg-white/60"}`} />
+                <span className={`block h-0.5 w-4 rounded-full transition-colors ${moreOpen ? "bg-white" : "bg-white/60"}`} />
+                <span className={`block h-0.5 w-4 rounded-full transition-colors ${moreOpen ? "bg-white" : "bg-white/60"}`} />
+              </motion.div>
+              <span className={`relative z-10 text-[10px] font-semibold ${moreOpen ? "text-white" : "text-white/55"}`}>
+                More
+              </span>
+            </button>
+          )}
+        </div>
+      </nav>
+    </>
   );
 }

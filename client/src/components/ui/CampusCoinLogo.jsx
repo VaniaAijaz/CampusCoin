@@ -1,38 +1,46 @@
 import CampusCoinIcon from "./CampusCoinIcon";
 
-/**
- * CampusCoinLogo — responsive brand mark
- * xs/sm  → icon only
- * sm+    → icon + wordmark
- * sizes: "sm" | "md" | "lg"
- */
 const cfg = {
-  sm: { iconSize: 28, text: "text-sm",   sub: false  },
-  md: { iconSize: 36, text: "text-base", sub: true   },
-  lg: { iconSize: 48, text: "text-xl",   sub: true   },
+  sm: { icon: 32, nameSize: "text-base",   subSize: "text-[7.5px]", gap: "gap-2.5" },
+  md: { icon: 38, nameSize: "text-[18px]", subSize: "text-[8.5px]", gap: "gap-3"   },
+  lg: { icon: 46, nameSize: "text-2xl",    subSize: "text-[10px]",  gap: "gap-3.5" },
 };
 
 export default function CampusCoinLogo({ size = "md", className = "" }) {
-  const { iconSize, text, sub } = cfg[size] || cfg.md;
+  const { icon, nameSize, subSize, gap } = cfg[size] || cfg.md;
 
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Icon always visible */}
-      <CampusCoinIcon size={iconSize} className="shrink-0" />
+    <div className={`flex items-center ${gap} ${className}`}>
+      {/* Icon: always visible */}
+      <CampusCoinIcon size={icon} className="shrink-0" />
 
-      {/* Wordmark: hidden on xs, shows from sm up */}
-      <div className="hidden sm:flex flex-col leading-none">
-        <span
-          className={`${text} font-black text-white tracking-tight leading-none`}
-          style={{ fontFamily: "'Cabinet Grotesk', sans-serif", letterSpacing: "-0.02em" }}
+      {/* Name: visible from 400px+ */}
+      <div className="hidden [@media(min-width:400px)]:flex flex-col justify-center leading-none">
+        {/* <span
+          className={`${nameSize} font-black text-white leading-none`}
+          style={{ fontFamily: "'Cabinet Grotesk', sans-serif", letterSpacing: "-0.04em" }}
         >
-          CampusCoin<span className="text-[#5170FF]">.</span>
+          CampusCoin<span style={{ color: "#5170FF" }}>.</span>
+        </span> */}
+        <span
+          className={`${nameSize} font-bold text-white leading-none`}
+          style={{
+            fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif",
+            letterSpacing: "-0.03em",
+          }}
+        >
+          CampusCoin.
         </span>
-        {sub && (
-          <span className="text-[9px] text-white/50 font-semibold tracking-widest uppercase mt-0.5">
-            Student Finance
-          </span>
-        )}
+
+
+
+        {/* Tagline: visible from 450px+ */}
+        {/* <span
+          className={`${subSize} text-white/55 font-light uppercase mt-[3px] hidden [@media(min-width:450px)]:block`}
+          style={{ letterSpacing: "0.18em" }}
+        >
+          Where Student Life Meets Smart Finance.
+        </span> */}
       </div>
     </div>
   );

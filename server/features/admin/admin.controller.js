@@ -82,7 +82,7 @@ const getUsers = async (req, res) => {
     startOfToday.setHours(0, 0, 0, 0);
 
     // Aggregate transactions count and session active time for each user
-    const [txAgg, sessionAgg] = await Promise.all([
+    const [txAgg, sessionAgg, todaySessionAgg] = await Promise.all([
       Transaction.aggregate([
         { $match: { userId: { $in: userIds }, isDeleted: false } },
         { $group: { _id: "$userId", count: { $sum: 1 } } },
