@@ -121,6 +121,7 @@ export default function Layout() {
   const navLinks = [
     { to: "/app", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/app/transactions", label: "Transactions", icon: ArrowLeftRight },
+    { to: "/app/insights", label: "AI Insights", icon: Sparkles },
     { to: "/app/khata", label: "Khata (Ledger)", icon: BookOpen },
     { to: "/app/budget", label: "Budget", icon: PieChart },
     { to: "/app/subscriptions", label: "Subscriptions", icon: Repeat },

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   PieChart,
   Plus,
@@ -37,6 +38,12 @@ const formatMonthLabel = (monthStr) => {
 };
 
 export default function BudgetPage() {
+  const [searchParams] = useSearchParams();
+  const urlOpen = searchParams.get("open");
+  const urlCategory = searchParams.get("category");
+  const urlCategoryId = searchParams.get("categoryId");
+  const urlLimit = searchParams.get("limit");
+
   const [budgets, setBudgets] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -49,9 +56,9 @@ export default function BudgetPage() {
   const nextMonthStr = useMemo(() => getNextMonthStr(), []);
 
   // Modal State
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedCatId, setSelectedCatId] = useState("");
-  const [limitInput, setLimitInput] = useState("");
+  const [modalOpen, setModalOpen] = useState(urlOpen === "create");
+  const [selectedCatId, setSelectedCatId] = useState(urlCategoryId || "");
+  const [limitInput, setLimitInput] = useState(urlLimit || "");
   const [targetMonth, setTargetMonth] = useState(getCurrentMonthStr);
   const [saving, setSaving] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -66,7 +73,17 @@ export default function BudgetPage() {
       ]);
       if (bRes.success) setBudgets(bRes.budgets);
       if (aRes.success) setAlerts(aRes.alerts);
-      if (cRes.success) setCategories(cRes.categories);
+      if (cRes.success && cRes.categories) {
+        setCategories(cRes.categories);
+        if (urlCategory && !selectedCatId) {
+          const matched = cRes.categories.find(
+            (c) => c.name?.toLowerCase() === urlCategory.toLowerCase()
+          );
+          if (matched) {
+            setSelectedCatId(matched._id);
+          }
+        }
+      }
     } catch {
       toast.error("Failed to load budget rings.");
     } finally {

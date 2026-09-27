@@ -15,8 +15,9 @@ import TransactionDetailModal from "../../components/ui/TransactionDetailModal";
 import CategoryIcon from "../../components/ui/CategoryIcon";
 import DashboardSkeleton from "../../components/ui/DashboardSkeleton";
 import NumberTicker from "../../components/ui/NumberTicker";
-import { formatCurrency } from "../../utils/currencyUtils";
 import AdSenseAd from "../../components/ads/AdSenseAd";
+import AiInsightsDashboardWidget from "../insights/AiInsightsDashboardWidget";
+import { formatCurrency } from "../../utils/currencyUtils";
 
 
 // Recharts
@@ -265,6 +266,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── AI Insights & Copilot Section: Top Prioritized Recommendations ─── */}
+      <AiInsightsDashboardWidget />
 
       {/* ─── Bottom Row (Split View): Wide Analytical Chart (Left ~67%) & Vertical List (Right ~33%) ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">

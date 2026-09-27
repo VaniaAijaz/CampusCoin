@@ -24,6 +24,7 @@ const ReportsPage = lazy(() => import("./features/reports/ReportsPage"));
 const CategoriesPage = lazy(() => import("./features/categories/CategoriesPage"));
 const ProfilePage = lazy(() => import("./features/profile/ProfilePage"));
 const SubscriptionsPage = lazy(() => import("./features/subscriptions/SubscriptionsPage"));
+const InsightsPage = lazy(() => import("./features/insights/InsightsPage"));
 const AdminPage = lazy(() => import("./features/admin/AdminPage"));
 
 const FallbackLoader = () => (
@@ -79,7 +80,7 @@ export default function App() {
       <Route path="/khata" element={<Navigate to="/app/khata" replace />} />
       <Route path="/iou" element={<Navigate to="/app/khata" replace />} />
       <Route path="/debts" element={<Navigate to="/app/khata" replace />} />
-      <Route path="/insights" element={<Navigate to="/app" replace />} />
+      <Route path="/insights" element={<Navigate to="/app/insights" replace />} />
       <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
       <Route path="/categories" element={<Navigate to="/app/categories" replace />} />
       <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
@@ -111,7 +112,7 @@ export default function App() {
         <Route path="khata" element={<KhataPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="budgets" element={<Navigate to="/app/budget" replace />} />
-        <Route path="insights" element={<Navigate to="/app" replace />} />
+        <Route path="insights" element={<Suspense fallback={<FallbackLoader />}><InsightsPage /></Suspense>} />
         <Route path="subscriptions" element={<Suspense fallback={<FallbackLoader />}><SubscriptionsPage /></Suspense>} />
         <Route path="debts" element={<Navigate to="/app/khata" replace />} />
         <Route path="iou" element={<Navigate to="/app/khata" replace />} />

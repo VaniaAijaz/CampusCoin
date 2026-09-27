@@ -73,6 +73,7 @@ app.use("/api/subscriptions", require("./features/subscriptions/subscription.rou
 app.use("/api/debts", require("./features/debts/debt.routes"));
 app.use("/api/goals", require("./features/goals/goal.routes"));
 app.use("/api/chat", require("./features/chat/chat.routes"));
+app.use("/api/insights", require("./features/insights/insight.routes"));
 
 // Initialize scheduled background jobs (disabled in test mode)
 if (process.env.NODE_ENV !== "test") {

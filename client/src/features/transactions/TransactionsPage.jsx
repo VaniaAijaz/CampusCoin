@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   ArrowLeftRight,
   Plus,
@@ -31,6 +32,12 @@ import AdSenseAd from "../../components/ads/AdSenseAd";
 
 export default function TransactionsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const urlCategory = searchParams.get("category");
+  const urlCategoryId = searchParams.get("categoryId");
+  const urlType = searchParams.get("type");
+  const urlSearch = searchParams.get("search");
+
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [total, setTotal] = useState(0);
@@ -39,9 +46,9 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [typeFilter, setTypeFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState(urlType || "");
+  const [categoryFilter, setCategoryFilter] = useState(urlCategoryId || "");
+  const [search, setSearch] = useState(urlSearch || "");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -82,13 +89,23 @@ export default function TransactionsPage() {
     const loadCats = async () => {
       try {
         const res = await getCategories();
-        if (res.success) setCategories(res.categories);
+        if (res.success && res.categories) {
+          setCategories(res.categories);
+          if (urlCategory && !urlCategoryId) {
+            const matched = res.categories.find(
+              (c) => c.name?.toLowerCase() === urlCategory.toLowerCase()
+            );
+            if (matched) {
+              setCategoryFilter(matched._id);
+            }
+          }
+        }
       } catch {
         // silent
       }
     };
     loadCats();
-  }, []);
+  }, [urlCategory, urlCategoryId]);
 
   const handleDelete = (id) => {
     setItemToDelete(id);
