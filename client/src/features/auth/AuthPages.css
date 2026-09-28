@@ -224,6 +224,17 @@
   margin-bottom: 24px;
 }
 
+.auth-mobile-logo {
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .auth-mobile-logo {
+    display: none !important;
+  }
+}
+
 .auth-back-link {
   display: inline-flex;
   align-items: center;

@@ -318,7 +318,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
               <ChevronLeft style={{ width: 16, height: 16 }} />
               Back to Home
             </Link>
-            <div style={{ display: "flex", alignItems: "center" }} className="lg:hidden">
+            <div className="auth-mobile-logo">
               <LogoMark size={30} />
             </div>
           </div>
