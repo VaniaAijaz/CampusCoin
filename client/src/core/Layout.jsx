@@ -15,6 +15,7 @@ import {
   Repeat,
   Sparkles,
   Menu,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -24,11 +25,10 @@ import AdSenseInterstitialModal from "../components/ads/AdSenseInterstitialModal
 import api from "./api";
 
 const C = {
-  sidebarBg: "#ffffff",
-  sidebarLine: "#e2e8f0",
+  sidebarBg: "rgba(255, 255, 255, 0.95)",
+  sidebarLine: "rgba(172, 217, 251, 0.45)",
   sidebarFg: "#0f172a",
   sidebarMuted: "#64748b",
-  sidebarHover: "#f8fafc",
   brand: "#2563eb",
   brandSoft: "#eff6ff",
   brandBorder: "#dbeafe",
@@ -47,46 +47,35 @@ const PAGE_VARIANTS = {
   exit: { opacity: 0, y: -4 },
 };
 
-function BrandMark({ size = 28 }) {
+function BrandMark({ size = 36 }) {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-      <span
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+      {/* Coins Icon Badge on Left */}
+      <div
         style={{
           position: "relative",
-          display: "block",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           width: size,
           height: size,
-          overflow: "hidden",
-          borderRadius: 8,
-          backgroundColor: "#2563eb",
+          borderRadius: 11,
+          background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+          boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
           flexShrink: 0,
         }}
       >
-        <span
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: "100%",
-            height: "55%",
-            borderBottomRightRadius: 10,
-            backgroundColor: "#93c5fd",
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            left: 0,
-            bottom: 0,
-            width: "52%",
-            height: "50%",
-            backgroundColor: "#1d4ed8",
-          }}
-        />
-      </span>
-      <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.025em", color: "#0f172a" }}>
-        CampusCoin
-      </span>
+        <Coins style={{ width: size * 0.58, height: size * 0.58, color: "#ffffff" }} strokeWidth={2.2} />
+      </div>
+
+      <div>
+        <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.03em", color: "#0f172a", display: "block", lineHeight: 1.15 }}>
+          CampusCoin
+        </span>
+        <span style={{ fontSize: 10.5, fontWeight: 600, color: "#64748b", letterSpacing: "0.02em" }}>
+          Student Finance
+        </span>
+      </div>
     </div>
   );
 }
@@ -168,59 +157,63 @@ export default function Layout() {
 
   const SidebarContent = () => (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", ...M }}>
-      {/* Brand Header */}
-      <div style={{ padding: "22px 20px 18px", borderBottom: `1px solid ${C.sidebarLine}` }}>
-        <BrandMark size={30} />
-        <p style={{ fontSize: 11.5, color: C.sidebarMuted, marginTop: 5, fontWeight: 600 }}>Student Financial Hub</p>
+      {/* Brand Header with Coins Logo */}
+      <div style={{ padding: "20px 18px 16px", borderBottom: `1px solid ${C.sidebarLine}` }}>
+        <BrandMark size={36} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", display: "inline-block", boxShadow: "0 0 8px rgba(16,185,129,0.6)" }} />
+          <p style={{ fontSize: 11, color: C.sidebarMuted, margin: 0, fontWeight: 700, letterSpacing: "0.02em" }}>Online • Student Portal</p>
+        </div>
       </div>
 
-      {/* User Info Card */}
+      {/* User Profile Card */}
       {user && (
         <div style={{
-          margin: "14px 12px 6px",
+          margin: "12px 10px 6px",
           padding: "10px 12px",
           borderRadius: 12,
-          background: "#f8fafc",
-          border: `1px solid ${C.sidebarLine}`,
+          background: "linear-gradient(135deg, rgba(239, 246, 255, 0.9) 0%, rgba(219, 234, 254, 0.6) 100%)",
+          border: "1px solid rgba(191, 219, 254, 0.7)",
           display: "flex",
           alignItems: "center",
           gap: 10,
+          boxShadow: "0 2px 6px rgba(37,99,235,0.04)",
         }}>
           <div style={{
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+            background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
             color: "#fff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: 800,
             flexShrink: 0,
-            boxShadow: "0 2px 6px rgba(37,99,235,0.2)",
+            boxShadow: "0 2px 6px rgba(37,99,235,0.25)",
           }}>
             {user.name?.[0]?.toUpperCase() || "S"}
           </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: C.sidebarFg, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p style={{ fontSize: 12.5, fontWeight: 800, color: C.sidebarFg, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {user.name}
             </p>
-            <p style={{ fontSize: 11, color: C.sidebarMuted, margin: 0 }}>
-              {user.role === "admin" ? "Platform Admin" : user.academicYear || "Student"}
+            <p style={{ fontSize: 10.5, color: "#2563eb", margin: "1px 0 0", fontWeight: 700 }}>
+              {user.role === "admin" ? "Platform Admin" : user.academicYear || "Student Account"}
             </p>
           </div>
         </div>
       )}
 
       {/* Navigation Groups */}
-      <nav style={{ flex: 1, overflowY: "auto", padding: "10px 10px" }}>
+      <nav style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
         <NavGroup label="Main" links={navLinks.slice(0, 4)} location={location} />
         <NavGroup label="Tools" links={navLinks.slice(4)} location={location} />
       </nav>
 
       {/* Sign Out Button */}
-      <div style={{ padding: "12px 12px 18px", borderTop: `1px solid ${C.sidebarLine}` }}>
+      <div style={{ padding: "12px 10px 16px", borderTop: `1px solid ${C.sidebarLine}` }}>
         <button
           onClick={doLogout}
           style={{
@@ -231,8 +224,8 @@ export default function Layout() {
             width: "100%",
             padding: "9px 14px",
             borderRadius: 9999,
-            background: "#ffffff",
-            border: `1px solid ${C.sidebarLine}`,
+            background: "rgba(255, 255, 255, 0.9)",
+            border: "1px solid rgba(226, 232, 240, 0.9)",
             color: C.sidebarMuted,
             fontSize: 12.5,
             fontWeight: 700,
@@ -246,8 +239,8 @@ export default function Layout() {
             e.currentTarget.style.color = "#dc2626";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#ffffff";
-            e.currentTarget.style.borderColor = C.sidebarLine;
+            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+            e.currentTarget.style.borderColor = "rgba(226, 232, 240, 0.9)";
             e.currentTarget.style.color = C.sidebarMuted;
           }}
         >
@@ -265,7 +258,7 @@ export default function Layout() {
       backgroundAttachment: "fixed",
       ...M
     }}>
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar with Frosted Glass Styling */}
       {!isMobile && (
         <aside
           style={{
@@ -273,15 +266,15 @@ export default function Layout() {
             top: 0,
             left: 0,
             bottom: 0,
-            width: 240,
-            background: "rgba(255, 255, 255, 0.95)",
+            width: 236,
+            background: C.sidebarBg,
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
             zIndex: 40,
             display: "flex",
             flexDirection: "column",
-            borderRight: "1px solid rgba(172, 217, 251, 0.4)",
-            boxShadow: "2px 0 14px rgba(37, 99, 235, 0.04)",
+            borderRight: `1px solid ${C.sidebarLine}`,
+            boxShadow: "2px 0 16px rgba(37, 99, 235, 0.05)",
           }}
         >
           <SidebarContent />
@@ -322,7 +315,7 @@ export default function Layout() {
                   zIndex: 51,
                   display: "flex",
                   flexDirection: "column",
-                  borderRight: "1px solid rgba(172, 217, 251, 0.4)",
+                  borderRight: `1px solid ${C.sidebarLine}`,
                   boxShadow: "4px 0 24px rgba(15, 23, 42, 0.15)",
                 }}
               >
@@ -334,7 +327,7 @@ export default function Layout() {
       )}
 
       {/* Main Content Area */}
-      <div style={{ marginLeft: isMobile ? 0 : 240, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div style={{ marginLeft: isMobile ? 0 : 236, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         {/* Clean Frosted Top Header */}
         <header
           style={{
@@ -509,7 +502,7 @@ export default function Layout() {
 function NavGroup({ label, links, location }) {
   return (
     <div style={{ marginTop: 10, marginBottom: 4 }}>
-      <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8", padding: "0 12px 5px", margin: 0 }}>
+      <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8", padding: "0 10px 4px", margin: 0 }}>
         {label}
       </p>
       {links.map((item) => (
@@ -521,31 +514,74 @@ function NavGroup({ label, links, location }) {
 
 function SideNavItem({ item }) {
   const { icon: Icon, to, label, end } = item;
+  const [hovered, setHovered] = useState(false);
+
   return (
     <NavLink
       to={to}
       end={end}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={({ isActive }) => ({
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: 10,
-        padding: "8px 12px",
-        borderRadius: 10,
-        marginBottom: 2,
+        padding: "9px 12px",
+        borderRadius: 11,
+        marginBottom: 3,
         fontSize: 13,
-        fontWeight: isActive ? 700 : 500,
-        color: isActive ? "#2563eb" : "#64748b",
-        background: isActive ? "#eff6ff" : "transparent",
-        border: `1px solid ${isActive ? "#dbeafe" : "transparent"}`,
+        fontWeight: isActive ? 750 : hovered ? 600 : 500,
+        color: isActive ? "#ffffff" : hovered ? "#1d4ed8" : "#475569",
+        background: isActive
+          ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+          : hovered
+          ? "rgba(224, 242, 254, 0.75)"
+          : "transparent",
+        boxShadow: isActive ? "0 4px 14px rgba(37, 99, 235, 0.32)" : "none",
         textDecoration: "none",
-        transition: "all 0.12s ease",
+        transition: "all 0.15s ease",
         ...M,
       })}
     >
       {({ isActive }) => (
         <>
-          <Icon style={{ width: 15, height: 15, flexShrink: 0, color: isActive ? "#2563eb" : "#64748b" }} />
-          <span>{label}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <Icon
+              style={{
+                width: 16,
+                height: 16,
+                flexShrink: 0,
+                color: isActive ? "#ffffff" : hovered ? "#2563eb" : "#64748b",
+                transition: "color 0.15s ease",
+              }}
+            />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+          </div>
+
+          {/* Active Coin Badge on Right */}
+          {isActive ? (
+            <motion.div
+              initial={{ scale: 0.6, rotate: -20, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.22)",
+                border: "1px solid rgba(255, 255, 255, 0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+              }}
+              title="Current Tab"
+            >
+              <Coins style={{ width: 11, height: 11, color: "#ffffff" }} strokeWidth={2.5} />
+            </motion.div>
+          ) : null}
         </>
       )}
     </NavLink>

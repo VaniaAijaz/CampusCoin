@@ -633,10 +633,10 @@ const analyzeUserFinances = async (userId) => {
       category: "grow",
       priority: "low",
       insightType: "emergency_savings",
-      title: `🛡️ Build an emergency cushion`,
-      summary: `You currently have steady positive cash flow but no designated emergency savings goal.`,
-      recommendation: `Consider creating an emergency savings target of ~${formatAmount(suggestedEmergencyTarget, userCurrency)} to safeguard against unexpected campus or academic expenses.`,
-      explanation: `With a monthly surplus of ${formatAmount(netSurplus, userCurrency)}, allocating ${formatAmount(suggestedMonthlyBuffer, userCurrency)}/month can build a 2-month security cushion.`,
+      title: `🛡️ Build a small emergency savings fund`,
+      summary: `You have extra money left over after expenses this month.`,
+      recommendation: `Setting aside around ${formatAmount(suggestedMonthlyBuffer, userCurrency)} a month will build a safe emergency cushion for unexpected costs.`,
+      explanation: `A small savings fund keeps you stress-free during exam weeks or unexpected semester expenses.`,
       supportingMetrics: {
         goalTarget: suggestedEmergencyTarget,
         suggestedMonthly: suggestedMonthlyBuffer,
@@ -725,18 +725,20 @@ const analyzeUserFinances = async (userId) => {
 
     if (totalBudgetCap > 0 && projectedMonthEndExpense > totalBudgetCap) {
       const overBudget = projectedMonthEndExpense - totalBudgetCap;
-      forecastPacingMsg = ` Projected to exceed your total budget cap by ~${formatAmount(overBudget, userCurrency)}.`;
+      forecastPacingMsg = ` That is about ${formatAmount(overBudget, userCurrency)} over your total monthly budget.`;
       priority = "high";
     }
+
+    const topDriver = drivers[0] ? `${drivers[0].categoryName} (${formatAmount(drivers[0].amount, userCurrency)})` : "General expenses";
 
     generatedInsights.push({
       category: "understand",
       priority,
       insightType: "month_end_forecast",
-      title: `📅 Month-end spending forecast`,
-      summary: `At your current rate (${formatAmount(dailyBurnRate, userCurrency)}/day), you're projected to spend ${formatAmount(projectedMonthEndExpense, userCurrency)} this month.${forecastPacingMsg}`,
-      recommendation: `Top spending drivers: ${drivers.map((d) => `${d.categoryName} (${formatAmount(d.amount, userCurrency)})`).join(", ")}.`,
-      explanation: `Calculated deterministically based on ${currentDay} elapsed days with ${daysRemaining} days remaining in the billing cycle.`,
+      title: `📅 Monthly Spend Forecast`,
+      summary: `At your current pace (${formatAmount(dailyBurnRate, userCurrency)} a day), you are on track to spend ${formatAmount(projectedMonthEndExpense, userCurrency)} this month.${forecastPacingMsg}`,
+      recommendation: `Your highest expense so far is ${topDriver}. Keeping daily spending lower will help you save more.`,
+      explanation: `Calculated based on your actual expenses over ${currentDay} days, with ${daysRemaining} days left in the month.`,
       supportingMetrics: {
         dailyBurnRate,
         projectedMonthEnd: projectedMonthEndExpense,
@@ -800,8 +802,10 @@ const analyzeUserFinances = async (userId) => {
 function formatAmount(amount, currency = "USD") {
   const code = (currency || "USD").toUpperCase();
   const num = Math.round(amount) || 0;
-  if (code === "PKR") return `Rs. ${num.toLocaleString()}`;
+  if (code === "PKR") return `Rs ${num.toLocaleString()}`;
   if (code === "EUR") return `€${num.toLocaleString()}`;
+  if (code === "GBP") return `£${num.toLocaleString()}`;
+  if (code === "INR") return `₹${num.toLocaleString()}`;
   return `$${num.toLocaleString()}`;
 }
 

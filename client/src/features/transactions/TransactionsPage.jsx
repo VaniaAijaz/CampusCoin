@@ -11,11 +11,14 @@ import {
   AlertTriangle,
   CreditCard,
   Banknote,
+  Smartphone,
   ChevronLeft,
   ChevronRight,
   TrendingUp,
   TrendingDown,
   RotateCcw,
+  Wallet,
+  Calendar,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { getTransactions, deleteTransaction, importTransactionsCSV } from "./transactionApi";
@@ -136,6 +139,7 @@ export default function TransactionsPage() {
         Type: t.type,
         Amount: t.amount,
         Description: t.description || "",
+        PaymentMethod: t.paymentMethod || "Digital Bank",
         Recurring: t.isRecurring ? "Yes" : "No",
       }));
       const blob = new Blob([Papa.unparse(rows)], { type: "text/csv;charset=utf-8;" });
@@ -183,6 +187,7 @@ export default function TransactionsPage() {
   const cur = user?.currency || "USD";
   const pageIncome = transactions.filter((t) => t.type === "income").reduce((a, t) => a + t.amount, 0);
   const pageExpense = transactions.filter((t) => t.type === "expense").reduce((a, t) => a + t.amount, 0);
+  const netFlow = pageIncome - pageExpense;
 
   const resetFilters = () => {
     setSearch("");
@@ -198,8 +203,14 @@ export default function TransactionsPage() {
       {/* ── Page Header ── */}
       <div className="dash-page-header">
         <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", letterSpacing: "0.02em" }}>
+              Cash Flow & Expenses
+            </span>
+          </div>
           <h1 className="dash-page-title">Expenses & Income</h1>
-          <p className="dash-page-desc">Track where your money goes and manage your transaction history.</p>
+          <p className="dash-page-desc">Track where your money goes and stay on top of your daily spending.</p>
         </div>
 
         <div className="dash-page-actions">
@@ -235,7 +246,7 @@ export default function TransactionsPage() {
               <ArrowLeftRight style={{ width: 20, height: 20 }} />
             </div>
             <div className="dash-kpi-value">{total}</div>
-            <p className="dash-kpi-label">Total Records</p>
+            <p className="dash-kpi-label">Total Transactions</p>
           </div>
           <span className="dash-kpi-badge" style={{ background: "#eff6ff", color: "#2563eb" }}>
             All time
@@ -250,7 +261,7 @@ export default function TransactionsPage() {
             <div className="dash-kpi-value" style={{ color: "#16a34a" }}>
               {formatCurrency(pageIncome, cur)}
             </div>
-            <p className="dash-kpi-label">Page Income</p>
+            <p className="dash-kpi-label">Money In (Income)</p>
           </div>
           <span className="dash-kpi-badge" style={{ background: "#dcfce7", color: "#16a34a" }}>
             + Received
@@ -262,19 +273,75 @@ export default function TransactionsPage() {
             <div className="dash-kpi-icon-wrap" style={{ background: "#fee2e2", color: "#dc2626" }}>
               <TrendingDown style={{ width: 20, height: 20 }} />
             </div>
-            <div className="dash-kpi-value">
+            <div className="dash-kpi-value" style={{ color: "#0f172a" }}>
               {formatCurrency(pageExpense, cur)}
             </div>
-            <p className="dash-kpi-label">Page Expenses</p>
+            <p className="dash-kpi-label">Money Out (Expenses)</p>
           </div>
           <span className="dash-kpi-badge" style={{ background: "#fee2e2", color: "#dc2626" }}>
             − Spent
           </span>
         </div>
+
+        <div className="dash-kpi-card">
+          <div>
+            <div className="dash-kpi-icon-wrap" style={{ background: netFlow >= 0 ? "#dcfce7" : "#fee2e2", color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+              <Wallet style={{ width: 20, height: 20 }} />
+            </div>
+            <div className="dash-kpi-value" style={{ color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+              {formatCurrency(netFlow, cur)}
+            </div>
+            <p className="dash-kpi-label">Net Difference</p>
+          </div>
+          <span className="dash-kpi-badge" style={{ background: netFlow >= 0 ? "#dcfce7" : "#fee2e2", color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+            {netFlow >= 0 ? "Surplus" : "Deficit"}
+          </span>
+        </div>
       </div>
 
-      {/* ── Filter & Search Bar ── */}
+      {/* ── Quick Filter Tabs + Search Bar ── */}
       <div className="dash-card" style={{ padding: "18px 20px" }}>
+        {/* Segmented Type Switcher */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "inline-flex", padding: 4, background: "#f1f5f9", borderRadius: 9999, border: "1px solid #e2e8f0" }}>
+            {[
+              { val: "", label: "All Records" },
+              { val: "expense", label: "🔴 Expenses Only" },
+              { val: "income", label: "🟢 Income Only" },
+            ].map((t) => {
+              const isSel = typeFilter === t.val;
+              return (
+                <button
+                  key={t.val}
+                  onClick={() => {
+                    setTypeFilter(t.val);
+                    setPage(1);
+                  }}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 9999,
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 12.5,
+                    fontWeight: isSel ? 800 : 600,
+                    background: isSel ? "#ffffff" : "transparent",
+                    color: isSel ? "#0f172a" : "#64748b",
+                    boxShadow: isSel ? "0 2px 6px rgba(0,0,0,0.06)" : "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>
+            Showing <strong>{transactions.length}</strong> of <strong>{total}</strong> records
+          </div>
+        </div>
+
+        {/* Search, Category, Date Filters */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, alignItems: "center" }}>
           {/* Search */}
           <div className="dash-input-wrap">
@@ -282,25 +349,14 @@ export default function TransactionsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Search description..."
               className="dash-input has-icon"
             />
           </div>
-
-          {/* Type Filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(1);
-            }}
-            className="dash-select"
-          >
-            <option value="">All Types</option>
-            <option value="expense">Expenses Only</option>
-            <option value="income">Income Only</option>
-          </select>
 
           {/* Category Filter */}
           <select
@@ -323,15 +379,18 @@ export default function TransactionsPage() {
           <input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPage(1);
+            }}
             className="dash-input"
-            title="Filter by start date"
+            title="Filter from date"
           />
 
           {/* Reset Button */}
           <button onClick={resetFilters} className="dash-btn-secondary" style={{ height: 42 }}>
             <RotateCcw style={{ width: 14, height: 14 }} />
-            <span>Reset</span>
+            <span>Reset Filters</span>
           </button>
         </div>
       </div>
@@ -377,8 +436,8 @@ export default function TransactionsPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div
                               style={{
-                                width: 28,
-                                height: 28,
+                                width: 30,
+                                height: 30,
                                 borderRadius: 8,
                                 background: isInc ? "#dcfce7" : "#eff6ff",
                                 color: isInc ? "#16a34a" : "#2563eb",
@@ -388,15 +447,15 @@ export default function TransactionsPage() {
                                 flexShrink: 0,
                               }}
                             >
-                              <CategoryIcon categoryName={tx.categoryId?.name} className="w-3.5 h-3.5" useEmerald={isInc} />
+                              <CategoryIcon categoryName={tx.categoryId?.name} className="w-4 h-4" useEmerald={isInc} />
                             </div>
                             <span style={{ fontWeight: 700, color: "#0f172a" }}>{tx.categoryId?.name || "General"}</span>
                             {tx.isFlagged && <AlertTriangle style={{ width: 14, height: 14, color: "#f59e0b" }} title={tx.flagReason} />}
                           </div>
                         </td>
 
-                        <td style={{ color: "#64748b", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {tx.description || <span style={{ fontStyle: "italic", color: "#94a3b8" }}>No note</span>}
+                        <td style={{ color: "#475569", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span style={{ fontWeight: 600 }}>{tx.description || <span style={{ fontStyle: "italic", color: "#94a3b8" }}>No note</span>}</span>
                           {tx.isRecurring && (
                             <span style={{ marginLeft: 6, fontSize: 10, padding: "2px 7px", borderRadius: 9999, background: "#dbeafe", color: "#1d4ed8", fontWeight: 700 }}>
                               Recurring
@@ -406,17 +465,21 @@ export default function TransactionsPage() {
 
                         <td>
                           {tx.paymentMethod === "Cash" ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 9999, background: "#dcfce7", color: "#16a34a", fontSize: 11, fontWeight: 700 }}>
-                              <Banknote style={{ width: 12, height: 12 }} /> Cash
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 9999, background: "#f1f5f9", color: "#475569", fontSize: 11.5, fontWeight: 700 }}>
+                              <Banknote style={{ width: 13, height: 13, color: "#16a34a" }} /> Cash
+                            </span>
+                          ) : tx.paymentMethod === "Mobile Wallet" ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 9999, background: "#eff6ff", color: "#1d4ed8", fontSize: 11.5, fontWeight: 700 }}>
+                              <Smartphone style={{ width: 13, height: 13, color: "#2563eb" }} /> Mobile Wallet
                             </span>
                           ) : (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb", fontSize: 11, fontWeight: 700 }}>
-                              <CreditCard style={{ width: 12, height: 12 }} /> Digital
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb", fontSize: 11.5, fontWeight: 700 }}>
+                              <CreditCard style={{ width: 13, height: 13 }} /> Digital Bank
                             </span>
                           )}
                         </td>
 
-                        <td style={{ color: "#64748b", fontSize: 12.5 }}>
+                        <td style={{ color: "#64748b", fontSize: 12.5, fontWeight: 500 }}>
                           {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </td>
 
@@ -424,23 +487,23 @@ export default function TransactionsPage() {
                           <span
                             style={{
                               display: "inline-block",
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: 800,
                               textTransform: "uppercase",
                               padding: "3px 10px",
                               borderRadius: 9999,
                               background: isInc ? "#dcfce7" : "#eff6ff",
                               color: isInc ? "#16a34a" : "#2563eb",
-                              letterSpacing: "0.06em",
+                              letterSpacing: "0.04em",
                             }}
                           >
-                            {tx.type}
+                            {isInc ? "Income" : "Expense"}
                           </span>
                         </td>
 
                         <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                          <span style={{ fontWeight: 900, fontSize: 14.5, color: isInc ? "#16a34a" : "#0f172a" }}>
-                            {isInc ? "+" : "−"}
+                          <span style={{ fontWeight: 800, fontSize: 15, color: isInc ? "#16a34a" : "#0f172a" }}>
+                            {isInc ? "+ " : "− "}
                             {formatCurrency(tx.amount, cur)}
                           </span>
                         </td>
@@ -510,7 +573,7 @@ export default function TransactionsPage() {
             <div className="dash-empty-icon">
               <ArrowLeftRight style={{ width: 24, height: 24 }} />
             </div>
-            <h3 className="dash-empty-title">No expenses yet.</h3>
+            <h3 className="dash-empty-title">No transactions found.</h3>
             <p className="dash-empty-desc">Add your first expense or income to start tracking your daily campus spending.</p>
             <button
               onClick={() => {

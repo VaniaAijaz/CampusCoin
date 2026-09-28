@@ -9,26 +9,15 @@ import {
   Pin,
   X,
   ChevronDown,
-  ChevronRight,
-  ArrowUpRight,
+  ArrowRight,
   TrendingUp,
   Target,
-  Repeat,
   Info,
   CheckCircle2,
   AlertTriangle,
-  Flame,
+  Lightbulb,
   Shield,
-  Sliders,
-  DollarSign,
-  Plus,
-  Minus,
-  Check,
-  Calendar,
-  Layers,
-  Search,
-  ArrowLeftRight,
-  PieChart,
+  Wallet,
 } from "lucide-react";
 import {
   getInsights,
@@ -41,57 +30,52 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
-import Portal from "../../components/ui/Portal";
-import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
-import AdSenseAd from "../../components/ads/AdSenseAd";
+import "../dashboard/Dashboard.css";
 
-/* ── Canonical CampusCoin Design Tokens ── */
+/* ── CampusCoin Premium Design Tokens ── */
 const C = {
-  hero: "oklch(0.115 0.018 255)",
-  heroFg: "oklch(0.985 0.003 250)",
-  heroMuted: "oklch(0.73 0.018 252)",
-  heroLine: "oklch(0.31 0.025 255)",
-  brand: "oklch(0.59 0.22 262)",
-  brandSoft: "oklch(0.93 0.06 262)",
-  highlight: "oklch(0.88 0.18 157)",
-  highlightFg: "oklch(0.17 0.04 160)",
-  growth: "oklch(0.64 0.17 157)",
-  growthSoft: "oklch(0.94 0.05 158)",
-  background: "oklch(0.99 0.003 250)",
-  foreground: "oklch(0.16 0.025 260)",
-  muted: "oklch(0.5 0.025 255)",
-  border: "oklch(0.9 0.012 255)",
-  altBg: "oklch(0.965 0.01 254)",
+  brand: "#2563eb",
+  brandDeep: "#1d4ed8",
+  brandSoft: "#eff6ff",
+  brandBorder: "#dbeafe",
+  foreground: "#0f172a",
+  muted: "#64748b",
+  border: "rgba(172, 217, 251, 0.55)",
+  cardBg: "rgba(255, 255, 255, 0.96)",
+  altBg: "#f8fafc",
 
-  // Category Semantic Accents
-  takeAction: "#e11d48",
-  takeActionSoft: "#ffe4e6",
+  takeAction: "#dc2626",
+  takeActionSoft: "#fee2e2",
   takeActionBorder: "#fecdd3",
+
   save: "#d97706",
   saveSoft: "#fef3c7",
   saveBorder: "#fde68a",
-  grow: "#059669",
-  growSoft: "#d1fae5",
-  growBorder: "#a7f3d0",
+
+  grow: "#16a34a",
+  growSoft: "#dcfce7",
+  growBorder: "#bbf7d0",
+
   understand: "#2563eb",
-  understandSoft: "#dbeafe",
+  understandSoft: "#eff6ff",
   understandBorder: "#bfdbfe",
 };
 
-const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
-const inputSt = {
-  width: "100%",
-  padding: "9px 14px",
-  borderRadius: 999,
-  background: C.altBg,
-  border: `1.5px solid ${C.border}`,
-  fontSize: 13,
-  color: C.foreground,
-  outline: "none",
-  fontFamily: M.fontFamily,
-  transition: "border-color 0.15s",
-  boxSizing: "border-box",
-};
+const M = { fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" };
+
+/** Clean up technical jargon into simple human student English */
+function formatHumanText(text = "") {
+  if (!text) return "";
+  return text
+    .replace(/Top spending drivers:/gi, "Largest purchases:")
+    .replace(/Month-end spending forecast/gi, "Monthly Spend Forecast")
+    .replace(/projected to exceed your total budget cap by ~?/gi, "which is over your budget limit by ")
+    .replace(/projected to spend/gi, "on track to spend")
+    .replace(/At your current rate/gi, "At your current pace")
+    .replace(/Personalized AI Recommendation/gi, "Smart Action Tip")
+    .replace(/discretionary purchases/gi, "extra purchases")
+    .replace(/deterministic/gi, "real");
+}
 
 export default function InsightsPage() {
   const { user } = useAuth();
@@ -100,10 +84,7 @@ export default function InsightsPage() {
 
   const [activeTab, setActiveTab] = useState("all");
   const [expandedWhyIds, setExpandedWhyIds] = useState({});
-  const [goalContributions, setGoalContributions] = useState({});
-  const [rebalanceModalItem, setRebalanceModalItem] = useState(null);
   const [driversModalItem, setDriversModalItem] = useState(null);
-  const [applyingBudgets, setApplyingBudgets] = useState(false);
 
   // Fetch insights
   const { data, isLoading, isFetching } = useQuery({
@@ -121,10 +102,10 @@ export default function InsightsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["insightsList"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardInsights"] });
-      toast.success("AI Copilot recalculated your financial patterns!");
+      toast.success("AI tips refreshed with your latest transactions!");
     },
     onError: () => {
-      toast.error("Failed to re-evaluate insights.");
+      toast.error("Could not refresh tips right now.");
     },
   });
 
@@ -133,10 +114,10 @@ export default function InsightsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["insightsList"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardInsights"] });
-      toast.success("Recommendation dismissed from active feed.");
+      toast.success("Tip dismissed from active feed.");
     },
     onError: () => {
-      toast.error("Could not dismiss recommendation.");
+      toast.error("Could not dismiss tip.");
     },
   });
 
@@ -144,7 +125,7 @@ export default function InsightsPage() {
     mutationFn: toggleBookmarkInsight,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["insightsList"] });
-      toast.success(res.isBookmarked ? "Insight bookmarked!" : "Bookmark removed.");
+      toast.success(res.isBookmarked ? "Tip saved to bookmarks!" : "Bookmark removed.");
     },
   });
 
@@ -152,7 +133,7 @@ export default function InsightsPage() {
     mutationFn: togglePinInsight,
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["insightsList"] });
-      toast.success(res.isPinned ? "Insight pinned to top!" : "Insight unpinned.");
+      toast.success(res.isPinned ? "Tip pinned to top!" : "Tip unpinned.");
     },
   });
 
@@ -173,7 +154,7 @@ export default function InsightsPage() {
       else if (item.category === "save") saveCount++;
       else if (item.category === "grow") growCount++;
       else if (item.category === "understand") understandCount++;
-      if (item.priority === "high") highPriorityCount++;
+      if (item.priority === "high" || item.priority === "critical") highPriorityCount++;
     });
 
     return {
@@ -185,10 +166,10 @@ export default function InsightsPage() {
       highPriorityCount,
       healthLabel:
         highPriorityCount > 0
-          ? `${highPriorityCount} High Alert`
+          ? `${highPriorityCount} Alert${highPriorityCount > 1 ? "s" : ""}`
           : takeActionCount > 0
           ? "Action Needed"
-          : "Healthy & Stable",
+          : "On Track",
     };
   }, [insights]);
 
@@ -200,7 +181,7 @@ export default function InsightsPage() {
     switch (cat) {
       case "take_action":
         return {
-          label: "Take Action",
+          label: "Action Needed",
           color: C.takeAction,
           bg: C.takeActionSoft,
           border: C.takeActionBorder,
@@ -208,15 +189,15 @@ export default function InsightsPage() {
         };
       case "save":
         return {
-          label: "Save",
+          label: "Saving Tip",
           color: C.save,
           bg: C.saveSoft,
           border: C.saveBorder,
-          icon: Flame,
+          icon: Lightbulb,
         };
       case "grow":
         return {
-          label: "Grow",
+          label: "Money Goal",
           color: C.grow,
           bg: C.growSoft,
           border: C.growBorder,
@@ -225,7 +206,7 @@ export default function InsightsPage() {
       case "understand":
       default:
         return {
-          label: "Understand",
+          label: "Spending Info",
           color: C.understand,
           bg: C.understandSoft,
           border: C.understandBorder,
@@ -251,9 +232,7 @@ export default function InsightsPage() {
 
       case "set_limit":
       case "adjust_budget":
-        if (actionPayload?.suggestedBudgets?.length) {
-          setRebalanceModalItem(item);
-        } else if (actionPayload?.categoryId) {
+        if (actionPayload?.categoryId) {
           navigate(
             `/app/budgets?open=create&categoryId=${actionPayload.categoryId}&category=${encodeURIComponent(
               actionPayload.categoryName || ""
@@ -266,7 +245,7 @@ export default function InsightsPage() {
 
       case "create_savings_plan":
       case "open_savings_goals":
-        navigate("/app/savings");
+        navigate("/app/budget");
         break;
 
       case "review_subscriptions":
@@ -287,284 +266,164 @@ export default function InsightsPage() {
     }
   };
 
-  const handleApplyRebalance = async () => {
-    if (!rebalanceModalItem?.supportingMetrics?.suggestedBudgets?.length) return;
-    setApplyingBudgets(true);
-    try {
-      const res = await applyBudgetAdjustments({
-        adjustments: rebalanceModalItem.supportingMetrics.suggestedBudgets,
-        insightId: rebalanceModalItem._id,
-      });
-      if (res.success) {
-        toast.success("Budgets adjusted successfully!");
-        setRebalanceModalItem(null);
-        queryClient.invalidateQueries({ queryKey: ["insightsList"] });
-        queryClient.invalidateQueries({ queryKey: ["dashboardInsights"] });
-        window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to apply budget adjustments.");
-    } finally {
-      setApplyingBudgets(false);
-    }
-  };
-
   return (
-    <div style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...M, display: "flex", flexDirection: "column", gap: 24, maxWidth: 960, margin: "0 auto", width: "100%" }}>
       {/* ── HEADER ── */}
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: "center",
           justifyContent: "space-between",
           gap: 16,
           flexWrap: "wrap",
         }}
       >
         <div>
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              color: C.brand,
-              margin: "0 0 6px",
-            }}
-          >
-            Financial Intelligence
-          </p>
-          <h1
-            style={{
-              fontSize: "clamp(1.6rem,4vw,2.4rem)",
-              fontWeight: 900,
-              color: C.foreground,
-              margin: 0,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-            }}
-          >
-            AI Financial Insights
-          </h1>
-          <p style={{ fontSize: 14, color: C.muted, margin: "6px 0 0", fontWeight: 500 }}>
-            Personalized, explainable financial analysis powered by your real data.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <button
-            onClick={() => refreshMutation.mutate()}
-            disabled={isRefreshing}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 7,
-              height: 42,
-              padding: "0 22px",
-              borderRadius: 999,
-              background: C.highlight,
-              color: C.highlightFg,
-              border: "none",
-              fontSize: 14,
-              fontWeight: 800,
-              cursor: isRefreshing ? "not-allowed" : "pointer",
-              ...M,
-              boxShadow: `0 4px 16px ${C.highlight}55`,
-              transition: "background 0.15s",
-              opacity: isRefreshing ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (!isRefreshing) e.currentTarget.style.background = "oklch(0.82 0.18 157)";
-            }}
-            onMouseLeave={(e) => {
-              if (!isRefreshing) e.currentTarget.style.background = C.highlight;
-            }}
-          >
-            <RefreshCw
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span
               style={{
-                width: 15,
-                animation: isRefreshing ? "spin 1s linear infinite" : "none",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#10b981",
+                display: "inline-block",
               }}
             />
-            {isRefreshing ? "Analyzing Patterns..." : "Re-evaluate Insights"}
-          </button>
-        </div>
-      </div>
-
-      {/* ── HERO BANNER ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "16px 22px",
-          borderRadius: 8,
-          background: C.hero,
-          position: "relative",
-          overflow: "hidden",
-          flexWrap: "wrap",
-          gap: 14,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            opacity: 0.12,
-            backgroundImage: `linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
-            backgroundSize: "48px 48px",
-          }}
-        />
-        <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-          <div
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#2563eb", letterSpacing: "0.02em" }}>
+              Smart Student Assistant
+            </span>
+          </div>
+          <h1
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: `${C.highlight}22`,
-              border: `1.5px solid ${C.highlight}44`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: C.highlight,
+              fontSize: "clamp(1.7rem, 3.5vw, 2.2rem)",
+              fontWeight: 800,
+              color: "#0f172a",
+              margin: 0,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.2,
             }}
           >
-            <Sparkles style={{ width: 18 }} />
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: C.heroFg }}>
-                CampusCoin Copilot
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "2px 8px",
-                  borderRadius: 999,
-                  background: `${C.highlight}22`,
-                  color: C.highlight,
-                  border: `1px solid ${C.highlight}44`,
-                }}
-              >
-                100% Deterministic & Personalized
-              </span>
-            </div>
-            <p style={{ fontSize: 12, color: C.heroMuted, margin: "2px 0 0", fontWeight: 500 }}>
-              Continuous evaluation against your verified spending history, active limits, and goals.
-            </p>
-          </div>
+            Smart Money Tips
+          </h1>
+          <p style={{ fontSize: 14, color: "#475569", margin: "6px 0 0", fontWeight: 500 }}>
+            Simple, practical tips based on your real expenses to help you save more.
+          </p>
         </div>
 
-        <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: C.heroMuted, fontWeight: 500 }}>
-            {stats.total} recommendation{stats.total !== 1 ? "s" : ""} generated
-          </span>
-        </div>
+        <button
+          onClick={() => refreshMutation.mutate()}
+          disabled={isRefreshing}
+          className="dash-btn-primary"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 22px",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: isRefreshing ? "not-allowed" : "pointer",
+            opacity: isRefreshing ? 0.75 : 1,
+          }}
+        >
+          <RefreshCw
+            style={{
+              width: 16,
+              height: 16,
+              animation: isRefreshing ? "spin 1s linear infinite" : "none",
+            }}
+          />
+          {isRefreshing ? "Checking Expenses..." : "Refresh Tips"}
+        </button>
       </div>
 
-      {/* ── KPI SUMMARY STRIP ── */}
+      {/* ── QUICK METRICS ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 0,
-          border: `1px solid ${C.border}`,
-          borderRadius: 8,
-          overflow: "hidden",
-          background: C.border,
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 12,
         }}
       >
         {[
           {
-            label: "Active Insights",
+            label: "Total Tips",
             value: stats.total,
-            raw: true,
-            accent: C.brand,
-            soft: C.brandSoft,
-            icon: Sparkles,
+            color: "#2563eb",
+            bg: "#eff6ff",
+            border: "#dbeafe",
+            icon: Lightbulb,
           },
           {
-            label: "Take Action Alerts",
+            label: "Budget Alerts",
             value: stats.takeActionCount,
-            raw: true,
-            accent: C.takeAction,
-            soft: C.takeActionSoft,
+            color: stats.takeActionCount > 0 ? "#dc2626" : "#475569",
+            bg: stats.takeActionCount > 0 ? "#fee2e2" : "#f8fafc",
+            border: stats.takeActionCount > 0 ? "#fecdd3" : "#e2e8f0",
             icon: AlertTriangle,
           },
           {
-            label: "Savings & Growth",
+            label: "Saving Ideas",
             value: stats.saveCount + stats.growCount,
-            raw: true,
-            accent: C.growth,
-            soft: C.growthSoft,
+            color: "#16a34a",
+            bg: "#dcfce7",
+            border: "#bbf7d0",
             icon: Target,
           },
           {
-            label: "Copilot Status",
+            label: "Status",
             value: stats.healthLabel,
-            raw: true,
-            accent: stats.highPriorityCount > 0 ? C.takeAction : C.growth,
-            soft: stats.highPriorityCount > 0 ? C.takeActionSoft : C.growthSoft,
+            color: stats.highPriorityCount > 0 ? "#dc2626" : "#16a34a",
+            bg: stats.highPriorityCount > 0 ? "#fee2e2" : "#dcfce7",
+            border: stats.highPriorityCount > 0 ? "#fecdd3" : "#bbf7d0",
             icon: Shield,
           },
-        ].map((s) => (
-          <div key={s.label} style={{ background: "#fff", padding: "18px 20px" }}>
+        ].map((k) => (
+          <div
+            key={k.label}
+            className="dash-kpi-card"
+            style={{
+              padding: "14px 18px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: s.soft,
-                color: s.accent,
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: k.bg,
+                border: `1px solid ${k.border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                marginBottom: 10,
+                color: k.color,
+                flexShrink: 0,
               }}
             >
-              <s.icon style={{ width: 16 }} />
+              <k.icon style={{ width: 18, height: 18 }} />
             </div>
-            <div
-              style={{
-                fontSize: "clamp(1.2rem,2.4vw,1.7rem)",
-                fontWeight: 900,
-                color: s.accent,
-                letterSpacing: "-0.03em",
-                lineHeight: 1,
-                marginBottom: 4,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {s.value}
+            <div>
+              <p style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", margin: 0, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                {k.label}
+              </p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: k.color, margin: "2px 0 0", lineHeight: 1.2 }}>
+                {k.value}
+              </p>
             </div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                margin: 0,
-              }}
-            >
-              {s.label}
-            </p>
           </div>
         ))}
       </div>
 
-      {/* ── CATEGORY FILTER TABS ── */}
+      {/* ── FILTER TABS ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         {[
-          { id: "all", label: "All Insights", count: stats.total },
-          { id: "take_action", label: "Take Action", count: stats.takeActionCount },
-          { id: "save", label: "Save", count: stats.saveCount },
-          { id: "grow", label: "Grow", count: stats.growCount },
-          { id: "understand", label: "Understand", count: stats.understandCount },
+          { id: "all", label: "All Tips", count: stats.total },
+          { id: "take_action", label: "Alerts", count: stats.takeActionCount },
+          { id: "save", label: "Saving Ideas", count: stats.saveCount },
+          { id: "grow", label: "Goals", count: stats.growCount },
+          { id: "understand", label: "Spending Info", count: stats.understandCount },
           { id: "bookmarked", label: "Saved", icon: Bookmark },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
@@ -576,35 +435,36 @@ export default function InsightsPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "8px 18px",
-                borderRadius: 999,
+                padding: "8px 16px",
+                borderRadius: 9999,
                 cursor: "pointer",
                 ...M,
                 fontSize: 13,
-                fontWeight: isActive ? 700 : 500,
-                background: isActive ? C.hero : "#fff",
-                color: isActive ? C.heroFg : C.muted,
-                border: `1.5px solid ${isActive ? C.hero : C.border}`,
-                transition: "all 0.15s",
+                fontWeight: isActive ? 700 : 600,
+                background: isActive ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" : "rgba(255, 255, 255, 0.92)",
+                color: isActive ? "#ffffff" : "#475569",
+                border: `1px solid ${isActive ? "transparent" : "rgba(172, 217, 251, 0.55)"}`,
+                boxShadow: isActive ? "0 4px 12px rgba(37, 99, 235, 0.28)" : "0 1px 3px rgba(0,0,0,0.02)",
+                transition: "all 0.15s ease",
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.borderColor = C.brand;
+                if (!isActive) e.currentTarget.style.background = "rgba(224, 242, 254, 0.65)";
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.borderColor = C.border;
+                if (!isActive) e.currentTarget.style.background = "rgba(255, 255, 255, 0.92)";
               }}
             >
-              {tab.icon && <tab.icon style={{ width: 13 }} />}
+              {tab.icon && <tab.icon style={{ width: 13, height: 13 }} />}
               <span>{tab.label}</span>
               {tab.count !== undefined && (
                 <span
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 800,
-                    padding: "1px 6px",
-                    borderRadius: 999,
-                    background: isActive ? `${C.highlight}33` : C.altBg,
-                    color: isActive ? C.highlight : C.foreground,
+                    padding: "1px 7px",
+                    borderRadius: 9999,
+                    background: isActive ? "rgba(255, 255, 255, 0.25)" : "rgba(224, 242, 254, 0.8)",
+                    color: isActive ? "#ffffff" : "#2563eb",
                   }}
                 >
                   {tab.count}
@@ -615,37 +475,35 @@ export default function InsightsPage() {
         })}
       </div>
 
-      {/* ── INSIGHTS LIST OR EMPTY STATE ── */}
+      {/* ── INSIGHTS FEED ── */}
       {isLoading ? (
         <div
+          className="dash-card"
           style={{
-            background: "#fff",
-            border: `1.5px solid ${C.border}`,
-            borderRadius: 8,
-            padding: "60px 20px",
+            padding: "50px 20px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: 10,
-            color: C.muted,
+            color: "#64748b",
             fontSize: 14,
           }}
         >
           <span
             style={{
-              width: 18,
-              height: 18,
-              border: `2px solid ${C.border}`,
-              borderTopColor: C.brand,
+              width: 20,
+              height: 20,
+              border: "2px solid #e2e8f0",
+              borderTopColor: "#2563eb",
               borderRadius: "50%",
               display: "inline-block",
               animation: "spin 0.7s linear infinite",
             }}
           />
-          Evaluating deterministic financial metrics & generating recommendations...
+          Checking your transactions to prepare easy tips...
         </div>
       ) : insights.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {insights.map((item) => {
             const cat = getCategoryConfig(item.category);
             const isWhyOpen = Boolean(expandedWhyIds[item._id]);
@@ -657,27 +515,26 @@ export default function InsightsPage() {
               <motion.div
                 key={item._id}
                 layout
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
+                className="dash-card"
                 style={{
-                  background: "#fff",
-                  border: `1.5px solid ${isPinned ? C.highlight : C.border}`,
-                  borderRadius: 8,
-                  padding: "20px 22px",
+                  padding: "24px 26px",
                   position: "relative",
-                  boxShadow: isPinned ? `0 4px 18px ${C.highlight}22` : "none",
+                  border: isPinned ? "1.5px solid #2563eb" : "1px solid rgba(172, 217, 251, 0.55)",
+                  boxShadow: isPinned ? "0 6px 20px rgba(37, 99, 235, 0.12)" : "0 4px 16px rgba(37, 99, 235, 0.04)",
                 }}
               >
-                {/* Top Strip: Badges & Controls */}
+                {/* Top Row: Category Tag & Buttons */}
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: 12,
-                    marginBottom: 12,
+                    marginBottom: 14,
                     flexWrap: "wrap",
                   }}
                 >
@@ -687,56 +544,45 @@ export default function InsightsPage() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        padding: "3px 10px",
-                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: "4px 12px",
+                        borderRadius: 9999,
                         background: cat.bg,
                         color: cat.color,
                         border: `1px solid ${cat.border}`,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
                       }}
                     >
-                      <cat.icon style={{ width: 12 }} />
+                      <cat.icon style={{ width: 13, height: 13 }} />
                       {cat.label}
                     </span>
 
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 800,
-                        padding: "3px 8px",
-                        borderRadius: 999,
-                        background:
-                          item.priority === "high"
-                            ? C.takeActionSoft
-                            : item.priority === "medium"
-                            ? C.saveSoft
-                            : C.altBg,
-                        color:
-                          item.priority === "high"
-                            ? C.takeAction
-                            : item.priority === "medium"
-                            ? C.save
-                            : C.muted,
-                        border: `1px solid ${C.border}`,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                      }}
-                    >
-                      {item.priority} Priority
-                    </span>
+                    {item.priority === "high" || item.priority === "critical" ? (
+                      <span
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          padding: "3px 9px",
+                          borderRadius: 9999,
+                          background: "#fee2e2",
+                          color: "#dc2626",
+                          border: "1px solid #fecdd3",
+                        }}
+                      >
+                        ⚡ High Alert
+                      </span>
+                    ) : null}
 
                     {item.relatedCategoryName && (
                       <span
                         style={{
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: 700,
-                          color: C.muted,
-                          background: C.altBg,
-                          padding: "2px 8px",
-                          borderRadius: 999,
+                          color: "#334155",
+                          background: "#eff6ff",
+                          border: "1px solid #dbeafe",
+                          padding: "3px 10px",
+                          borderRadius: 9999,
                         }}
                       >
                         🏷️ {item.relatedCategoryName}
@@ -748,471 +594,226 @@ export default function InsightsPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <button
                       onClick={() => pinMutation.mutate(item._id)}
-                      title={isPinned ? "Unpin" : "Pin to top"}
+                      title={isPinned ? "Unpin tip" : "Pin tip to top"}
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 32,
+                        height: 32,
                         borderRadius: "50%",
-                        border: `1px solid ${isPinned ? C.highlight : C.border}`,
-                        background: isPinned ? `${C.highlight}33` : C.altBg,
-                        color: isPinned ? C.highlightFg : C.muted,
+                        border: `1px solid ${isPinned ? "#2563eb" : "#e2e8f0"}`,
+                        background: isPinned ? "#eff6ff" : "#fff",
+                        color: isPinned ? "#2563eb" : "#64748b",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: "pointer",
-                        transition: "all 0.12s",
+                        transition: "all 0.15s ease",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = C.brandSoft)}
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = isPinned
-                          ? `${C.highlight}33`
-                          : C.altBg)
-                      }
                     >
-                      <Pin style={{ width: 13, transform: isPinned ? "rotate(45deg)" : "none" }} />
+                      <Pin style={{ width: 14, height: 14, transform: isPinned ? "rotate(45deg)" : "none" }} />
                     </button>
 
                     <button
                       onClick={() => bookmarkMutation.mutate(item._id)}
-                      title={isBookmarked ? "Remove Bookmark" : "Save for later"}
+                      title={isBookmarked ? "Remove bookmark" : "Save tip for later"}
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 32,
+                        height: 32,
                         borderRadius: "50%",
-                        border: `1px solid ${isBookmarked ? C.brand : C.border}`,
-                        background: isBookmarked ? C.brandSoft : C.altBg,
-                        color: isBookmarked ? C.brand : C.muted,
+                        border: `1px solid ${isBookmarked ? "#2563eb" : "#e2e8f0"}`,
+                        background: isBookmarked ? "#eff6ff" : "#fff",
+                        color: isBookmarked ? "#2563eb" : "#64748b",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: "pointer",
-                        transition: "all 0.12s",
+                        transition: "all 0.15s ease",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = C.brandSoft)}
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = isBookmarked ? C.brandSoft : C.altBg)
-                      }
                     >
                       <Bookmark
                         style={{
-                          width: 13,
-                          fill: isBookmarked ? C.brand : "none",
+                          width: 14,
+                          height: 14,
+                          fill: isBookmarked ? "#2563eb" : "none",
                         }}
                       />
                     </button>
 
                     <button
                       onClick={() => dismissMutation.mutate(item._id)}
-                      title="Dismiss from feed"
+                      title="Dismiss tip"
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 32,
+                        height: 32,
                         borderRadius: "50%",
-                        border: `1px solid ${C.border}`,
-                        background: C.altBg,
-                        color: C.muted,
+                        border: "1px solid #e2e8f0",
+                        background: "#fff",
+                        color: "#64748b",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: "pointer",
-                        transition: "all 0.12s",
+                        transition: "all 0.15s ease",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = C.takeActionSoft;
-                        e.currentTarget.style.color = C.takeAction;
+                        e.currentTarget.style.background = "#fee2e2";
+                        e.currentTarget.style.color = "#dc2626";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = C.altBg;
-                        e.currentTarget.style.color = C.muted;
+                        e.currentTarget.style.background = "#fff";
+                        e.currentTarget.style.color = "#64748b";
                       }}
                     >
-                      <X style={{ width: 14 }} />
+                      <X style={{ width: 14, height: 14 }} />
                     </button>
                   </div>
                 </div>
 
-                {/* Title & Summary */}
+                {/* Title */}
                 <h3
                   style={{
-                    fontSize: "clamp(1.1rem,2vw,1.35rem)",
-                    fontWeight: 900,
-                    color: C.foreground,
-                    margin: "0 0 6px",
+                    fontSize: "1.25rem",
+                    fontWeight: 800,
+                    color: "#0f172a",
+                    margin: "0 0 8px",
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  {item.title}
+                  {formatHumanText(item.title)}
                 </h3>
-                <p style={{ fontSize: 13, color: C.muted, margin: "0 0 14px", lineHeight: 1.5 }}>
-                  {item.summary}
+
+                {/* Readable Human Explanation */}
+                <p style={{ fontSize: 14.5, color: "#334155", margin: "0 0 16px", lineHeight: 1.6, fontWeight: 500 }}>
+                  {formatHumanText(item.summary)}
                 </p>
 
-                {/* Recommendation Box */}
-                <div
-                  style={{
-                    background: C.altBg,
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 8,
-                    padding: "12px 16px",
-                    marginBottom: 14,
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 10,
-                  }}
-                >
-                  <Sparkles
-                    style={{ width: 16, color: C.brand, flexShrink: 0, marginTop: 2 }}
-                  />
-                  <div>
-                    <span
+                {/* Quick Tip Box */}
+                {item.recommendation && (
+                  <div
+                    style={{
+                      background: "linear-gradient(135deg, rgba(239, 246, 255, 0.9) 0%, rgba(219, 234, 254, 0.6) 100%)",
+                      border: "1px solid rgba(191, 219, 254, 0.8)",
+                      borderRadius: 12,
+                      padding: "14px 18px",
+                      marginBottom: 16,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 12,
+                    }}
+                  >
+                    <div
                       style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        color: C.brand,
-                        display: "block",
-                        marginBottom: 2,
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        background: "#2563eb",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        marginTop: 1,
                       }}
                     >
-                      Personalized AI Recommendation
-                    </span>
-                    <p style={{ fontSize: 13, color: C.foreground, margin: 0, fontWeight: 600 }}>
-                      {item.recommendation}
-                    </p>
+                      <Lightbulb style={{ width: 16, height: 16 }} />
+                    </div>
+                    <div>
+                      <span
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                          color: "#1d4ed8",
+                          display: "block",
+                          marginBottom: 3,
+                        }}
+                      >
+                        Quick Action Tip
+                      </span>
+                      <p style={{ fontSize: 14, color: "#0f172a", margin: 0, fontWeight: 700, lineHeight: 1.5 }}>
+                        {formatHumanText(item.recommendation)}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Supporting Metrics Strip (Deterministic) */}
+                {/* Stat Chips */}
                 {metrics && Object.keys(metrics).length > 0 && (
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 12,
+                      gap: 10,
                       flexWrap: "wrap",
-                      marginBottom: 14,
+                      marginBottom: 16,
                     }}
                   >
                     {metrics.currentAmount !== undefined && (
                       <span
                         style={{
-                          fontSize: 12,
+                          fontSize: 12.5,
                           fontWeight: 700,
-                          color: C.foreground,
-                          background: "#fff",
-                          border: `1px solid ${C.border}`,
-                          padding: "4px 10px",
-                          borderRadius: 999,
+                          color: "#0f172a",
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          padding: "5px 12px",
+                          borderRadius: 9999,
                         }}
                       >
-                        Current: <strong>{formatCurrency(metrics.currentAmount, cur)}</strong>
-                      </span>
-                    )}
-                    {metrics.avgAmount !== undefined && (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: C.muted,
-                          background: "#fff",
-                          border: `1px solid ${C.border}`,
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        3-Mo Avg: <strong>{formatCurrency(metrics.avgAmount, cur)}</strong>
-                      </span>
-                    )}
-                    {metrics.percentageChange !== undefined && (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: metrics.percentageChange > 0 ? C.takeAction : C.growth,
-                          background:
-                            metrics.percentageChange > 0 ? C.takeActionSoft : C.growthSoft,
-                          border: `1px solid ${
-                            metrics.percentageChange > 0 ? C.takeActionBorder : C.growBorder
-                          }`,
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        {metrics.percentageChange > 0 ? "+" : ""}
-                        {metrics.percentageChange}% vs baseline
-                      </span>
-                    )}
-                    {metrics.budgetLimit !== undefined && (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: C.muted,
-                          background: "#fff",
-                          border: `1px solid ${C.border}`,
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        Monthly Cap: <strong>{formatCurrency(metrics.budgetLimit, cur)}</strong>
+                        Current Spend: <strong style={{ color: "#2563eb" }}>{formatCurrency(metrics.currentAmount, cur)}</strong>
                       </span>
                     )}
                     {metrics.projectedMonthEnd !== undefined && (
                       <span
                         style={{
-                          fontSize: 12,
+                          fontSize: 12.5,
                           fontWeight: 700,
-                          color: C.brand,
-                          background: C.brandSoft,
-                          border: `1px solid ${C.border}`,
-                          padding: "4px 10px",
-                          borderRadius: 999,
+                          color: "#1d4ed8",
+                          background: "#eff6ff",
+                          border: "1px solid #dbeafe",
+                          padding: "5px 12px",
+                          borderRadius: 9999,
                         }}
                       >
                         Forecast: <strong>{formatCurrency(metrics.projectedMonthEnd, cur)}</strong>
                       </span>
                     )}
-                  </div>
-                )}
-
-                {/* Interactive Savings Stepper if pattern is goal */}
-                {item.pattern === "active_savings_goal" && metrics.targetAmount && (
-                  <div
-                    style={{
-                      background: "#fff",
-                      border: `1.5px solid ${C.border}`,
-                      borderRadius: 8,
-                      padding: "14px 16px",
-                      marginBottom: 14,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <span style={{ fontSize: 12, fontWeight: 700, color: C.foreground }}>
-                        Goal Target: {formatCurrency(metrics.targetAmount, cur)} · Remaining:{" "}
-                        {formatCurrency(metrics.remainingAmount || 0, cur)}
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: C.growth }}>
-                        {metrics.currentAmount
-                          ? Math.round((metrics.currentAmount / metrics.targetAmount) * 100)
-                          : 0}
-                        % Completed
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        height: 6,
-                        borderRadius: 999,
-                        background: C.altBg,
-                        overflow: "hidden",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <div
+                    {metrics.budgetLimit !== undefined && (
+                      <span
                         style={{
-                          height: "100%",
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              ((metrics.currentAmount || 0) / (metrics.targetAmount || 1)) * 100
-                            )
-                          )}%`,
-                          background: C.growth,
-                          borderRadius: 999,
+                          fontSize: 12.5,
+                          fontWeight: 600,
+                          color: "#475569",
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          padding: "5px 12px",
+                          borderRadius: 9999,
                         }}
-                      />
-                    </div>
-
-                    {/* Interactive Monthly Contribution Slider */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span style={{ fontSize: 12, color: C.muted }}>
-                        Adjust Monthly Contribution:
+                      >
+                        Limit: <strong>{formatCurrency(metrics.budgetLimit, cur)}</strong>
                       </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <button
-                          onClick={() =>
-                            setGoalContributions((prev) => {
-                              const curr =
-                                prev[item._id] || metrics.suggestedMonthlyContribution || 100;
-                              return { ...prev, [item._id]: Math.max(10, curr - 50) };
-                            })
-                          }
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "50%",
-                            border: `1px solid ${C.border}`,
-                            background: C.altBg,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: 800,
-                          }}
-                        >
-                          -
-                        </button>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: C.foreground }}>
-                          {formatCurrency(
-                            goalContributions[item._id] ||
-                              metrics.suggestedMonthlyContribution ||
-                              100,
-                            cur
-                          )}
-                          /mo
-                        </span>
-                        <button
-                          onClick={() =>
-                            setGoalContributions((prev) => {
-                              const curr =
-                                prev[item._id] || metrics.suggestedMonthlyContribution || 100;
-                              return { ...prev, [item._id]: curr + 50 };
-                            })
-                          }
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "50%",
-                            border: `1px solid ${C.border}`,
-                            background: C.altBg,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: 800,
-                          }}
-                        >
-                          +
-                        </button>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: C.brand,
-                            padding: "3px 8px",
-                            borderRadius: 999,
-                            background: C.brandSoft,
-                          }}
-                        >
-                          ≈{" "}
-                          {Math.ceil(
-                            (metrics.remainingAmount || 100) /
-                              (goalContributions[item._id] ||
-                                metrics.suggestedMonthlyContribution ||
-                                100)
-                          )}{" "}
-                          months to complete
-                        </span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
-                {/* "Why am I getting this?" Expandable Accordion */}
-                <div style={{ marginBottom: 14 }}>
-                  <button
-                    onClick={() => toggleWhy(item._id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: C.brand,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      ...M,
-                    }}
-                  >
-                    <span>Why am I getting this?</span>
-                    <ChevronDown
-                      style={{
-                        width: 14,
-                        transform: isWhyOpen ? "rotate(180deg)" : "none",
-                        transition: "transform 0.15s",
-                      }}
-                    />
-                  </button>
-
-                  <AnimatePresence>
-                    {isWhyOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.15 }}
-                        style={{ overflow: "hidden", marginTop: 8 }}
-                      >
-                        <div
-                          style={{
-                            background: C.altBg,
-                            border: `1px solid ${C.border}`,
-                            borderRadius: 8,
-                            padding: "12px 16px",
-                            fontSize: 12,
-                            color: C.foreground,
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          <p style={{ margin: "0 0 6px", fontWeight: 700, color: C.foreground }}>
-                            {item.explanation}
-                          </p>
-                          <span style={{ fontSize: 11, color: C.muted }}>
-                            Confidence: <strong>{item.confidence || "HIGH"}</strong> · Calculated
-                            at {new Date(item.generatedAt || Date.now()).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Working Action Buttons */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                {/* Single Clear Action Button in Sapphire Blue */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 4 }}>
                   <button
                     onClick={() => handleAction(item)}
+                    className="dash-btn-primary"
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
-                      height: 36,
-                      padding: "0 18px",
-                      borderRadius: 999,
-                      background: C.highlight,
-                      color: C.highlightFg,
-                      border: "none",
-                      fontSize: 13,
-                      fontWeight: 800,
+                      gap: 8,
+                      height: 40,
+                      padding: "0 20px",
+                      fontSize: 13.5,
+                      fontWeight: 700,
                       cursor: "pointer",
-                      ...M,
-                      boxShadow: `0 2px 10px ${C.highlight}44`,
-                      transition: "background 0.15s",
                     }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "oklch(0.82 0.18 157)")
-                    }
-                    onMouseLeave={(e) => (e.currentTarget.style.background = C.highlight)}
                   >
-                    <span>{item.actionLabel || "Take Action"}</span>
-                    <ArrowUpRight style={{ width: 14 }} />
+                    <span>{item.actionLabel || "Review Expenses"}</span>
+                    <ArrowRight style={{ width: 15, height: 15 }} />
                   </button>
 
                   {item.pattern === "spending_spike" && metrics.drivers?.length > 0 && (
@@ -1222,22 +823,30 @@ export default function InsightsPage() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 6,
-                        height: 36,
-                        padding: "0 16px",
-                        borderRadius: 999,
-                        background: C.altBg,
-                        border: `1.5px solid ${C.border}`,
-                        fontSize: 12,
+                        height: 40,
+                        padding: "0 18px",
+                        borderRadius: 9999,
+                        background: "#fff",
+                        border: "1px solid #cbd5e1",
+                        fontSize: 13,
                         fontWeight: 700,
-                        color: C.foreground,
+                        color: "#334155",
                         cursor: "pointer",
                         ...M,
-                        transition: "all 0.15s",
+                        transition: "all 0.15s ease",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = C.brandSoft)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = C.altBg)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#eff6ff";
+                        e.currentTarget.style.borderColor = "#93c5fd";
+                        e.currentTarget.style.color = "#2563eb";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#fff";
+                        e.currentTarget.style.borderColor = "#cbd5e1";
+                        e.currentTarget.style.color = "#334155";
+                      }}
                     >
-                      <span>View Spike Drivers ({metrics.drivers.length})</span>
+                      <span>Highest Purchases ({metrics.drivers.length})</span>
                     </button>
                   )}
                 </div>
@@ -1248,15 +857,14 @@ export default function InsightsPage() {
       ) : (
         /* Empty State */
         <div
+          className="dash-card"
           style={{
-            background: "#fff",
-            border: `1.5px solid ${C.border}`,
-            borderRadius: 8,
-            padding: "60px 20px",
+            padding: "50px 20px",
+            textAlign: "center",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 14,
+            justifyContent: "center",
           }}
         >
           <div
@@ -1264,382 +872,104 @@ export default function InsightsPage() {
               width: 52,
               height: 52,
               borderRadius: "50%",
-              background: C.growthSoft,
+              background: "#eff6ff",
+              border: "1px solid #dbeafe",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              color: "#2563eb",
+              marginBottom: 12,
             }}
           >
-            <CheckCircle2 style={{ width: 24, color: C.growth }} />
+            <CheckCircle2 style={{ width: 24, height: 24 }} />
           </div>
-          <div style={{ textAlign: "center" }}>
-            <p
-              style={{
-                fontSize: 17,
-                fontWeight: 800,
-                color: C.foreground,
-                margin: "0 0 6px",
-              }}
-            >
-              You're all caught up!
-            </p>
-            <p style={{ fontSize: 13, color: C.muted, margin: 0, maxWidth: 420 }}>
-              No critical spending anomalies or overspending risks were detected in this filter.
-              Keep recording transactions to maintain accurate financial intelligence.
-            </p>
-          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 6px" }}>
+            You're All Caught Up!
+          </h3>
+          <p style={{ fontSize: 14, color: "#64748b", margin: "0 0 16px", maxWidth: 420 }}>
+            Your spending is looking good and no urgent budget alerts were found.
+          </p>
           <button
             onClick={() => refreshMutation.mutate()}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 7,
-              height: 42,
-              padding: "0 22px",
-              borderRadius: 999,
-              background: C.highlight,
-              color: C.highlightFg,
-              border: "none",
-              fontSize: 14,
-              fontWeight: 800,
-              cursor: "pointer",
-              ...M,
-            }}
+            className="dash-btn-primary"
+            style={{ padding: "10px 22px", fontSize: 13.5 }}
           >
-            <RefreshCw style={{ width: 14 }} /> Refresh Analysis
+            Check Spending Again
           </button>
         </div>
       )}
 
-      {/* ── MODAL: REVIEW & APPLY BUDGET REBALANCING ── */}
-      <Portal>
-        <AnimatePresence>
-          {rebalanceModalItem && (
-            <div
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 1000,
-                background: "rgba(15,23,42,0.65)",
-                backdropFilter: "blur(6px)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 16,
-              }}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                style={{
-                  ...M,
-                  background: "#fff",
-                  border: `1.5px solid ${C.border}`,
-                  borderRadius: 12,
-                  padding: "24px 26px",
-                  maxWidth: 520,
-                  width: "100%",
-                  boxShadow: "0 20px 48px rgba(0,0,0,0.18)",
-                }}
+      {/* ── DRIVERS BREAKDOWN MODAL ── */}
+      {driversModalItem && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            backdropFilter: "blur(6px)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setDriversModalItem(null)}
+        >
+          <div
+            className="dash-card"
+            style={{
+              maxWidth: 480,
+              width: "100%",
+              padding: 24,
+              boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                Top Spending Purchases
+              </h3>
+              <button
+                onClick={() => setDriversModalItem(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}
               >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+              {driversModalItem.supportingMetrics?.drivers?.map((d, i) => (
                 <div
+                  key={i}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    marginBottom: 16,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Sliders style={{ width: 18, color: C.brand }} />
-                    <h3 style={{ fontSize: 17, fontWeight: 900, color: C.foreground, margin: 0 }}>
-                      Review & Apply Suggested Budgets
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setRebalanceModalItem(null)}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      color: C.muted,
-                      cursor: "pointer",
-                      fontSize: 16,
-                    }}
-                  >
-                    ✕
-                  </button>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{d.categoryName}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#2563eb" }}>
+                    {formatCurrency(d.amount, cur)}
+                  </span>
                 </div>
-
-                <p style={{ fontSize: 13, color: C.muted, margin: "0 0 16px", lineHeight: 1.5 }}>
-                  CampusCoin AI calculated these suggested monthly caps based on your past 3 months
-                  of actual spending. No changes occur until you confirm.
-                </p>
-
-                <div
-                  style={{
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    marginBottom: 20,
-                  }}
-                >
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: C.altBg, borderBottom: `1px solid ${C.border}` }}>
-                        <th
-                          style={{
-                            padding: "10px 14px",
-                            textAlign: "left",
-                            fontSize: 11,
-                            fontWeight: 800,
-                            color: C.muted,
-                          }}
-                        >
-                          Category
-                        </th>
-                        <th
-                          style={{
-                            padding: "10px 14px",
-                            textAlign: "right",
-                            fontSize: 11,
-                            fontWeight: 800,
-                            color: C.muted,
-                          }}
-                        >
-                          Current
-                        </th>
-                        <th
-                          style={{
-                            padding: "10px 14px",
-                            textAlign: "right",
-                            fontSize: 11,
-                            fontWeight: 800,
-                            color: C.brand,
-                          }}
-                        >
-                          Suggested
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rebalanceModalItem.supportingMetrics?.suggestedBudgets?.map((b, idx) => (
-                        <tr
-                          key={idx}
-                          style={{
-                            borderBottom:
-                              idx !==
-                              rebalanceModalItem.supportingMetrics.suggestedBudgets.length - 1
-                                ? `1px solid ${C.border}`
-                                : "none",
-                          }}
-                        >
-                          <td style={{ padding: "10px 14px", fontWeight: 700, color: C.foreground }}>
-                            {b.categoryName}
-                          </td>
-                          <td style={{ padding: "10px 14px", textAlign: "right", color: C.muted }}>
-                            {formatCurrency(b.currentLimit, cur)}
-                          </td>
-                          <td
-                            style={{
-                              padding: "10px 14px",
-                              textAlign: "right",
-                              fontWeight: 800,
-                              color: C.growth,
-                            }}
-                          >
-                            {formatCurrency(b.suggestedLimit, cur)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                  <button
-                    onClick={() => setRebalanceModalItem(null)}
-                    style={{
-                      padding: "9px 18px",
-                      borderRadius: 999,
-                      border: `1.5px solid ${C.border}`,
-                      background: C.altBg,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: C.muted,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleApplyRebalance}
-                    disabled={applyingBudgets}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "9px 22px",
-                      borderRadius: 999,
-                      border: "none",
-                      background: C.highlight,
-                      color: C.highlightFg,
-                      fontSize: 13,
-                      fontWeight: 800,
-                      cursor: applyingBudgets ? "not-allowed" : "pointer",
-                      boxShadow: `0 4px 14px ${C.highlight}55`,
-                    }}
-                  >
-                    {applyingBudgets ? "Applying..." : "Apply Verified Budgets"}
-                  </button>
-                </div>
-              </motion.div>
+              ))}
             </div>
-          )}
-        </AnimatePresence>
-      </Portal>
-
-      {/* ── MODAL: SPENDING DRIVERS INSPECTOR ── */}
-      <Portal>
-        <AnimatePresence>
-          {driversModalItem && (
-            <div
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 1000,
-                background: "rgba(15,23,42,0.65)",
-                backdropFilter: "blur(6px)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 16,
+            <button
+              onClick={() => {
+                setDriversModalItem(null);
+                navigate("/app/transactions");
               }}
+              className="dash-btn-primary"
+              style={{ width: "100%", justifyContent: "center" }}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                style={{
-                  ...M,
-                  background: "#fff",
-                  border: `1.5px solid ${C.border}`,
-                  borderRadius: 12,
-                  padding: "24px 26px",
-                  maxWidth: 500,
-                  width: "100%",
-                  boxShadow: "0 20px 48px rgba(0,0,0,0.18)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 14,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <ArrowLeftRight style={{ width: 18, color: C.takeAction }} />
-                    <h3 style={{ fontSize: 17, fontWeight: 900, color: C.foreground, margin: 0 }}>
-                      Contributing Transactions
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setDriversModalItem(null)}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      color: C.muted,
-                      cursor: "pointer",
-                      fontSize: 16,
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <p style={{ fontSize: 13, color: C.muted, margin: "0 0 16px" }}>
-                  The spike in <strong>{driversModalItem.relatedCategoryName || "spending"}</strong>{" "}
-                  was primarily driven by these recent transactions:
-                </p>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    marginBottom: 20,
-                    maxHeight: 280,
-                    overflowY: "auto",
-                  }}
-                >
-                  {driversModalItem.supportingMetrics?.drivers?.map((d, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 14px",
-                        borderRadius: 8,
-                        background: C.altBg,
-                        border: `1px solid ${C.border}`,
-                      }}
-                    >
-                      <div>
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: C.foreground,
-                            display: "block",
-                          }}
-                        >
-                          {d.description || "Expense"}
-                        </span>
-                        <span style={{ fontSize: 11, color: C.muted }}>
-                          {new Date(d.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 900, color: C.takeAction }}>
-                        {formatCurrency(d.amount, cur)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                  <button
-                    onClick={() => {
-                      setDriversModalItem(null);
-                      handleAction(driversModalItem);
-                    }}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "9px 20px",
-                      borderRadius: 999,
-                      border: "none",
-                      background: C.highlight,
-                      color: C.highlightFg,
-                      fontSize: 13,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Open in Ledger
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      </Portal>
-
-      {/* ── AD BANNER ── */}
-      <AdSenseAd slot="dashboard-bottom" />
+              View Full Transaction History
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

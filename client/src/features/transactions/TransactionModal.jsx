@@ -1,25 +1,17 @@
 import { useState, useEffect } from "react";
-import { X, Plus, AlertCircle, Calendar, Tag, DollarSign, Repeat, CreditCard, Banknote, FolderPlus } from "lucide-react";
+import { X, Plus, AlertCircle, Calendar, Tag, Repeat, CreditCard, Banknote, FolderPlus, Smartphone } from "lucide-react";
 import { createTransaction, updateTransaction } from "./transactionApi";
 import { getCategories, createCategory } from "../categories/categoryApi";
+import { useAuth } from "../auth/AuthContext";
+import { formatCurrency } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Portal from "../../components/ui/Portal";
 import "../dashboard/Dashboard.css";
 
-const C = {
-  brand: "#2563eb",
-  brandSoft: "#dbeafe",
-  growth: "#16a34a",
-  growthSoft: "#dcfce7",
-  foreground: "#0f172a",
-  muted: "#64748b",
-  border: "#e2e8f0",
-  altBg: "#f8fafc",
-};
-
 export default function TransactionModal({ isOpen, onClose, editTransaction = null }) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
@@ -35,6 +27,9 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
 
+  const cur = user?.currency || "USD";
+  const currencySymbol = cur === "PKR" ? "Rs" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur === "INR" ? "₹" : "$";
+
   useEffect(() => {
     if (!isOpen) return;
     const load = async () => {
@@ -42,8 +37,8 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
       try {
         const res = await getCategories(type);
         if (res.success) {
-          setCategories(res.categories);
-          if (!editTransaction && res.categories.length > 0) setCategoryId(res.categories[0]._id);
+          setCategories(res.categories || []);
+          if (!editTransaction && res.categories?.length > 0) setCategoryId(res.categories[0]._id);
         }
       } catch (err) {
         console.error(err);
@@ -56,7 +51,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
 
   useEffect(() => {
     if (editTransaction) {
-      setType(editTransaction.type);
+      setType(editTransaction.type || "expense");
       setAmount(editTransaction.amount?.toString() || "");
       setPaymentMethod(editTransaction.paymentMethod || "Digital Bank");
       setCategoryId(editTransaction.categoryId?._id || editTransaction.categoryId || "");
@@ -147,7 +142,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
     onSuccess: (res) => {
       if (!editTransaction && res.flags?.length > 0) {
         toast(
-          (t) => (
+          () => (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
               <AlertCircle style={{ width: 18, color: "#f59e0b", flexShrink: 0 }} />
               <div>
@@ -163,6 +158,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
       }
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
       onClose();
     },
   });
@@ -206,67 +202,61 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
               inset: 0,
               zIndex: 100,
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: "center",
               justifyContent: "center",
               background: "rgba(15, 23, 42, 0.45)",
               backdropFilter: "blur(6px)",
-              padding: 0,
+              padding: 16,
             }}
-            className="sm:items-center sm:p-4"
           >
             <motion.div
-              initial={{ y: "100%", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0 }}
-              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.15 }}
               onClick={(e) => e.stopPropagation()}
+              className="dash-card"
               style={{
                 width: "100%",
                 maxWidth: 480,
-                background: "#ffffff",
-                borderRadius: "24px 24px 0 0",
-                boxShadow: "0 -8px 40px rgba(15, 23, 42, 0.18)",
-                maxHeight: "92vh",
-                overflowY: "auto",
-                fontFamily: "var(--dash-font)",
+                padding: 0,
+                overflow: "hidden",
+                maxHeight: "90vh",
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
               }}
-              className="sm:rounded-[24px]"
             >
-              {/* Top Drag Handle (Mobile) */}
-              <div style={{ width: 36, height: 4, background: "#e2e8f0", borderRadius: 9999, margin: "12px auto 0" }} />
-
               {/* Modal Header */}
               <div
                 style={{
-                  background: "linear-gradient(135deg, #091227 0%, #0d1e44 100%)",
-                  padding: "22px 24px 20px",
-                  color: "#ffffff",
-                  position: "relative",
-                  borderBottom: "1px solid rgba(255,255,255,0.1)",
+                  padding: "20px 24px 16px",
+                  borderBottom: "1px solid rgba(172, 217, 251, 0.45)",
+                  background: "linear-gradient(135deg, rgba(239, 246, 255, 0.9) 0%, rgba(219, 234, 254, 0.5) 100%)",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#93c5fd", marginBottom: 2 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#2563eb" }}>
                       Transaction Entry
-                    </div>
-                    <h3 style={{ fontSize: 20, fontWeight: 800, color: "#ffffff", margin: 0, letterSpacing: "-0.02em" }}>
-                      {editTransaction ? "Edit Transaction" : "Add Transaction"}
+                    </span>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "2px 0 0" }}>
+                      {editTransaction ? "Edit Transaction" : "Record New Transaction"}
                     </h3>
                   </div>
                   <button
                     onClick={onClose}
                     style={{
-                      width: 34,
-                      height: 34,
+                      width: 32,
+                      height: 32,
                       borderRadius: "50%",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(226, 232, 240, 0.9)",
+                      background: "#ffffff",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: "#ffffff",
+                      color: "#64748b",
                     }}
                   >
                     <X style={{ width: 16, height: 16 }} />
@@ -279,97 +269,63 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
                     gap: 6,
-                    marginTop: 16,
+                    marginTop: 14,
                     padding: 4,
-                    background: "rgba(255,255,255,0.08)",
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255, 255, 255, 0.9)",
+                    borderRadius: 12,
+                    border: "1px solid rgba(191, 219, 254, 0.8)",
                   }}
                 >
                   <button
                     type="button"
                     onClick={() => setType("expense")}
                     style={{
-                      padding: "9px 0",
-                      borderRadius: 10,
+                      padding: "8px 0",
+                      borderRadius: 9,
                       cursor: "pointer",
-                      background: type === "expense" ? "#2563eb" : "transparent",
-                      color: type === "expense" ? "#ffffff" : "#94a3b8",
+                      background: type === "expense" ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" : "transparent",
+                      color: type === "expense" ? "#ffffff" : "#475569",
                       border: "none",
-                      fontSize: 13.5,
+                      fontSize: 13,
                       fontWeight: 700,
+                      boxShadow: type === "expense" ? "0 2px 8px rgba(37,99,235,0.3)" : "none",
                       transition: "all 0.15s ease",
                     }}
                   >
-                    Expense
+                    🔴 Expense (Spent)
                   </button>
                   <button
                     type="button"
                     onClick={() => setType("income")}
                     style={{
-                      padding: "9px 0",
-                      borderRadius: 10,
+                      padding: "8px 0",
+                      borderRadius: 9,
                       cursor: "pointer",
-                      background: type === "income" ? "#16a34a" : "transparent",
-                      color: type === "income" ? "#ffffff" : "#94a3b8",
+                      background: type === "income" ? "linear-gradient(135deg, #16a34a 0%, #15803d 100%)" : "transparent",
+                      color: type === "income" ? "#ffffff" : "#475569",
                       border: "none",
-                      fontSize: 13.5,
+                      fontSize: 13,
                       fontWeight: 700,
+                      boxShadow: type === "income" ? "0 2px 8px rgba(22,163,74,0.3)" : "none",
                       transition: "all 0.15s ease",
                     }}
                   >
-                    Income
+                    🟢 Income (Received)
                   </button>
                 </div>
               </div>
 
               {/* Form Body */}
-              <form onSubmit={handleSubmit} style={{ padding: "22px 24px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* Payment Method */}
+              <form onSubmit={handleSubmit} style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
+                {/* Amount Input */}
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", display: "block", marginBottom: 6 }}>
-                    Payment Method
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "#334155", display: "block", marginBottom: 6 }}>
+                    Amount ({currencySymbol})
                   </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 4, background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-                    {[
-                      ["Digital Bank", <CreditCard key="card" style={{ width: 14, height: 14 }} />],
-                      ["Cash", <Banknote key="cash" style={{ width: 14, height: 14 }} />],
-                    ].map(([val, icon]) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => setPaymentMethod(val)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          padding: "8px 0",
-                          borderRadius: 9,
-                          cursor: "pointer",
-                          background: paymentMethod === val ? "#ffffff" : "transparent",
-                          color: paymentMethod === val ? "#0f172a" : "#64748b",
-                          border: paymentMethod === val ? "1px solid #cbd5e1" : "none",
-                          boxShadow: paymentMethod === val ? "0 2px 6px rgba(0,0,0,0.04)" : "none",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        {icon}
-                        <span>{val}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Amount */}
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", display: "block", marginBottom: 6 }}>
-                    Amount ($)
-                  </label>
-                  <div className="dash-input-wrap">
-                    <span style={{ position: "absolute", left: 14, color: "#64748b", fontWeight: 800, fontSize: 16 }}>$</span>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <span style={{ position: "absolute", left: 14, color: "#2563eb", fontWeight: 800, fontSize: 16 }}>
+                      {currencySymbol}
+                    </span>
                     <input
                       type="number"
                       step="any"
@@ -379,136 +335,171 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0.00"
                       className="dash-input"
-                      style={{ paddingLeft: 30, fontSize: 16, fontWeight: 800 }}
+                      style={{ paddingLeft: 42, fontSize: 16, fontWeight: 700 }}
+                      autoFocus
                     />
                   </div>
-
-                  {/* Quick increment chips */}
-                  <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                    {[5, 10, 20, 50, 100].map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => setAmount(v.toString())}
-                        style={{
-                          padding: "4px 12px",
-                          borderRadius: 9999,
-                          cursor: "pointer",
-                          background: amount === v.toString() ? "#dbeafe" : "#f1f5f9",
-                          border: `1px solid ${amount === v.toString() ? "#93c5fd" : "#e2e8f0"}`,
-                          color: amount === v.toString() ? "#1d4ed8" : "#64748b",
-                          fontSize: 12,
-                          fontWeight: 700,
-                        }}
-                      >
-                        +${v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", display: "block", marginBottom: 6 }}>
-                    Description
-                  </label>
-                  <input
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. Dining hall, books, transit ticket"
-                    className="dash-input"
-                  />
                 </div>
 
                 {/* Category Selection */}
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", margin: 0 }}>
-                      Category
-                    </label>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Category</label>
                     <button
                       type="button"
                       onClick={() => setShowAddCat(!showAddCat)}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "#2563eb",
                         background: "none",
                         border: "none",
                         cursor: "pointer",
+                        color: "#2563eb",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                     >
-                      <FolderPlus style={{ width: 13, height: 13 }} />
-                      <span>{showAddCat ? "Cancel" : "+ Add Custom"}</span>
+                      <Plus size={13} />
+                      <span>{showAddCat ? "Cancel" : "+ New Category"}</span>
                     </button>
                   </div>
 
-                  {showAddCat ? (
-                    <div style={{ padding: 12, borderRadius: 12, background: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", gap: 8 }}>
+                  {showAddCat && (
+                    <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                       <input
                         type="text"
                         value={newCatName}
                         onChange={(e) => setNewCatName(e.target.value)}
-                        placeholder="e.g. Campus Printing"
+                        placeholder="New category name..."
                         className="dash-input"
-                        style={{ flex: 1 }}
+                        style={{ height: 38, fontSize: 13 }}
                       />
                       <button
                         type="button"
                         onClick={handleCreateNewCategory}
                         disabled={addingCat}
                         className="dash-btn-primary"
-                        style={{ height: 42, padding: "0 16px" }}
+                        style={{ height: 38, padding: "0 14px", fontSize: 12 }}
                       >
-                        {addingCat ? "..." : "Add"}
+                        {addingCat ? "Adding..." : "Save"}
                       </button>
                     </div>
-                  ) : fetchingCats ? (
-                    <div style={{ padding: "10px 0", fontSize: 12, color: "#64748b" }}>Loading categories...</div>
-                  ) : (
-                    <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="dash-select" style={{ width: "100%" }}>
-                      {categories.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name} {c.isDefault ? "(Standard)" : ""}
-                        </option>
-                      ))}
-                    </select>
                   )}
+
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    required
+                    className="dash-select"
+                  >
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Description Input */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "#334155", display: "block", marginBottom: 6 }}>
+                    Description / Note
+                  </label>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={type === "expense" ? "e.g. Lunch with friends, Course books" : "e.g. Monthly allowance, Freelance payout"}
+                    className="dash-input"
+                  />
+                </div>
+
+                {/* Payment Method */}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "#334155", display: "block", marginBottom: 6 }}>
+                    Payment Method
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                    {[
+                      ["Digital Bank", <CreditCard key="card" size={13} />],
+                      ["Cash", <Banknote key="cash" size={13} />],
+                      ["Mobile Wallet", <Smartphone key="phone" size={13} />],
+                    ].map(([val, icon]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setPaymentMethod(val)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 5,
+                          padding: "8px 4px",
+                          borderRadius: 9,
+                          cursor: "pointer",
+                          background: paymentMethod === val ? "#eff6ff" : "#f8fafc",
+                          color: paymentMethod === val ? "#2563eb" : "#475569",
+                          border: `1px solid ${paymentMethod === val ? "#93c5fd" : "#e2e8f0"}`,
+                          fontSize: 12,
+                          fontWeight: paymentMethod === val ? 700 : 500,
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        {icon}
+                        <span>{val}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Date */}
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b", display: "block", marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "#334155", display: "block", marginBottom: 6 }}>
                     Date
                   </label>
-                  <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="dash-input" />
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                    className="dash-input"
+                  />
                 </div>
 
-                {/* Submit Button */}
-                <button type="submit" disabled={loading} className="dash-btn-primary" style={{ width: "100%", height: 46, fontSize: 14.5, marginTop: 4 }}>
-                  {loading ? (
-                    <span
-                      style={{
-                        width: 18,
-                        height: 18,
-                        border: "2px solid rgba(255,255,255,0.3)",
-                        borderTopColor: "#ffffff",
-                        borderRadius: "50%",
-                        display: "inline-block",
-                        animation: "spin 0.6s linear infinite",
-                      }}
-                    />
-                  ) : (
-                    <>
-                      <Plus style={{ width: 16, height: 16 }} />
-                      <span>{editTransaction ? "Update Transaction" : "Save Transaction"}</span>
-                    </>
-                  )}
-                </button>
+                {/* Recurring Toggle */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Repeat size={15} style={{ color: "#2563eb" }} />
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>Recurring Monthly?</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#2563eb" }}
+                  />
+                </div>
+
+                {/* Submit Buttons */}
+                <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="dash-btn-secondary"
+                    style={{ flex: 1, justifyContent: "center" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="dash-btn-primary"
+                    style={{ flex: 2, justifyContent: "center" }}
+                  >
+                    {loading ? "Saving..." : editTransaction ? "Update Transaction" : "Save Transaction"}
+                  </button>
+                </div>
               </form>
             </motion.div>
           </motion.div>
