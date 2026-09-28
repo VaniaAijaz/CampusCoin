@@ -13,14 +13,13 @@ import {
   Sparkles,
   ChevronRight,
   GraduationCap,
-  Layers,
   Tag,
-  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { getDashboardMetrics, getRecentTransactions } from "../transactions/transactionApi";
 import { getBudgets } from "../budgets/budgetApi";
 import { getSubscriptions } from "../subscriptions/subscriptionApi";
+import { getCategories } from "../categories/categoryApi";
 import TransactionModal from "../transactions/TransactionModal";
 import TransactionDetailModal from "../../components/ui/TransactionDetailModal";
 import CategoryIcon from "../../components/ui/CategoryIcon";
@@ -166,6 +165,7 @@ const defaultDashboard = {
   recentTx: [],
   budgets: [],
   subscriptions: [],
+  categories: [],
 };
 
 export default function DashboardPage() {
@@ -183,11 +183,12 @@ export default function DashboardPage() {
     queryKey: ["dashboardData"],
     queryFn: async () => {
       try {
-        const [metricsRes, recentRes, budgetsRes, subsRes] = await Promise.allSettled([
+        const [metricsRes, recentRes, budgetsRes, subsRes, catsRes] = await Promise.allSettled([
           getDashboardMetrics(),
           getRecentTransactions(),
           getBudgets(),
           getSubscriptions(),
+          getCategories("expense"),
         ]);
         return {
           metrics:
@@ -205,6 +206,10 @@ export default function DashboardPage() {
           subscriptions:
             subsRes.status === "fulfilled" && subsRes.value?.success
               ? subsRes.value.subscriptions || []
+              : [],
+          categories:
+            catsRes.status === "fulfilled" && catsRes.value?.success
+              ? catsRes.value.categories || []
               : [],
         };
       } catch {
@@ -237,7 +242,7 @@ export default function DashboardPage() {
   if (isAuthLoading) return <DashboardSkeleton />;
   if (queryLoading && !data) return <DashboardSkeleton />;
 
-  const { metrics, recentTx, budgets } = data || defaultDashboard;
+  const { metrics, recentTx, budgets, categories } = data || defaultDashboard;
   const income = metrics?.currentMonth?.income || 0;
   const expense = metrics?.currentMonth?.expense || 0;
   const balance = income - expense;
@@ -251,45 +256,63 @@ export default function DashboardPage() {
     return raw.map((d) => ({ month: d.month || "", income: Number(d.income) || 0, expense: Number(d.expense) || 0 }));
   }, [metrics?.trends]);
 
-  // Category breakdown aggregation
+  // Merge Category Tab definitions with actual monthly spending
   const categoriesList = useMemo(() => {
-    const raw = metrics?.categoryBreakdown || [];
-    if (raw.length > 0) return raw;
+    const breakdown = metrics?.categoryBreakdown || [];
+    const breakdownMap = {};
 
-    // Fallback: aggregate from recent expense transactions if not in metrics
-    const map = {};
-    (recentTx || []).forEach((t) => {
-      if (t.type === "expense") {
-        const catName = t.categoryId?.name || "General";
-        const catId = t.categoryId?._id || t.categoryId || catName;
-        const color = t.categoryId?.color;
-        const icon = t.categoryId?.icon;
-        if (!map[catId]) {
-          map[catId] = { _id: catId, name: catName, total: 0, count: 0, color, icon };
-        }
-        map[catId].total += Number(t.amount) || 0;
-        map[catId].count += 1;
-      }
+    breakdown.forEach((b) => {
+      if (b._id) breakdownMap[b._id.toString()] = b;
+      if (b.name) breakdownMap[b.name.toLowerCase().trim()] = b;
     });
-    return Object.values(map).sort((a, b) => b.total - a.total);
-  }, [metrics?.categoryBreakdown, recentTx]);
+
+    // If categories exist in categories tab, map every category with its spent amount:
+    if (categories && categories.length > 0) {
+      return categories
+        .filter((c) => c.type === "expense" || !c.type)
+        .map((cat) => {
+          const idKey = cat._id?.toString();
+          const nameKey = cat.name?.toLowerCase().trim();
+          const matched = (idKey && breakdownMap[idKey]) || (nameKey && breakdownMap[nameKey]);
+
+          return {
+            _id: cat._id,
+            name: cat.name,
+            icon: cat.icon,
+            color: cat.color,
+            total: matched ? Number(matched.total) || 0 : 0,
+            count: matched ? Number(matched.count) || 0 : 0,
+          };
+        })
+        .sort((a, b) => b.total - a.total);
+    }
+
+    // Fallback to breakdown directly if categories tab list is empty
+    return breakdown;
+  }, [metrics?.categoryBreakdown, categories]);
 
   const totalCategorizedExpense = useMemo(() => {
     return categoriesList.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
   }, [categoriesList]);
 
-  const topCategory = useMemo(() => {
-    return categoriesList.length > 0 ? categoriesList[0] : null;
+  const activeCategoriesWithSpending = useMemo(() => {
+    return categoriesList.filter((c) => Number(c.total) > 0);
   }, [categoriesList]);
 
+  const topCategory = useMemo(() => {
+    return activeCategoriesWithSpending.length > 0 ? activeCategoriesWithSpending[0] : null;
+  }, [activeCategoriesWithSpending]);
+
   const pieData = useMemo(() => {
-    return categoriesList.map((cat, i) => ({
+    const active = activeCategoriesWithSpending;
+    if (active.length === 0) return [];
+    return active.map((cat, i) => ({
       ...cat,
       name: cat.name || "Category",
       value: Number(cat.total) || 0,
       fill: cat.color || CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length],
     }));
-  }, [categoriesList]);
+  }, [activeCategoriesWithSpending]);
 
   const displayTx = useMemo(() => (recentTx || []).slice(0, 6), [recentTx]);
 
@@ -582,7 +605,7 @@ export default function DashboardPage() {
         <AiInsightsDashboardWidget />
       </div>
 
-      {/* 4. CATEGORY SPENDING OVERVIEW SECTION (Donut & Breakdown Cards) */}
+      {/* 4. CATEGORY SPENDING OVERVIEW SECTION (All Categories with Spent Amounts) */}
       <div className="di" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div
           style={{
@@ -618,7 +641,7 @@ export default function DashboardPage() {
               Student Spending by Category
             </h2>
             <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", fontWeight: 500 }}>
-              Real-time distribution of where your funds were allocated this month.
+              All your configured expense categories and how much has been spent this month.
             </p>
           </div>
 
@@ -648,28 +671,37 @@ export default function DashboardPage() {
                 fontWeight: 700,
                 color: C.brand,
                 textDecoration: "none",
-                padding: "6px 12px",
+                padding: "6px 14px",
                 borderRadius: 999,
                 background: C.altBg,
-                border: `1px solid ${C.border}`,
+                border: `1.5px solid ${C.border}`,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = C.brand;
+                e.currentTarget.style.background = C.brandSoft;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = C.border;
+                e.currentTarget.style.background = C.altBg;
               }}
             >
-              <span>Manage Categories</span>
+              <span>Categories Tab</span>
               <ChevronRight style={{ width: 14 }} />
             </Link>
           </div>
         </div>
 
-        {/* Donut Chart + Category Cards Bento Grid */}
+        {/* Donut Chart + Category Portfolio Bento Grid */}
         <div
           style={{
             display: "grid",
             gap: 16,
-            gridTemplateColumns: categoriesList.length > 0 ? "340px 1fr" : "1fr",
+            gridTemplateColumns: activeCategoriesWithSpending.length > 0 ? "340px 1fr" : "1fr",
           }}
         >
-          {/* Donut Chart Panel */}
-          {categoriesList.length > 0 && (
+          {/* Donut Distribution Chart (when there are active expenses) */}
+          {activeCategoriesWithSpending.length > 0 && (
             <div
               style={{
                 background: "#fff",
@@ -699,7 +731,7 @@ export default function DashboardPage() {
                       color: C.muted,
                     }}
                   >
-                    Category Share
+                    Active Share
                   </span>
                   <span
                     style={{
@@ -711,7 +743,7 @@ export default function DashboardPage() {
                       borderRadius: 999,
                     }}
                   >
-                    {categoriesList.length} Categories
+                    {activeCategoriesWithSpending.length} Active
                   </span>
                 </div>
 
@@ -748,7 +780,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase" }}>
-                      Total
+                      Total Spent
                     </span>
                     <span style={{ fontSize: 15, fontWeight: 900, color: C.foreground }}>
                       {formatCurrency(totalCategorizedExpense, cur)}
@@ -768,7 +800,7 @@ export default function DashboardPage() {
                   marginTop: 6,
                 }}
               >
-                {categoriesList.slice(0, 4).map((cat, i) => {
+                {activeCategoriesWithSpending.slice(0, 4).map((cat, i) => {
                   const pct =
                     totalCategorizedExpense > 0
                       ? Math.round(((Number(cat.total) || 0) / totalCategorizedExpense) * 100)
@@ -804,7 +836,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Category Cards Breakdown List */}
+          {/* Full Category Portfolio Cards (Shows every category with its spent amount) */}
           <div
             style={{
               background: "#fff",
@@ -826,10 +858,10 @@ export default function DashboardPage() {
               }}
             >
               <h3 style={{ fontSize: 15, fontWeight: 800, color: C.foreground, margin: 0 }}>
-                Category Spend Ledger
+                Categories & Monthly Spending
               </h3>
               <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
-                Total: <strong>{formatCurrency(totalCategorizedExpense, cur)}</strong>
+                {categoriesList.length} configured · Total: <strong>{formatCurrency(totalCategorizedExpense, cur)}</strong>
               </span>
             </div>
 
@@ -839,35 +871,43 @@ export default function DashboardPage() {
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
                   gap: 10,
+                  maxHeight: 320,
+                  overflowY: "auto",
+                  paddingRight: 4,
                 }}
               >
                 {categoriesList.map((cat, i) => {
                   const spent = Number(cat.total) || 0;
                   const pct = totalCategorizedExpense > 0 ? Math.round((spent / totalCategorizedExpense) * 100) : 0;
                   const catColor = cat.color || CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length];
+                  const hasSpent = spent > 0;
 
                   return (
                     <Link
                       key={cat._id || i}
                       to={`/app/transactions?categoryId=${cat._id}&category=${encodeURIComponent(cat.name || "")}`}
+                      title={`Click to view ${cat.name} transactions`}
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "space-between",
                         padding: "12px 14px",
                         borderRadius: 8,
-                        background: C.altBg,
-                        border: `1px solid ${C.border}`,
+                        background: hasSpent ? C.altBg : "#fafafa",
+                        border: `1px solid ${hasSpent ? C.border : "oklch(0.93 0.008 255)"}`,
                         textDecoration: "none",
                         transition: "all 0.15s",
+                        opacity: hasSpent ? 1 : 0.82,
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.borderColor = C.brand;
                         e.currentTarget.style.background = "#fff";
+                        e.currentTarget.style.opacity = "1";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = C.border;
-                        e.currentTarget.style.background = C.altBg;
+                        e.currentTarget.style.borderColor = hasSpent ? C.border : "oklch(0.93 0.008 255)";
+                        e.currentTarget.style.background = hasSpent ? C.altBg : "#fafafa";
+                        e.currentTarget.style.opacity = hasSpent ? "1" : "0.82";
                       }}
                     >
                       <div
@@ -908,8 +948,7 @@ export default function DashboardPage() {
                               {cat.name}
                             </p>
                             <span style={{ fontSize: 10, color: C.muted }}>
-                              {cat.count ? `${cat.count} txs · ` : ""}
-                              {pct}% of spending
+                              {hasSpent ? `${cat.count} txs · ${pct}% of total` : "0 transactions"}
                             </span>
                           </div>
                         </div>
@@ -918,7 +957,7 @@ export default function DashboardPage() {
                           style={{
                             fontSize: 14,
                             fontWeight: 900,
-                            color: C.foreground,
+                            color: hasSpent ? C.foreground : C.muted,
                             letterSpacing: "-0.02em",
                             flexShrink: 0,
                           }}
@@ -927,7 +966,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
 
-                      {/* Mini visual progress bar */}
+                      {/* Visual progress bar */}
                       <div
                         style={{
                           height: 4,
@@ -941,7 +980,7 @@ export default function DashboardPage() {
                           style={{
                             height: "100%",
                             width: `${Math.min(100, pct)}%`,
-                            background: catColor,
+                            background: hasSpent ? catColor : "transparent",
                             borderRadius: 99,
                             transition: "width 0.4s",
                           }}
@@ -977,32 +1016,11 @@ export default function DashboardPage() {
                   <Tag style={{ width: 18 }} />
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: C.foreground, margin: 0 }}>
-                  No categorized expenses yet this month
+                  No categories found
                 </p>
                 <p style={{ fontSize: 12, color: C.muted, margin: 0, textAlign: "center", maxWidth: 360 }}>
-                  Add your campus meals, transport, stationery, or housing expenses to see your visual breakdown.
+                  View your Category Tab to customize your spending categories.
                 </p>
-                <button
-                  onClick={openAdd}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    height: 36,
-                    padding: "0 18px",
-                    borderRadius: 999,
-                    background: C.highlight,
-                    color: C.highlightFg,
-                    border: "none",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    ...M,
-                    marginTop: 4,
-                  }}
-                >
-                  <Plus style={{ width: 13 }} /> Add Expense
-                </button>
               </div>
             )}
           </div>
