@@ -39,7 +39,7 @@ const transactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["Cash", "Digital Bank", "Digital"],
+      enum: ["Cash", "Digital Bank", "Digital", "Allowance Card"],
       default: "Digital Bank",
       required: true,
     },

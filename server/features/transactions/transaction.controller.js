@@ -517,17 +517,21 @@ const getDashboardMetrics = async (req, res) => {
 
     const targetSavingsBase = req.user.monthlySavingsGoal || 0;
     const baseSavedThisMonth = Math.min(Math.max(baseNetSavings, 0), targetSavingsBase);
-    const adjustedNetSavings = baseNetSavings - baseSavedThisMonth;
+    let adjustedNetSavings = baseNetSavings - baseSavedThisMonth;
+
+    const allowanceBaseline = req.user.monthlyAllowanceBaseline || 0;
+    const allowanceFunds = Math.min(Math.max(adjustedNetSavings, 0), allowanceBaseline);
+    adjustedNetSavings -= allowanceFunds;
 
 
-    // Aggregate digital vs cash payment methods
-    const [digitalIncAgg, digitalExpAgg, cashIncAgg, cashExpAgg] = await Promise.all([
+    // Aggregate digital vs cash vs allowance payment methods
+    const [digitalIncAgg, digitalExpAgg, cashIncAgg, cashExpAgg, allowanceExpAgg] = await Promise.all([
       Transaction.aggregate([
-        { $match: { userId, type: "income", paymentMethod: { $ne: "Cash" }, date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $match: { userId, type: "income", paymentMethod: { $nin: ["Cash", "Allowance Card"] }, date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Transaction.aggregate([
-        { $match: { userId, type: "expense", paymentMethod: { $ne: "Cash" }, date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $match: { userId, type: "expense", paymentMethod: { $nin: ["Cash", "Allowance Card"] }, date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Transaction.aggregate([
@@ -536,6 +540,10 @@ const getDashboardMetrics = async (req, res) => {
       ]),
       Transaction.aggregate([
         { $match: { userId, type: "expense", paymentMethod: "Cash", date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      Transaction.aggregate([
+        { $match: { userId, type: "expense", paymentMethod: "Allowance Card", date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
     ]);
@@ -547,6 +555,9 @@ const getDashboardMetrics = async (req, res) => {
     const baseCashInc = cashIncAgg[0]?.total || 0;
     const baseCashExp = cashExpAgg[0]?.total || 0;
     const baseCashNet = baseCashInc - baseCashExp;
+
+    const baseAllowanceExp = allowanceExpAgg[0]?.total || 0;
+    const allowanceBalance = allowanceFunds - baseAllowanceExp;
 
     // 6-Month Trend Aggregation Pipeline
     const sixMonthTrends = [];
@@ -624,6 +635,12 @@ const getDashboardMetrics = async (req, res) => {
           expense: CurrencyService.fromBase(baseCashExp, userCurrency),
           balance: CurrencyService.fromBase(baseCashNet, userCurrency),
         },
+        allowance: {
+          funds: CurrencyService.fromBase(allowanceFunds, userCurrency),
+          expense: CurrencyService.fromBase(baseAllowanceExp, userCurrency),
+          balance: CurrencyService.fromBase(allowanceBalance, userCurrency),
+        },
+        vaultBalance: CurrencyService.fromBase(req.user.vaultBalance || 0, userCurrency),
       },
       trends: sixMonthTrends,
       categoryBreakdown: formattedCategoryBreakdown,

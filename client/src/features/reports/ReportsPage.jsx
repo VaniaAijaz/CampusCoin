@@ -14,7 +14,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import toast from "react-hot-toast";
-import { formatCurrency } from "../../utils/currencyUtils";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import { generateStatementPDF } from "./StatementGenerator";
 import { useAuth } from "../auth/AuthContext";
 import AdSenseAd from "../../components/ads/AdSenseAd";
@@ -61,7 +61,7 @@ const ChartTip = ({ active, payload, label, cur }) => {
 const formatCompactAxis = (val, cur = "USD") => {
   const num = Math.abs(Number(val) || 0);
   const prefix = val < 0 ? "-" : "";
-  const symbol = cur === "PKR" ? "Rs " : cur === "EUR" ? "€" : "$";
+  const symbol = getCurrencySymbol(cur);
   if (num >= 1e9) return `${prefix}${symbol}${(num / 1e9).toFixed(1)}B`;
   if (num >= 1e6) return `${prefix}${symbol}${(num / 1e6).toFixed(1)}M`;
   if (num >= 1e3) return `${prefix}${symbol}${(num / 1e3).toFixed(0)}k`;

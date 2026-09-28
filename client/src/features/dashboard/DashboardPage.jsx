@@ -228,10 +228,13 @@ export default function DashboardPage() {
   const expense = metrics?.currentMonth?.expense || 0;
   const balance = metrics?.currentMonth?.netSavings ?? (income - expense);
   const savedThisMonth = metrics?.currentMonth?.savedThisMonth || 0;
+  const targetSavings = metrics?.currentMonth?.targetSavings || 0;
   const digitalBal = metrics?.currentMonth?.digital?.balance ?? 
     (recentTx || []).filter(t => t.paymentMethod !== "Cash").reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
   const cashBal = metrics?.currentMonth?.cash?.balance ?? 
     (recentTx || []).filter(t => t.paymentMethod === "Cash").reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
+  const vaultBalance = metrics?.currentMonth?.vaultBalance || 0;
+  const allowanceBal = metrics?.currentMonth?.allowance?.balance || 0;
   const avail = (budgets || []).reduce((a, b) => a + (b.limitAmount - (b.spentAmount || 0)), 0) || 0;
   const cur = user?.currency || "USD";
   const month = new Date().toLocaleString("default", { month: "long", year: "numeric" });
@@ -415,10 +418,12 @@ export default function DashboardPage() {
             </div>
 
             {/* Right Financial Breakdown Pods */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, minWidth: 280 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, minWidth: 280 }}>
               {[
                 { label: "Digital Bank", value: digitalBal, color: "#2563eb", bg: "#eff6ff", border: "#dbeafe", icon: <CreditCard style={{ width: 14, height: 14 }} /> },
                 { label: "Cash in Hand", value: cashBal, color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0", icon: <Banknote style={{ width: 14, height: 14 }} /> },
+                { label: "Vault", value: vaultBalance, color: "#7c3aed", bg: "#f3e8ff", border: "#e9d5ff", icon: <PiggyBank style={{ width: 14, height: 14 }} /> },
+                { label: "Allowance Card", value: allowanceBal, color: "#f59e0b", bg: "#fef3c7", border: "#fde68a", icon: <Wallet style={{ width: 14, height: 14 }} /> },
                 { label: "Income", value: income, color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0", icon: <ArrowUpRight style={{ width: 14, height: 14 }} /> },
                 { label: "Expense", value: expense, color: "#dc2626", bg: "#fee2e2", border: "#fecdd3", icon: <ArrowDownRight style={{ width: 14, height: 14 }} /> },
               ].map((t) => (
@@ -902,6 +907,72 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── 4.5 SAVINGS GOAL TRACKER ── */}
+      {(targetSavings > 0 || savedThisMonth > 0) && (
+        <div className="di" style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2563eb", marginBottom: 2 }}>
+                Goal Tracking
+              </div>
+              <h2 style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.65rem)", fontWeight: 900, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
+                Monthly Savings Progress
+              </h2>
+            </div>
+            <Link to="/app/profile" className="dash-btn-secondary" style={{ height: 34, fontSize: 12, padding: "0 12px" }}>
+              <span>Edit Goal</span>
+              <ChevronRight style={{ width: 14, height: 14 }} />
+            </Link>
+          </div>
+          
+          <div className="dash-card" style={{ padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between", maxWidth: 400 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <p style={{ fontSize: 13.5, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                  <PiggyBank style={{ width: 14, height: 14, display: "inline", marginRight: 4, verticalAlign: "middle" }}/>
+                  Savings Goal
+                </p>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    padding: "2px 7px",
+                    borderRadius: 9999,
+                    background: savedThisMonth >= targetSavings ? "#dcfce7" : "#eff6ff",
+                    color: savedThisMonth >= targetSavings ? "#16a34a" : "#2563eb",
+                  }}
+                >
+                  {savedThisMonth >= targetSavings ? "Goal Met!" : `${Math.round((savedThisMonth / Math.max(targetSavings, 1)) * 100)}% achieved`}
+                </span>
+              </div>
+
+              <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em" }}>
+                {formatCurrency(savedThisMonth, cur)}
+              </div>
+              <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>saved this month</p>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ height: 6, background: "#e2e8f0", borderRadius: 99, overflow: "hidden", marginBottom: 4 }}>
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(100, (savedThisMonth / Math.max(targetSavings, 1)) * 100)}%`,
+                    background: savedThisMonth >= targetSavings ? "#16a34a" : "#2563eb",
+                    borderRadius: 99,
+                    transition: "width 0.5s",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#64748b" }}>
+                <span>{formatCurrency(savedThisMonth, cur)} saved</span>
+                <span>Target: {formatCurrency(targetSavings, cur)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 5. BUDGET HEALTH CARDS ── */}
       {budgets?.length > 0 && (

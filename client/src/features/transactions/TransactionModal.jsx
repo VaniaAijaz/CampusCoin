@@ -3,7 +3,7 @@ import { X, Plus, AlertCircle, Calendar, Tag, Repeat, CreditCard, Banknote, Fold
 import { createTransaction, updateTransaction } from "./transactionApi";
 import { getCategories, createCategory } from "../categories/categoryApi";
 import { useAuth } from "../auth/AuthContext";
-import { formatCurrency } from "../../utils/currencyUtils";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,7 +28,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
   const [addingCat, setAddingCat] = useState(false);
 
   const cur = user?.currency || "USD";
-  const currencySymbol = cur === "PKR" ? "Rs" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur === "INR" ? "₹" : "$";
+  const currencySymbol = getCurrencySymbol(cur);
 
   useEffect(() => {
     if (!isOpen) return;

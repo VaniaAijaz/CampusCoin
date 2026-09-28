@@ -264,7 +264,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="dash-form-label">Monthly Savings Goal ($)</label>
+                  <label className="dash-form-label">Monthly Savings Goal ({getCurrencySymbol(user?.currency)})</label>
                   <input
                     type="number"
                     step="10"
