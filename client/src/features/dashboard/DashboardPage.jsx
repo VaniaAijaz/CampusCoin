@@ -360,15 +360,7 @@ export default function DashboardPage() {
             <span>{month} · Net Balance</span>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 28,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="dash-hero-grid">
             {/* Left Balance Display */}
             <div>
               <div
@@ -418,7 +410,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Right Financial Breakdown Pods */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, minWidth: 280 }}>
+            <div className="dash-pods-grid">
               {[
                 { label: "Digital Bank", value: digitalBal, color: "#2563eb", bg: "#eff6ff", border: "#dbeafe", icon: <CreditCard style={{ width: 14, height: 14 }} /> },
                 { label: "Cash in Hand", value: cashBal, color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0", icon: <Banknote style={{ width: 14, height: 14 }} /> },

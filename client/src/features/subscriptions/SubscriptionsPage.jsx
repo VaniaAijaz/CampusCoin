@@ -52,7 +52,7 @@ export default function SubscriptionsPage() {
       const res = await createSubscription({
         name: name.trim(),
         amount: Number(amount),
-        currency: "USD",
+        currency: user?.currency || "USD",
         billing_cycle: billingCycle,
         renewal_date: renewalDate,
       });

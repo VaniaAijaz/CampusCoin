@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Plus, AlertCircle, Calendar, Tag, Repeat, CreditCard, Banknote, FolderPlus, Smartphone } from "lucide-react";
 import { createTransaction, updateTransaction } from "./transactionApi";
 import { getCategories, createCategory } from "../categories/categoryApi";
+import { createSubscription } from "../subscriptions/subscriptionApi";
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
@@ -21,6 +22,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
+  const [subscriptionName, setSubscriptionName] = useState("");
   const [categories, setCategories] = useState([]);
   const [fetchingCats, setFetchingCats] = useState(false);
   const [showAddCat, setShowAddCat] = useState(false);
@@ -74,6 +76,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
       setRecurringFrequency("monthly");
       setShowAddCat(false);
       setNewCatName("");
+      setSubscriptionName("");
     }
   }, [editTransaction, isOpen]);
 
@@ -106,8 +109,26 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
   };
 
   const transactionMutation = useMutation({
-    mutationFn: async (payload) =>
-      editTransaction ? await updateTransaction(editTransaction._id, payload) : await createTransaction(payload),
+    mutationFn: async (payload) => {
+      const res = editTransaction ? await updateTransaction(editTransaction._id, payload) : await createTransaction(payload);
+      
+      // Auto-create a subscription if the category is 'Subscription' and a name is provided
+      const isSubscription = categories.find((c) => c._id === payload.categoryId)?.name?.toLowerCase() === "subscription";
+      if (!editTransaction && isSubscription && type === "expense" && subscriptionName.trim()) {
+        try {
+          await createSubscription({
+            name: subscriptionName.trim(),
+            amount: payload.amount,
+            billing_cycle: payload.isRecurring ? payload.recurringFrequency : "monthly",
+            renewal_date: payload.date,
+          });
+        } catch (err) {
+          console.error("Failed to auto-create subscription:", err);
+        }
+      }
+      
+      return res;
+    },
     onMutate: async (newTx) => {
       await queryClient.cancelQueries({ queryKey: ["dashboardData"] });
       const previousData = queryClient.getQueryData(["dashboardData"]);
@@ -400,6 +421,22 @@ export default function TransactionModal({ isOpen, onClose, editTransaction = nu
                     ))}
                   </select>
                 </div>
+
+                {/* Subscription Name Input */}
+                {categories.find((c) => c._id === categoryId)?.name?.toLowerCase() === "subscription" && type === "expense" && (
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#334155", display: "block", marginBottom: 6 }}>
+                      Subscription Name
+                    </label>
+                    <input
+                      type="text"
+                      value={subscriptionName}
+                      onChange={(e) => setSubscriptionName(e.target.value)}
+                      placeholder="e.g. Netflix, Gym, Spotify"
+                      className="dash-input"
+                    />
+                  </div>
+                )}
 
                 {/* Description Input */}
                 <div>

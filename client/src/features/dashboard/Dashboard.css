@@ -462,6 +462,32 @@
   flex: 1;
 }
 
+.dash-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .dash-hero-grid {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.dash-pods-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  min-width: 280px;
+}
+
+@media (min-width: 500px) {
+  .dash-pods-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* ── 4-Column KPI Grid ── */
 .dash-kpi-grid {
   display: grid;
