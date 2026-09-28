@@ -255,7 +255,7 @@ export default function LandingPage() {
             <div className="lp-wallet-sub">Campus Wallet</div>
 
             <div className="lp-wallet-balance-row">
-              {balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}
+              <span>{balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}</span>
               <button
                 type="button"
                 className="lp-wallet-eye"
@@ -263,25 +263,38 @@ export default function LandingPage() {
                 onClick={() => setBalanceVisible(!balanceVisible)}
               >
                 {balanceVisible ? (
-                  <Eye style={{ width: 19, height: 19 }} />
+                  <Eye style={{ width: 18, height: 18 }} />
                 ) : (
-                  <EyeOff style={{ width: 19, height: 19 }} />
+                  <EyeOff style={{ width: 18, height: 18 }} />
                 )}
               </button>
             </div>
 
             <div className="lp-wallet-actions">
-              {[
-                [<Send style={{ width: 19, height: 19 }} key="s" />, "Send"],
-                [<ArrowDownToLine style={{ width: 19, height: 19 }} key="r" />, "Receive"],
-                [<Wallet style={{ width: 19, height: 19 }} key="p" />, "Pay"],
-                [<span style={{ fontSize: 22, lineHeight: 1 }} key="m">••</span>, "More"],
-              ].map(([icon, label], i) => (
-                <div key={i} className="lp-wallet-action-col">
-                  <span className="lp-wallet-action-btn">{icon}</span>
-                  {label}
-                </div>
-              ))}
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <Send style={{ width: 20, height: 20 }} />
+                </span>
+                <span>Send</span>
+              </div>
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <ArrowDownToLine style={{ width: 20, height: 20 }} />
+                </span>
+                <span>Receive</span>
+              </div>
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <Wallet style={{ width: 20, height: 20 }} />
+                </span>
+                <span>Pay</span>
+              </div>
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <span style={{ fontSize: 24, lineHeight: 0.5, letterSpacing: "-1px", fontWeight: 900 }}>••</span>
+                </span>
+                <span>More</span>
+              </div>
             </div>
           </div>
 
@@ -292,7 +305,7 @@ export default function LandingPage() {
             </span>
             <span className="lp-notice-text">
               <strong>Money received</strong>
-              <strong style={{ color: "oklch(0.36 0.12 147)" }}>+ ₹75.00</strong>
+              <strong style={{ color: "#16a34a" }}>+ ₹75.00</strong>
               <span>Today, 9:41 AM</span>
             </span>
           </div>
@@ -304,7 +317,7 @@ export default function LandingPage() {
             </span>
             <span className="lp-notice-text">
               <strong>Spending insights</strong>
-              <strong style={{ color: "var(--lp-blue)" }}>Stay on track</strong>
+              <strong style={{ color: "#2563eb" }}>Stay on track</strong>
               <span>Your money, clearer</span>
             </span>
           </div>
@@ -313,17 +326,51 @@ export default function LandingPage() {
         {/* Mobile Wallet Fallback */}
         <div className="lp-mobile-wallet-container">
           <div className="lp-wallet-card lp-mobile-wallet-card">
-            <div className="lp-wallet-top" style={{ fontSize: 17 }}>
-              <span className="lp-wallet-mark" style={{ width: 19, height: 19 }} />
+            <div className="lp-wallet-top">
+              <span className="lp-wallet-mark" />
               CampusCoin
             </div>
-            <p className="lp-wallet-sub" style={{ marginTop: 22 }}>Campus Wallet</p>
-            <p className="lp-wallet-balance-row" style={{ fontSize: 28, margin: "4px 0 0" }}>₹ 2,48,500</p>
-            <div className="lp-wallet-actions" style={{ marginTop: 20 }}>
-              <span>Send</span>
-              <span>Receive</span>
-              <span>Pay</span>
-              <span>More</span>
+            <div className="lp-wallet-sub">Campus Wallet</div>
+            <div className="lp-wallet-balance-row">
+              <span>{balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}</span>
+              <button
+                type="button"
+                className="lp-wallet-eye"
+                aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+                onClick={() => setBalanceVisible(!balanceVisible)}
+              >
+                {balanceVisible ? (
+                  <Eye style={{ width: 18, height: 18 }} />
+                ) : (
+                  <EyeOff style={{ width: 18, height: 18 }} />
+                )}
+              </button>
+            </div>
+            <div className="lp-wallet-actions">
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <Send style={{ width: 18, height: 18 }} />
+                </span>
+                <span>Send</span>
+              </div>
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <ArrowDownToLine style={{ width: 18, height: 18 }} />
+                </span>
+                <span>Receive</span>
+              </div>
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <Wallet style={{ width: 18, height: 18 }} />
+                </span>
+                <span>Pay</span>
+              </div>
+              <div className="lp-wallet-action-col">
+                <span className="lp-wallet-action-btn">
+                  <span style={{ fontSize: 20, lineHeight: 0.5, letterSpacing: "-1px", fontWeight: 900 }}>••</span>
+                </span>
+                <span>More</span>
+              </div>
             </div>
           </div>
         </div>

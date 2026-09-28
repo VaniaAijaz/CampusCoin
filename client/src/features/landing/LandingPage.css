@@ -381,14 +381,14 @@
   color: var(--lp-muted-foreground);
 }
 
-/* ── 2. Hero 3D Floating Wallet (Enlarged & Majestic) ── */
+/* ── 2. Hero 3D Floating Wallet (Enlarged & Pixel-Perfect) ── */
 .lp-hero-wallet {
   pointer-events: none;
   position: absolute;
-  right: clamp(2%, 4.5vw, 7%);
-  top: clamp(13%, 16vh, 20%);
+  right: clamp(2%, 4.5vw, 6%);
+  top: clamp(14%, 17vh, 22%);
   z-index: 10;
-  filter: drop-shadow(0 42px 64px var(--lp-shadow-blue));
+  filter: drop-shadow(0 38px 64px var(--lp-shadow-blue));
 }
 
 @media (max-width: 1023px) {
@@ -400,14 +400,14 @@
 .lp-wallet-card {
   pointer-events: auto;
   position: relative;
-  width: clamp(440px, 34vw, 570px);
-  height: clamp(300px, 23vw, 390px);
-  padding: clamp(32px, 2.6vw, 44px) clamp(34px, 2.8vw, 48px) clamp(28px, 2.2vw, 38px);
+  width: clamp(450px, 34vw, 560px);
+  min-height: clamp(310px, 23vw, 370px);
+  padding: clamp(30px, 2.5vw, 40px) clamp(32px, 2.8vw, 44px) clamp(28px, 2.2vw, 36px);
   border: 1px solid oklch(1 0 0 / 65%);
-  border-radius: 32px;
-  color: var(--lp-primary-foreground);
-  background: linear-gradient(121deg, var(--lp-wallet-light) -5%, var(--lp-blue) 35%, var(--lp-wallet-shade) 76%, oklch(0.57 0.15 245));
-  box-shadow: 0 36px 74px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 45%);
+  border-radius: 28px;
+  color: #ffffff;
+  background: linear-gradient(124deg, #2575fc 0%, #1d60ea 42%, #0e44c2 82%, #0a359e 100%);
+  box-shadow: 0 34px 68px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 50%);
   transform: rotate(13deg) skew(-4deg, -1deg);
   transform-origin: center;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
@@ -415,7 +415,7 @@
 
 .lp-wallet-card:hover {
   transform: rotate(10deg) skew(-2deg, 0deg) translateY(-8px);
-  box-shadow: 0 48px 88px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 55%);
+  box-shadow: 0 46px 84px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 60%);
 }
 
 .lp-wallet-card::after {
@@ -430,161 +430,169 @@
 .lp-wallet-top {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: clamp(21px, 1.6vw, 26px);
+  gap: 12px;
+  font-size: clamp(20px, 1.5vw, 24px);
   font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .lp-wallet-mark {
   display: inline-block;
-  width: clamp(26px, 2vw, 32px);
-  height: clamp(26px, 2vw, 32px);
-  border-radius: 9px;
-  background: linear-gradient(135deg, oklch(1 0 0 / 95%) 50%, oklch(0.82 0.09 241 / 85%) 50%);
+  width: clamp(24px, 1.8vw, 28px);
+  height: clamp(24px, 1.8vw, 28px);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff 50%, rgba(255, 255, 255, 0.6) 50%);
 }
 
 .lp-wallet-sub {
-  margin-top: clamp(28px, 2.8vw, 44px);
-  font-size: clamp(13px, 1vw, 16px);
+  margin-top: clamp(22px, 2.2vw, 32px);
+  margin-bottom: 0;
+  font-size: clamp(13px, 1vw, 15px);
+  font-weight: 500;
   opacity: 0.88;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .lp-wallet-balance-row {
-  margin-top: 8px;
-  display: flex;
+  margin-top: 6px;
+  display: inline-flex;
   align-items: center;
-  gap: 18px;
-  font-size: clamp(40px, 3.4vw, 56px);
+  gap: 14px;
+  font-size: clamp(36px, 3vw, 48px);
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .lp-wallet-eye {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
-  background: transparent;
-  color: oklch(1 0 0 / 75%);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 8px;
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition: background-color 0.15s;
 }
 
 .lp-wallet-eye:hover {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .lp-wallet-actions {
-  margin-top: clamp(32px, 3vw, 48px);
+  margin-top: clamp(28px, 2.6vw, 40px);
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   text-align: center;
-  font-size: clamp(13.5px, 1vw, 16px);
+  font-size: clamp(13px, 0.95vw, 15px);
   font-weight: 600;
+  color: #ffffff;
 }
 
 .lp-wallet-action-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
 }
 
 .lp-wallet-action-btn {
   display: flex;
-  width: clamp(46px, 3.6vw, 58px);
-  height: clamp(46px, 3.6vw, 58px);
+  width: clamp(44px, 3.4vw, 54px);
+  height: clamp(44px, 3.4vw, 54px);
   align-items: center;
   justify-content: center;
   border-radius: 16px;
-  background-color: oklch(1 0 0 / 90%);
-  color: var(--lp-blue-deep);
-  box-shadow: 0 6px 16px oklch(0.25 0.08 260 / 14%);
+  background-color: #ffffff;
+  color: #1a56db;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   transition: transform 0.15s ease;
 }
 
 .lp-wallet-action-btn:hover {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
-/* Floating Glass Notices (Scaled Up) */
+/* Floating Glass Notices (Pixel-Perfect Matching Reference Image) */
 .lp-notice {
   position: absolute;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  width: clamp(230px, 17vw, 290px);
-  padding: clamp(16px, 1.4vw, 22px);
-  border: 1px solid oklch(1 0 0 / 85%);
-  border-radius: 20px;
-  background-color: var(--lp-glass);
-  box-shadow: 0 20px 44px oklch(0.31 0.08 248 / 20%);
+  gap: 14px;
+  width: clamp(220px, 16vw, 260px);
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  background-color: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 40px rgba(16, 42, 102, 0.16);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  transform: rotate(12deg);
+  transform: rotate(13deg);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 20;
 }
 
 .lp-notice-1 {
-  right: -44px;
-  top: clamp(120px, 12vw, 170px);
+  right: -60px;
+  top: 110px;
 }
 
 .lp-notice-2 {
-  right: -24px;
-  top: clamp(250px, 23vw, 330px);
+  right: -30px;
+  top: 228px;
 }
 
 .lp-notice:hover {
-  transform: rotate(8deg) translateY(-3px);
-  box-shadow: 0 26px 52px oklch(0.31 0.08 248 / 26%);
+  transform: rotate(10deg) translateY(-3px);
+  box-shadow: 0 24px 48px rgba(16, 42, 102, 0.22);
 }
 
 .lp-notice-icon-green {
   display: flex;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background-color: oklch(0.83 0.1 146);
-  color: oklch(0.36 0.12 147);
+  border-radius: 11px;
+  background-color: #bbf7d0;
+  color: #15803d;
 }
 
 .lp-notice-icon-blue {
   display: flex;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background-color: oklch(0.77 0.09 270);
-  color: oklch(0.41 0.14 263);
+  border-radius: 11px;
+  background-color: #dbeafe;
+  color: #2563eb;
 }
 
 .lp-notice-text {
-  font-size: clamp(12.5px, 0.95vw, 14.5px);
-  line-height: 1.48;
+  font-size: 13px;
+  line-height: 1.42;
+  display: flex;
+  flex-direction: column;
 }
 
 .lp-notice-text strong {
-  display: block;
   font-weight: 700;
   color: var(--lp-foreground);
+  font-size: 13.5px;
 }
 
 .lp-notice-text span {
   color: var(--lp-muted-foreground);
   font-size: 11.5px;
+  margin-top: 2px;
 }
 
 .lp-fine-spaced {
