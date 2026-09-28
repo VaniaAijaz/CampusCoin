@@ -69,7 +69,7 @@ export default function AiInsightsCard({ insight, onRefresh }) {
   }[velocity.velocityStatus || "safe"];
 
   return (
-    <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-6 shadow-2xl transition-all duration-300 relative overflow-hidden">
+    <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-[3rem] p-6 shadow-2xl transition-all duration-300 relative overflow-hidden">
       {/* Top subtle ambient glow */}
       <div className="absolute top-0 right-1/4 w-52 h-52 bg-brand-primary text-brand-dark/10 rounded-full blur-3xl pointer-events-none" />
 

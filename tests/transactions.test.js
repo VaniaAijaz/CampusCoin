@@ -44,7 +44,6 @@ describe("Transactions Endpoint Integration Tests", () => {
     if (createdTxId) {
       await Transaction.findByIdAndDelete(createdTxId);
     }
-    await mongoose.connection.close();
   });
 
   describe("GET /api/transactions without authentication", () => {

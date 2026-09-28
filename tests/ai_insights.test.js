@@ -63,7 +63,6 @@ describe("AI Insights & Recommendations System Tests", () => {
     await Goal.deleteMany({ user: testUserId });
     await Subscription.deleteMany({ userId: testUserId });
     await Insight.deleteMany({ userId: testUserId });
-    await mongoose.connection.close();
   });
 
   describe("Scenario 6: Insufficient Data Handling", () => {

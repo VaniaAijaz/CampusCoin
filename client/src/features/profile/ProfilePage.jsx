@@ -101,7 +101,11 @@ export default function ProfilePage() {
     e.preventDefault(); setSavingProfile(true);
     try {
       const { data } = await api.put("/auth/profile", form);
-      if (data.success) { updateUser(data.user); toast.success("Profile updated!"); }
+      if (data.success) { 
+        updateUser(data.user); 
+        queryClient.invalidateQueries(); 
+        toast.success("Profile updated!"); 
+      }
     } catch (err) { toast.error(err.response?.data?.message || "Failed to update profile."); }
     finally { setSavingProfile(false); }
   };
@@ -266,24 +270,44 @@ export default function ProfilePage() {
 
               {/* Currency */}
               <div ref={currencyRef} style={{ position:"relative" }}>
-                <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:7 }}>Currency</label>
-                <button type="button" onClick={() => setCurrencyDropdownOpen(o => !o)} style={{
-                  ...inputSt, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left",
-                }}>
-                  <span>{currencies.find(c => c.value===form.currency)?.label || "Select"}</span>
+                <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:7 }}>Preferred Currency</label>
+                <button 
+                  type="button" 
+                  onClick={() => setCurrencyDropdownOpen(o => !o)} 
+                  style={{
+                    ...inputSt,
+                    display: "flex", alignItems: "center", justifyContent: "space-between", 
+                    cursor: "pointer", textAlign: "left",
+                  }}>
+                  <span style={{ fontWeight: 600 }}>{currencies.find(c => c.value===form.currency)?.label || "Select"}</span>
                   <ChevronDown style={{ width:14, color:C.muted, flexShrink:0 }} />
                 </button>
                 {currencyDropdownOpen && (
-                  <div style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:"#fff", border:`1.5px solid ${C.border}`, borderRadius:12, overflow:"hidden", zIndex:50, boxShadow:"0 8px 24px rgba(0,0,0,0.08)" }}>
+                  <div 
+                    style={{ 
+                      position:"absolute", top:"100%", left:0, right:0, marginTop:6, 
+                      background:"#fff", border:`1.5px solid ${C.border}`,
+                      borderRadius:16, overflow:"hidden", zIndex:50,
+                      boxShadow:"0 12px 32px rgba(0,0,0,0.12)",
+                    }}>
                     {currencies.map(c => (
                       <button key={c.value} type="button" onClick={() => handleCurrencyChange(c.value)} style={{
-                        display:"block", width:"100%", padding:"10px 14px", textAlign:"left",
+                        display:"flex", alignItems:"center", justifyContent:"space-between",
+                        width:"100%", padding:"12px 16px", textAlign:"left",
                         fontSize:13, fontWeight: form.currency===c.value ? 700 : 500,
                         color: form.currency===c.value ? C.brand : C.foreground,
-                        background: form.currency===c.value ? C.brandSoft : "#fff",
-                        border:"none", cursor:"pointer", ...M, transition:"background 0.1s",
-                      }}>
-                        {c.label}
+                        background: form.currency===c.value ? C.brandSoft : "transparent",
+                        border:"none", cursor:"pointer", ...M, transition:"background 0.15s",
+                      }}
+                      onMouseEnter={e => {
+                        if (form.currency !== c.value) e.currentTarget.style.background = C.altBg;
+                      }}
+                      onMouseLeave={e => {
+                        if (form.currency !== c.value) e.currentTarget.style.background = "transparent";
+                      }}
+                      >
+                        <span>{c.label}</span>
+                        {form.currency===c.value && <Check style={{ width:14, color:C.brand }} />}
                       </button>
                     ))}
                   </div>

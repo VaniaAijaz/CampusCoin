@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedToken = initialToken.current;
 
-    if (!storedToken || storedToken.startsWith("demo-mock") || user?.isDemo) {
+    if (!storedToken || storedToken.startsWith("demo-") || user?.isDemo) {
       setLoading(false);
       return;
     }

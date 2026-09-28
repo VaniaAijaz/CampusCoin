@@ -22,7 +22,10 @@ class CurrencyService {
    * Fetch live market rates and cache them in Redis.
    * Runs on server startup and every 12 hours.
    */
-  async syncRates() {
+  async syncRates(force = false) {
+    if (process.env.NODE_ENV === "test" && !force) {
+      return;
+    }
     const { redisClient } = require("./redis");
     try {
       let cachedRates = null;

@@ -27,7 +27,6 @@ import DashboardSkeleton from "../../components/ui/DashboardSkeleton";
 import NumberTicker from "../../components/ui/NumberTicker";
 import { formatCurrency } from "../../utils/currencyUtils";
 import AdSenseAd from "../../components/ads/AdSenseAd";
-import AiInsightsDashboardWidget from "../insights/AiInsightsDashboardWidget";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -623,10 +622,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* 3. AI FINANCIAL INSIGHTS COPILOT WIDGET */}
-      <div className="di">
-        <AiInsightsDashboardWidget />
-      </div>
+
 
       {/* 4. CATEGORY SPENDING OVERVIEW SECTION (All Categories with Spent Amounts) */}
       <div className="di" style={{ display: "flex", flexDirection: "column", gap: 14 }}>

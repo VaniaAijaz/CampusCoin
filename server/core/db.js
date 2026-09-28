@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
+    if (mongoose.connection.readyState === 1) {
+      return mongoose.connection;
+    }
     const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/campuscoin";
     const conn = await mongoose.connect(mongoUri);
     console.log(`MongoDB Connected: ${conn.connection.host}`);

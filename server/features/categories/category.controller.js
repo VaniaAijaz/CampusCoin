@@ -66,14 +66,18 @@ const createCategory = async (req, res) => {
 // PUT /api/categories/:id
 const updateCategory = async (req, res) => {
   try {
-    const category = await Category.findOne({ _id: req.params.id, userId: req.user._id });
+    const category = await Category.findOne({
+      _id: req.params.id,
+      $or: [{ userId: req.user._id }, { isDefault: true }, { userId: null }],
+    });
     if (!category) {
-      return res.status(404).json({ success: false, message: "Category not found or you do not own it." });
+      return res.status(404).json({ success: false, message: "Category not found." });
     }
-    const { name, icon, color } = req.body;
+    const { name, icon, color, type } = req.body;
     if (name) category.name = name.trim();
     if (icon) category.icon = icon;
     if (color) category.color = color;
+    if (type) category.type = type;
     await category.save();
     await invalidateUserCache(req.user._id);
     res.json({ success: true, category });
@@ -85,9 +89,12 @@ const updateCategory = async (req, res) => {
 // DELETE /api/categories/:id
 const deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findOne({ _id: req.params.id, userId: req.user._id });
+    const category = await Category.findOne({
+      _id: req.params.id,
+      $or: [{ userId: req.user._id }, { isDefault: true }, { userId: null }],
+    });
     if (!category) {
-      return res.status(404).json({ success: false, message: "Category not found or you do not own it." });
+      return res.status(404).json({ success: false, message: "Category not found." });
     }
     await category.deleteOne();
     await invalidateUserCache(req.user._id);

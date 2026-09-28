@@ -20,8 +20,8 @@ export default function BudgetProgressRing({
 
     if (rawPct >= 100) {
       stat = "danger";
-      stroke = "#F43F5E"; // Rose
-      badge = { text: "Cap Exceeded", icon: AlertTriangle, color: "text-brand-coral bg-brand-coral/10 border-brand-coral/20" };
+      stroke = "#EF4444"; // Tailwind red-500
+      badge = { text: "Cap Exceeded", icon: AlertTriangle, color: "text-red-500 bg-red-500/10 border-red-500/20" };
     } else if (rawPct >= 75) {
       stat = "warning";
       stroke = "#F59E0B"; // Amber

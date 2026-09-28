@@ -19,9 +19,60 @@ The application utilizes MongoDB (NoSQL), but strictly enforces the following lo
 ## Setup & Execution
 The project is a monorepo configured for simultaneous execution.
 1. Unified root `.env` contains `MONGO_URI`, `JWT_SECRET`, `PORT=5000`, and `VITE_API_BASE_URL=http://localhost:5000/api`.
-2. Run `npm run install:all` (or `npm install` in the root, `/server`, and `/client` directories).
+2. Run `npm install` in the root directory.
 3. Run `npm run dev` from the root directory to start both the Express API and Vite React client concurrently via `concurrently`.
 
 ## Default Credentials
 - **Admin**: `admin@campuscoin.com` / `Admin@123`
 - **Student**: `student@campus.edu` / `Password123` (or register a free account)
+
+---
+
+## Comprehensive Test Suites & Verification
+
+All automated test suites are strictly consolidated under the `tests/` directory.
+
+### Quick Commands
+
+| Test Suite | Command | Description |
+| :--- | :--- | :--- |
+| **Run All Suites** | `npm run test:all` | Executes Jest backend suites, UI 14-page crawler, and Playwright E2E |
+| **All Unit/Integration Tests** | `npm test` | Runs all Jest unit and integration tests across the platform |
+| **Master Playwright E2E** | `npm run test:e2e` | 14-step full browser flow, theme matrix, modals, and mutations |
+| **14-Page UI Crawler** | `npm run test:ui-crawl` | Validates rendering, layout, and DOM structure of all 14 routes |
+| **Nodemailer Password Reset** | `npm run test:email` | Tests Nodemailer transporter, reset token hashing, and email delivery |
+| **Currency & Dynamic Data Layer** | `npm run test:currency` | Multi-currency (USD/EUR/PKR) rates, live conversion, and Khata ledger |
+| **Budget Limits & Boundary** | `npm run test:budget` | 0%, 50%, 80%, 100%, 101% spent boundary conditions and caps |
+| **Dashboard Analytics** | `npm run test:dashboard` | Reactive balance calculation, monthly trend history, and breakdown |
+| **Authentication & Verification** | `npm run test:auth` | Registration, login, JWT cookies, role isolation, and session handling |
+| **Transactions CRUD** | `npm run test:transactions` | Income/Expense logging, CSV parsing, soft deletion, and filtering |
+| **AI Financial Insights** | `npm run test:insights` | Dedicated AI Insights tab, budget adjust recommendations, bookmarks |
+| **AI Categorization Engine** | `npm run test:categorization` | Keyword recognition and student manual override rules |
+| **Admin Telemetry & Security** | `npm run test:admin` | System health telemetry, announcement broadcast, and user management |
+| **Monetization & Ad Gating** | `npm run test:ads` | Student free vs premium tier ad rendering rules |
+| **Auth Guards & Route Protection**| `npm run test:authgate` | React client router authentication guards and unauthorized redirects |
+
+### Testing Individual Files Directly
+
+You can also run any specific test file directly using Jest or Playwright:
+
+```bash
+# Nodemailer password reset notification
+npx jest tests/nodemailer_reset_email.test.js
+
+# Playwright E2E test suite
+npx playwright test tests/e2e/campuscoin-master.spec.ts
+
+# Multi-currency and data layer test
+npx jest tests/currency_and_data_layer.test.js
+
+# Budget engine test
+npx jest tests/budget.test.js
+
+# Dashboard reactive test
+npx jest tests/dashboard.test.js
+
+# UI crawler test
+node tests/test_ui_crawl.js
+```
+

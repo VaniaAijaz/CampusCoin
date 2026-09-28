@@ -98,9 +98,14 @@ const aiCategorize = async (req, res) => {
       { keywords: ["gift", "birthday", "eid", "present", "reward"], category: "Gift" },
     ];
 
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     let suggestion = null;
     for (const rule of rules) {
-      if (rule.keywords.some((kw) => desc.includes(kw))) {
+      const matched = rule.keywords.some((kw) => {
+        const regex = new RegExp(`(^|[^a-z0-9])${escapeRegex(kw)}([^a-z0-9]|$)`, "i");
+        return regex.test(desc);
+      });
+      if (matched) {
         suggestion = rule.category;
         break;
       }

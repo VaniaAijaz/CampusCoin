@@ -262,6 +262,8 @@ const sendVerificationEmail = async (email, name, otp, link) => {
 };
 
 module.exports = {
+  transporter,
+  sendEmail,
   sendWelcomeEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,

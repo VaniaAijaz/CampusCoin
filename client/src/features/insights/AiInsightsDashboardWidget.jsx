@@ -172,12 +172,13 @@ export default function AiInsightsDashboardWidget() {
 
   return (
     <div
+      className="rounded-[3rem]"
       style={{
         ...M,
         background: "#fff",
         border: `1.5px solid ${C.border}`,
-        borderRadius: 8,
-        padding: "22px 24px",
+        borderRadius: "3rem",
+        padding: "26px 28px",
         display: "flex",
         flexDirection: "column",
         gap: 16,

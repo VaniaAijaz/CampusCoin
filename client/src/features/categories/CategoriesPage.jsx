@@ -273,42 +273,37 @@ export default function CategoriesPage() {
                       }}>
                         {cat.type}
                       </span>
-                      <span style={{ fontSize:10, color: isLight ? C.muted : "rgba(255,255,255,0.55)", fontWeight:500 }}>
-                        {isDefault ? "Default" : "Custom"}
-                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Actions — only for custom */}
-                {!isDefault && (
-                  <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0, opacity:0, transition:"opacity 0.15s" }} className="group-hover:!opacity-100">
-                    <button onClick={() => handleOpenModal(cat)} style={{
-                      width:30, height:30, borderRadius:"50%",
-                      border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
-                      background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                      color: fgColor, transition:"all 0.12s",
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.14)" : "rgba(255,255,255,0.3)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
-                    >
-                      <Edit2 style={{ width:12 }} />
-                    </button>
-                    <button onClick={() => handleDelete(cat._id)} style={{
-                      width:30, height:30, borderRadius:"50%",
-                      border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
-                      background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                      color: fgColor, transition:"all 0.12s",
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.45)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
-                    >
-                      <Trash2 style={{ width:12 }} />
-                    </button>
-                  </div>
-                )}
+                {/* Actions — user can edit and delete any category */}
+                <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+                  <button onClick={() => handleOpenModal(cat)} title="Edit Category" style={{
+                    width:30, height:30, borderRadius:"50%",
+                    border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
+                    background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
+                    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                    color: fgColor, transition:"all 0.12s",
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.14)" : "rgba(255,255,255,0.3)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
+                  >
+                    <Edit2 style={{ width:12 }} />
+                  </button>
+                  <button onClick={() => handleDelete(cat._id)} title="Delete Category" style={{
+                    width:30, height:30, borderRadius:"50%",
+                    border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
+                    background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
+                    cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                    color: fgColor, transition:"all 0.12s",
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.45)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
+                  >
+                    <Trash2 style={{ width:12 }} />
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -415,9 +410,6 @@ export default function CategoriesPage() {
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: pFg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {name || "Category Preview"}
-                          </div>
-                          <div style={{ fontSize: 10, color: isLight ? C.muted : "rgba(255,255,255,0.6)", fontWeight: 500, marginTop: 2 }}>
-                            {editingCat ? (editingCat.isDefault ? "Default" : "Custom") : "Custom"}
                           </div>
                         </div>
                         <span style={{

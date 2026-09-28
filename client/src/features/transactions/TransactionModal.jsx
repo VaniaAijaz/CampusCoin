@@ -114,6 +114,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction=null
       }
       queryClient.invalidateQueries({ queryKey:["dashboardData"] });
       queryClient.invalidateQueries({ queryKey:["transactions"] });
+      window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
       onClose();
     },
   });
@@ -251,7 +252,7 @@ export default function TransactionModal({ isOpen, onClose, editTransaction=null
                     <div style={{ padding:"10px 0", fontSize:12, color:C.muted }}>Loading categories…</div>
                   ) : (
                     <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} style={{ ...fieldSt, cursor:"pointer" }}>
-                      {categories.map(c=><option key={c._id} value={c._id}>{c.name}{c.isDefault?" (Standard)":""}</option>)}
+                      {categories.map(c=><option key={c._id} value={c._id}>{c.name}</option>)}
                     </select>
                   )}
                 </div>

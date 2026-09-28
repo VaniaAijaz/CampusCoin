@@ -55,7 +55,6 @@ describe("V4 Dynamic Data Layer & Currency Engine Integration Tests", () => {
     if (createdDebtIds.length > 0) {
       await Debt.deleteMany({ _id: { $in: createdDebtIds } });
     }
-    await mongoose.connection.close();
   });
 
   describe("1. CurrencyService Unit & Logic Verification", () => {

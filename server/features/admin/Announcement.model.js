@@ -6,7 +6,7 @@ const announcementSchema = new mongoose.Schema(
     message: { type: String, required: true, trim: true },
     priority: {
       type: String,
-      enum: ["low", "medium", "high", "urgent"],
+      enum: ["low", "medium", "high", "urgent", "critical"],
       default: "medium",
     },
     type: {

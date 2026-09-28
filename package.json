@@ -7,7 +7,21 @@
     "build": "vite build client",
     "start": "node server/server.js",
     "seed": "node server/core/seed.js",
-    "test": "jest --runInBand --detectOpenHandles"
+    "test": "jest --runInBand --detectOpenHandles",
+    "test:all": "npm run test && npm run test:ui-crawl && npm run test:e2e",
+    "test:e2e": "playwright test tests/e2e/campuscoin-master.spec.ts",
+    "test:ui-crawl": "node tests/test_ui_crawl.js",
+    "test:email": "jest tests/nodemailer_reset_email.test.js",
+    "test:currency": "jest tests/currency_and_data_layer.test.js",
+    "test:budget": "jest tests/budget.test.js",
+    "test:dashboard": "jest tests/dashboard.test.js",
+    "test:auth": "jest tests/auth.test.js",
+    "test:transactions": "jest tests/transactions.test.js",
+    "test:insights": "jest tests/ai_insights.test.js",
+    "test:categorization": "jest tests/ai_categorization.test.js",
+    "test:admin": "jest tests/admin_and_sessions.test.js",
+    "test:ads": "jest tests/monetization_and_ads.test.js",
+    "test:authgate": "jest tests/authGate.test.jsx"
   },
   "keywords": [
     "student",
@@ -56,6 +70,7 @@
   },
   "devDependencies": {
     "@babel/preset-react": "^7.26.3",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

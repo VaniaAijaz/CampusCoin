@@ -1,15 +1,42 @@
-import { useState, useEffect } from "react";
-import { Plus, Repeat, Calendar, Trash2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Repeat, Calendar, Trash2, CreditCard, Sparkles, AlertCircle, X } from "lucide-react";
 import { getSubscriptions, createSubscription, deleteSubscription } from "./subscriptionApi";
 import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAuth } from "../auth/AuthContext";
+import { formatCurrency } from "../../utils/currencyUtils";
 
-const glassRecipe =
-  "base-glass bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] transform-gpu backface-hidden";
+/* ── Canonical CampusCoin Design Tokens ── */
+const C = {
+  hero:        "oklch(0.115 0.018 255)",
+  heroFg:      "oklch(0.985 0.003 250)",
+  heroMuted:   "oklch(0.73 0.018 252)",
+  heroLine:    "oklch(0.31 0.025 255)",
+  brand:       "oklch(0.59 0.22 262)",
+  brandSoft:   "oklch(0.93 0.06 262)",
+  highlight:   "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth:      "oklch(0.64 0.17 157)",
+  growthSoft:  "oklch(0.94 0.05 158)",
+  background:  "oklch(0.99 0.003 250)",
+  foreground:  "oklch(0.16 0.025 260)",
+  muted:       "oklch(0.5 0.025 255)",
+  border:      "oklch(0.9 0.012 255)",
+  altBg:       "oklch(0.965 0.01 254)",
+};
+const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+
+const inputStyle = {
+  width: "100%", padding: "10px 14px", borderRadius: 999,
+  background: C.altBg, border: `1.5px solid ${C.border}`,
+  fontSize: 13, color: C.foreground, outline: "none",
+  fontFamily: M.fontFamily, transition: "border-color 0.15s", boxSizing: "border-box",
+};
 
 export default function SubscriptionsPage() {
+  const { user } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -20,6 +47,7 @@ export default function SubscriptionsPage() {
   const [amount, setAmount] = useState("");
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [renewalDate, setRenewalDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const fetchSubs = async () => {
     setLoading(true);
@@ -28,7 +56,7 @@ export default function SubscriptionsPage() {
       if (res.success) {
         setSubscriptions(res.subscriptions);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to load subscriptions.");
     } finally {
       setLoading(false);
@@ -39,23 +67,37 @@ export default function SubscriptionsPage() {
     fetchSubs();
   }, []);
 
+  const totalMonthlyBurn = useMemo(() => {
+    return subscriptions.reduce((sum, s) => {
+      const amt = Number(s.amount) || 0;
+      return sum + (s.billing_cycle === "yearly" ? amt / 12 : amt);
+    }, 0);
+  }, [subscriptions]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const res = await createSubscription({
         name,
         amount: Number(amount),
-        currency: "USD",
+        currency: user?.currency || "USD",
         billing_cycle: billingCycle,
         renewal_date: renewalDate,
       });
       if (res.success) {
         toast.success("Subscription added!");
         setModalOpen(false);
+        setName("");
+        setAmount("");
+        setBillingCycle("monthly");
+        setRenewalDate("");
         fetchSubs();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Error adding subscription");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -71,7 +113,7 @@ export default function SubscriptionsPage() {
         toast.success("Subscription deleted.");
         fetchSubs();
       }
-    } catch (err) {
+    } catch {
       toast.error("Error deleting subscription");
     } finally {
       setItemToDelete(null);
@@ -79,6 +121,7 @@ export default function SubscriptionsPage() {
   };
 
   const getDueDays = (dateStr) => {
+    if (!dateStr) return 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let nextDue = new Date(dateStr);
@@ -93,194 +136,346 @@ export default function SubscriptionsPage() {
   };
 
   return (
-    <div className="space-y-6 text-white w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* ── HEADER ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5 drop-shadow-sm">
-            <div className="p-2 rounded-full bg-white/20 border border-white/30">
-              <Repeat className="w-5 h-5 text-purple-300" />
-            </div>
+          <p style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.14em", color: C.brand, margin: "0 0 6px" }}>
+            Recurring
+          </p>
+          <h1 style={{ fontSize: "clamp(1.6rem,4vw,2.4rem)", fontWeight: 900, color: C.foreground, margin: 0, letterSpacing: "-0.03em", lineHeight: 1 }}>
             Subscriptions
-          </h2>
-          <p className="text-xs sm:text-sm text-white/70 mt-1">
-            Manage your recurring software, media, and campus memberships.
+          </h1>
+          <p style={{ fontSize: 14, color: C.muted, margin: "6px 0 0", fontWeight: 500 }}>
+            Manage recurring software, media passes, and university memberships.
           </p>
         </div>
-        <div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="py-2.5 px-5 rounded-full bg-white/25 hover:bg-white/35 border border-white/40 text-white text-xs font-bold shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] transition-colors flex items-center gap-2 cursor-pointer active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Subscription</span>
-          </button>
+
+        <button
+          onClick={() => setModalOpen(true)}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            height: 40, padding: "0 20px", borderRadius: 999,
+            background: C.highlight, color: C.highlightFg,
+            border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer", ...M,
+            boxShadow: `0 4px 16px ${C.highlight}55`, transition: "all 0.15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+        >
+          <Plus style={{ width: 14 }} />
+          <span>Add Subscription</span>
+        </button>
+      </div>
+
+      {/* ── METRICS SUMMARY BANNER ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+        {/* Monthly Burn Rate */}
+        <div style={{
+          background: C.hero, borderRadius: 16, padding: "20px 24px",
+          position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "space-between",
+        }}>
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.1,
+            backgroundImage: `linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
+            backgroundSize: "32px 32px"
+          }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: C.heroMuted }}>
+              Monthly Burn Rate
+            </span>
+            <div style={{ fontSize: 28, fontWeight: 900, color: C.heroFg, marginTop: 4, letterSpacing: "-0.03em" }}>
+              {formatCurrency(totalMonthlyBurn, user?.currency || "USD")}
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.heroMuted, marginLeft: 6 }}>/month</span>
+            </div>
+          </div>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500, marginTop: 12 }}>
+            Combined recurring expense allocation
+          </span>
+        </div>
+
+        {/* Active Memberships */}
+        <div style={{
+          background: "#fff", border: `1.5px solid ${C.border}`, borderRadius: 16, padding: "20px 24px",
+          display: "flex", flexDirection: "column", justifyContent: "space-between",
+        }}>
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.12em", color: C.muted }}>
+              Active Subscriptions
+            </span>
+            <div style={{ fontSize: 28, fontWeight: 900, color: C.foreground, marginTop: 4, letterSpacing: "-0.03em" }}>
+              {subscriptions.length}
+            </div>
+          </div>
+          <span style={{ fontSize: 11, color: C.brand, fontWeight: 700, marginTop: 12 }}>
+            Tracked student services
+          </span>
         </div>
       </div>
 
+      {/* ── SUBSCRIPTIONS LIST / GRID ── */}
       {loading ? (
-        <div className="py-16 text-center text-xs text-white/70">Loading...</div>
+        <div style={{ background: "#fff", border: `1.5px solid ${C.border}`, borderRadius: 16, padding: "48px 24px", textAlign: "center", color: C.muted, fontSize: 13 }}>
+          Loading subscriptions…
+        </div>
       ) : subscriptions.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {subscriptions.map((sub) => {
             const domain = sub.name.toLowerCase().replace(/\s+/g, "") + ".com";
-            const logoUrl = `https://img.logo.dev/${domain}?token=pk_1234567890`; 
+            const logoUrl = `https://img.logo.dev/${domain}?token=pk_1234567890`;
             const dueDays = getDueDays(sub.renewal_date);
 
             return (
-              <div key={sub._id} className={`${glassRecipe} p-5 flex flex-col justify-between relative`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 overflow-hidden flex items-center justify-center p-1">
+              <div
+                key={sub._id}
+                style={{
+                  background: "#fff", border: `1.5px solid ${C.border}`,
+                  borderRadius: 16, padding: "20px", display: "flex", flexDirection: "column",
+                  justifyContent: "space-between", gap: 16, transition: "box-shadow 0.15s",
+                }}
+              >
+                {/* Header & Logo */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: C.altBg, border: `1px solid ${C.border}`,
+                      overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0, padding: 3,
+                    }}>
                       <img
                         src={logoUrl}
                         alt={sub.name}
-                        className="w-full h-full object-contain"
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
                         onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
+                          e.target.style.display = "none";
+                          if (e.target.nextSibling) e.target.nextSibling.style.display = "flex";
                         }}
                       />
-                      <div className="hidden w-full h-full items-center justify-center text-white/50 font-bold text-xs">
+                      <div style={{ display: "none", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", color: C.brand, fontWeight: 900, fontSize: 16 }}>
                         {sub.name.charAt(0).toUpperCase()}
                       </div>
                     </div>
                     <div>
-                      <h4 className="font-bold text-white text-sm">{sub.name}</h4>
-                      <p className="text-[10px] text-white/50 uppercase tracking-wider">{sub.billing_cycle}</p>
+                      <h3 style={{ fontSize: 15, fontWeight: 800, color: C.foreground, margin: "0 0 2px" }}>
+                        {sub.name}
+                      </h3>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        {sub.billing_cycle || "Monthly"}
+                      </span>
                     </div>
                   </div>
+
                   <button
                     onClick={() => handleDelete(sub._id)}
-                    className="p-1.5 rounded-full hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition-colors"
+                    title="Delete Subscription"
+                    style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      border: `1px solid ${C.border}`, background: "transparent",
+                      color: C.muted, display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "pointer", transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#fee2e2"; e.currentTarget.style.color = "#dc2626"; e.currentTarget.style.borderColor = "#fca5a5"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 style={{ width: 14 }} />
                   </button>
                 </div>
-                
-                <div>
-                  <div className="text-2xl font-black text-white">
-                    ${Number(sub.amount).toFixed(2)}
+
+                {/* Amount & Due Date */}
+                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+                      Cost
+                    </span>
+                    <span style={{ fontSize: 18, fontWeight: 900, color: C.foreground, letterSpacing: "-0.02em" }}>
+                      {formatCurrency(sub.amount, sub.currency || user?.currency || "USD")}
+                    </span>
                   </div>
-                  
-                  <div className={`mt-3 px-3 py-1.5 rounded-full inline-flex items-center gap-2 text-xs font-bold border ${
-                    dueDays <= 3
-                      ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                      : dueDays <= 7
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                  }`}>
-                    <Calendar className="w-3.5 h-3.5" />
-                    Due in {dueDays} Days
-                  </div>
+
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999,
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    background: dueDays <= 3 ? "#fee2e2" : dueDays <= 7 ? "#fef3c7" : C.growthSoft,
+                    color: dueDays <= 3 ? "#b91c1c" : dueDays <= 7 ? "#b45309" : C.growth,
+                    border: `1px solid ${dueDays <= 3 ? "#fca5a5" : dueDays <= 7 ? "#fde68a" : C.growth + "40"}`,
+                  }}>
+                    <Calendar style={{ width: 11 }} />
+                    Due in {dueDays}d
+                  </span>
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="py-16 text-center text-xs text-white/60">
-          No subscriptions found.
+        <div style={{
+          background: "#fff", border: `1.5px solid ${C.border}`, borderRadius: 16,
+          padding: "48px 24px", textAlign: "center", display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 12,
+        }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: C.brandSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Repeat style={{ width: 22, color: C.brand }} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: C.foreground, margin: "0 0 4px" }}>
+              No subscriptions found
+            </h3>
+            <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>
+              Add student tools like Netflix, Spotify, or Adobe to automatically track renewals and monthly expenses.
+            </p>
+          </div>
+          <button
+            onClick={() => setModalOpen(true)}
+            style={{
+              marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6,
+              height: 36, padding: "0 18px", borderRadius: 999,
+              background: C.brand, color: "#fff", border: "none", fontSize: 13,
+              fontWeight: 700, cursor: "pointer", ...M,
+            }}
+          >
+            <Plus style={{ width: 13 }} /> Add Your First Subscription
+          </button>
         </div>
       )}
 
-      {/* Subscription Modal using Portal */}
+      {/* ── ADD SUBSCRIPTION MODAL ── */}
       <Portal>
         <AnimatePresence>
           {modalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setModalOpen(false)}
-                className="fixed inset-0 bg-black/75 backdrop-blur-md -z-10"
+                style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
               />
               <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                initial={{ scale: 0.95, opacity: 0, y: 16 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="w-full max-w-md bg-white/[0.03] backdrop-blur-[64px] border border-white/10 rounded-3xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] text-white relative z-10"
+                exit={{ scale: 0.95, opacity: 0, y: 16 }}
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                style={{
+                  position: "relative", zIndex: 10, width: "100%", maxWidth: 440,
+                  background: "#fff", border: `1.5px solid ${C.border}`,
+                  borderRadius: 20, padding: 24, boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+                  ...M,
+                }}
               >
-                <h3 className="text-xl font-bold mb-4 drop-shadow-sm">Add Subscription</h3>
-                <form onSubmit={handleSubmit} className="space-y-4 text-sm relative">
-                  <div className="relative">
-                    <label className="block text-white/70 mb-1 text-xs">Service Name</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, borderBottom: `1px solid ${C.border}`, paddingBottom: 14 }}>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 900, color: C.foreground, margin: 0, letterSpacing: "-0.02em" }}>
+                      Add Subscription
+                    </h3>
+                    <p style={{ fontSize: 12, color: C.muted, margin: "3px 0 0" }}>
+                      Track renewals and burn rate automatically.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    style={{ background: "transparent", border: "none", color: C.muted, cursor: "pointer", padding: 4 }}
+                  >
+                    <X style={{ width: 18 }} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {/* Service Name */}
+                  <div style={{ position: "relative" }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                      Service Name
+                    </label>
                     <input
                       required
                       type="text"
-                      placeholder="e.g. Netflix, Spotify"
+                      placeholder="e.g. Netflix, Spotify, GitHub"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white focus:border-brand-primary outline-none placeholder:text-white/30"
+                      style={inputStyle}
                     />
-                    
-                    {/* Combobox Dropdown Logic Inline */}
-                    {name && !['netflix', 'spotify', 'prime video', 'adobe', 'github'].includes(name.toLowerCase()) && (
-                      <div className="absolute top-[100%] left-0 w-full mt-2 rounded-xl bg-black/40 backdrop-blur-3xl border border-white/10 overflow-hidden shadow-2xl z-50 p-1 flex flex-col gap-1 max-h-48 overflow-y-auto">
-                        {['Netflix', 'Spotify', 'Prime Video', 'Adobe', 'GitHub']
-                          .filter(s => s.toLowerCase().includes(name.toLowerCase()))
-                          .map(s => {
-                            const dom = s.toLowerCase().replace(/\s+/g, "") + ".com";
-                            return (
-                              <div
-                                key={s}
-                                onClick={() => setName(s)}
-                                className="flex items-center gap-3 p-2 hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
-                              >
-                                <img src={`https://img.logo.dev/${dom}?token=pk_1234567890`} className="w-6 h-6 rounded-md bg-white/10 p-0.5 object-contain" alt={s} onError={(e) => { e.target.style.display = 'none'; }} />
-                                <span className="font-bold text-white text-sm">{s}</span>
-                              </div>
-                            )
-                          })
-                        }
-                        <div
-                           onClick={() => { /* keep custom name */ }}
-                           className="flex items-center gap-3 p-2 hover:bg-white/10 rounded-lg cursor-pointer transition-colors text-white/50 text-xs italic"
-                        >
-                          Use "{name}"
-                        </div>
+
+                    {/* Quick Popular Picks */}
+                    {!name && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                        {["Netflix", "Spotify", "GitHub", "Adobe", "Prime"].map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setName(p)}
+                            style={{
+                              padding: "4px 10px", borderRadius: 999,
+                              background: C.altBg, border: `1px solid ${C.border}`,
+                              fontSize: 11, fontWeight: 600, color: C.muted, cursor: "pointer",
+                            }}
+                          >
+                            +{p}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
+
+                  {/* Amount */}
                   <div>
-                    <label className="block text-white/70 mb-1 text-xs">Amount</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                      Amount ({user?.currency || "USD"})
+                    </label>
                     <input
                       required
                       type="number"
                       step="0.01"
                       min="0"
+                      placeholder="9.99"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white focus:border-brand-primary outline-none"
+                      style={inputStyle}
                     />
                   </div>
+
+                  {/* Billing Cycle */}
                   <div>
-                    <label className="block text-white/70 mb-1 text-xs">Billing Cycle</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                      Billing Cycle
+                    </label>
                     <select
                       value={billingCycle}
                       onChange={(e) => setBillingCycle(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white focus:border-brand-primary outline-none"
+                      style={{ ...inputStyle, cursor: "pointer" }}
                     >
-                      <option className="bg-[#0B0F19] text-white" value="monthly">Monthly</option>
-                      <option className="bg-[#0B0F19] text-white" value="yearly">Yearly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
                     </select>
                   </div>
+
+                  {/* Renewal Date */}
                   <div>
-                    <label className="block text-white/70 mb-1 text-xs">Next Renewal Date</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                      Next Renewal Date
+                    </label>
                     <input
                       required
                       type="date"
                       value={renewalDate}
                       onChange={(e) => setRenewalDate(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white focus:border-brand-primary outline-none"
+                      style={{ ...inputStyle, cursor: "pointer" }}
                     />
                   </div>
-                  <div className="pt-2">
+
+                  {/* Submit */}
+                  <div style={{ paddingTop: 8 }}>
                     <button
                       type="submit"
-                      className="w-full py-3 rounded-xl bg-white/20 hover:bg-white/30 border border-white/40 text-white font-bold transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]"
+                      disabled={saving}
+                      style={{
+                        width: "100%", height: 42, borderRadius: 999,
+                        background: C.highlight, color: C.highlightFg,
+                        border: "none", fontSize: 14, fontWeight: 800,
+                        cursor: "pointer", ...M, boxShadow: `0 4px 16px ${C.highlight}55`,
+                        opacity: saving ? 0.7 : 1, transition: "all 0.15s",
+                      }}
                     >
-                      Save Subscription
+                      {saving ? "Saving…" : "Save Subscription"}
                     </button>
                   </div>
                 </form>
@@ -290,12 +485,13 @@ export default function SubscriptionsPage() {
         </AnimatePresence>
       </Portal>
 
+      {/* ── DELETE CONFIRMATION ── */}
       <GlassConfirmModal
         isOpen={!!itemToDelete}
         onClose={() => setItemToDelete(null)}
         onConfirm={confirmDelete}
         title="Delete Subscription"
-        message="Are you sure you want to delete this subscription?"
+        message="Are you sure you want to delete this subscription? It will no longer calculate into your monthly burn rate."
         confirmText="Delete"
       />
     </div>
