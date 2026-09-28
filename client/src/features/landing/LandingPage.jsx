@@ -194,37 +194,121 @@ export default function LandingPage() {
             </nav>
           )}
 
-          {/* Hero Main Content */}
-          <div className="lp-hero-content">
-            <div className="lp-eyebrow">
-              <span className="lp-eyebrow-dot" />
-              Money for the Way You Move
+          {/* Hero Main Content Row (2-Column Grid) */}
+          <div className="lp-hero-main-row">
+            {/* Left Column: Heading, Description, CTAs */}
+            <div className="lp-hero-left">
+              <div className="lp-eyebrow">
+                <span className="lp-eyebrow-dot" />
+                Money for the Way You Move
+              </div>
+
+              <h1 className="lp-display-heading">
+                Smarter
+                <br />
+                Money for a
+                <br />
+                <span className="lp-text-blue">Brighter Campus</span>
+              </h1>
+
+              <p className="lp-hero-desc">
+                A modern money experience for campus life. Make everyday payments, stay on top of spending, and focus
+                on what matters.
+              </p>
+
+              {/* Hero CTAs */}
+              <div className="lp-hero-ctas">
+                <button type="button" onClick={handleGetStarted} className="lp-btn-primary">
+                  Get Started
+                  <span className="lp-btn-circle-arrow">
+                    <ArrowRight style={{ width: 15, height: 15 }} />
+                  </span>
+                </button>
+                <a href="#solutions" className="lp-btn-ghost">
+                  Explore features <ArrowRight style={{ width: 16, height: 16 }} />
+                </a>
+              </div>
             </div>
 
-            <h1 className="lp-display-heading">
-              Smarter
-              <br />
-              Money for a
-              <br />
-              <span className="lp-text-blue">Brighter Campus</span>
-            </h1>
+            {/* Right Column: 3D Floating Wallet Card */}
+            <div className="lp-hero-right">
+              <div className="lp-hero-wallet" aria-label="CampusCoin wallet preview">
+                <div className="lp-wallet-card">
+                  <div className="lp-wallet-top">
+                    <span className="lp-wallet-mark" />
+                    CampusCoin
+                  </div>
 
-            <p className="lp-hero-desc">
-              A modern money experience for campus life. Make everyday payments, stay on top of spending, and focus
-              on what matters.
-            </p>
+                  <div className="lp-wallet-sub">Campus Wallet</div>
 
-            {/* Hero CTAs */}
-            <div className="lp-hero-ctas">
-              <button type="button" onClick={handleGetStarted} className="lp-btn-primary">
-                Get Started
-                <span className="lp-btn-circle-arrow">
-                  <ArrowRight style={{ width: 15, height: 15 }} />
-                </span>
-              </button>
-              <a href="#solutions" className="lp-btn-ghost">
-                Explore features <ArrowRight style={{ width: 16, height: 16 }} />
-              </a>
+                  <div className="lp-wallet-balance-row">
+                    <span>{balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}</span>
+                    <button
+                      type="button"
+                      className="lp-wallet-eye"
+                      aria-label={balanceVisible ? "Hide balance" : "Show balance"}
+                      onClick={() => setBalanceVisible(!balanceVisible)}
+                    >
+                      {balanceVisible ? (
+                        <Eye style={{ width: 18, height: 18 }} />
+                      ) : (
+                        <EyeOff style={{ width: 18, height: 18 }} />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="lp-wallet-actions">
+                    <div className="lp-wallet-action-col">
+                      <span className="lp-wallet-action-btn">
+                        <Send style={{ width: 19, height: 19 }} />
+                      </span>
+                      <span>Send</span>
+                    </div>
+                    <div className="lp-wallet-action-col">
+                      <span className="lp-wallet-action-btn">
+                        <ArrowDownToLine style={{ width: 19, height: 19 }} />
+                      </span>
+                      <span>Receive</span>
+                    </div>
+                    <div className="lp-wallet-action-col">
+                      <span className="lp-wallet-action-btn">
+                        <Wallet style={{ width: 19, height: 19 }} />
+                      </span>
+                      <span>Pay</span>
+                    </div>
+                    <div className="lp-wallet-action-col">
+                      <span className="lp-wallet-action-btn">
+                        <span style={{ fontSize: 22, lineHeight: 0.5, letterSpacing: "-1px", fontWeight: 900 }}>••</span>
+                      </span>
+                      <span>More</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating Glass Notification 1 */}
+                <div className="lp-notice lp-notice-1">
+                  <span className="lp-notice-icon-green">
+                    <ArrowDownToLine style={{ width: 17, height: 17 }} />
+                  </span>
+                  <span className="lp-notice-text">
+                    <strong>Money received</strong>
+                    <strong style={{ color: "#16a34a" }}>+ ₹75.00</strong>
+                    <span>Today, 9:41 AM</span>
+                  </span>
+                </div>
+
+                {/* Floating Glass Notification 2 */}
+                <div className="lp-notice lp-notice-2">
+                  <span className="lp-notice-icon-blue">
+                    <BarChart3 style={{ width: 17, height: 17 }} />
+                  </span>
+                  <span className="lp-notice-text">
+                    <strong>Spending insights</strong>
+                    <strong style={{ color: "#2563eb" }}>Stay on track</strong>
+                    <span>Your money, clearer</span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -241,137 +325,6 @@ export default function LandingPage() {
               title="Built for Campus"
               detail="Made for students"
             />
-          </div>
-        </div>
-
-        {/* Desktop Floating 3D Wallet Preview */}
-        <div className="lp-hero-wallet" aria-label="CampusCoin wallet preview">
-          <div className="lp-wallet-card">
-            <div className="lp-wallet-top">
-              <span className="lp-wallet-mark" />
-              CampusCoin
-            </div>
-
-            <div className="lp-wallet-sub">Campus Wallet</div>
-
-            <div className="lp-wallet-balance-row">
-              <span>{balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}</span>
-              <button
-                type="button"
-                className="lp-wallet-eye"
-                aria-label={balanceVisible ? "Hide balance" : "Show balance"}
-                onClick={() => setBalanceVisible(!balanceVisible)}
-              >
-                {balanceVisible ? (
-                  <Eye style={{ width: 18, height: 18 }} />
-                ) : (
-                  <EyeOff style={{ width: 18, height: 18 }} />
-                )}
-              </button>
-            </div>
-
-            <div className="lp-wallet-actions">
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <Send style={{ width: 20, height: 20 }} />
-                </span>
-                <span>Send</span>
-              </div>
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <ArrowDownToLine style={{ width: 20, height: 20 }} />
-                </span>
-                <span>Receive</span>
-              </div>
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <Wallet style={{ width: 20, height: 20 }} />
-                </span>
-                <span>Pay</span>
-              </div>
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <span style={{ fontSize: 24, lineHeight: 0.5, letterSpacing: "-1px", fontWeight: 900 }}>••</span>
-                </span>
-                <span>More</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Floating Glass Notification 1 */}
-          <div className="lp-notice lp-notice-1">
-            <span className="lp-notice-icon-green">
-              <ArrowDownToLine style={{ width: 18, height: 18 }} />
-            </span>
-            <span className="lp-notice-text">
-              <strong>Money received</strong>
-              <strong style={{ color: "#16a34a" }}>+ ₹75.00</strong>
-              <span>Today, 9:41 AM</span>
-            </span>
-          </div>
-
-          {/* Floating Glass Notification 2 */}
-          <div className="lp-notice lp-notice-2">
-            <span className="lp-notice-icon-blue">
-              <BarChart3 style={{ width: 18, height: 18 }} />
-            </span>
-            <span className="lp-notice-text">
-              <strong>Spending insights</strong>
-              <strong style={{ color: "#2563eb" }}>Stay on track</strong>
-              <span>Your money, clearer</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Mobile Wallet Fallback */}
-        <div className="lp-mobile-wallet-container">
-          <div className="lp-wallet-card lp-mobile-wallet-card">
-            <div className="lp-wallet-top">
-              <span className="lp-wallet-mark" />
-              CampusCoin
-            </div>
-            <div className="lp-wallet-sub">Campus Wallet</div>
-            <div className="lp-wallet-balance-row">
-              <span>{balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}</span>
-              <button
-                type="button"
-                className="lp-wallet-eye"
-                aria-label={balanceVisible ? "Hide balance" : "Show balance"}
-                onClick={() => setBalanceVisible(!balanceVisible)}
-              >
-                {balanceVisible ? (
-                  <Eye style={{ width: 18, height: 18 }} />
-                ) : (
-                  <EyeOff style={{ width: 18, height: 18 }} />
-                )}
-              </button>
-            </div>
-            <div className="lp-wallet-actions">
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <Send style={{ width: 18, height: 18 }} />
-                </span>
-                <span>Send</span>
-              </div>
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <ArrowDownToLine style={{ width: 18, height: 18 }} />
-                </span>
-                <span>Receive</span>
-              </div>
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <Wallet style={{ width: 18, height: 18 }} />
-                </span>
-                <span>Pay</span>
-              </div>
-              <div className="lp-wallet-action-col">
-                <span className="lp-wallet-action-btn">
-                  <span style={{ fontSize: 20, lineHeight: 0.5, letterSpacing: "-1px", fontWeight: 900 }}>••</span>
-                </span>
-                <span>More</span>
-              </div>
-            </div>
           </div>
         </div>
 

@@ -76,9 +76,9 @@
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 1640px;
+  max-width: 1380px;
   margin: 0 auto;
-  padding: 0 clamp(24px, 5vw, 96px);
+  padding: 0 clamp(20px, 4vw, 64px);
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -219,11 +219,44 @@
   background-color: var(--lp-secondary);
 }
 
-/* ── Hero Main Content ── */
-.lp-hero-content {
+/* ── Hero Main Content 2-Column Row ── */
+.lp-hero-main-row {
   position: relative;
-  padding-top: clamp(14px, 2.5vw, 32px);
-  padding-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(32px, 4vw, 64px);
+  padding-top: clamp(16px, 2.5vh, 36px);
+  padding-bottom: clamp(16px, 2.5vh, 36px);
+  flex: 1;
+}
+
+@media (max-width: 1023px) {
+  .lp-hero-main-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 36px;
+  }
+}
+
+.lp-hero-left {
+  flex: 1.15;
+  max-width: 620px;
+}
+
+.lp-hero-right {
+  flex: 0.95;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+@media (max-width: 1023px) {
+  .lp-hero-right {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .lp-eyebrow {
@@ -248,11 +281,11 @@
 }
 
 .lp-display-heading {
-  font-size: clamp(38px, 4.4vw, 56px);
-  line-height: 1.08;
+  font-size: clamp(44px, 4.8vw, 64px);
+  line-height: 1.05;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  max-width: 580px;
+  letter-spacing: -0.035em;
+  max-width: 620px;
   margin: 0;
   color: var(--lp-foreground);
 }
@@ -262,16 +295,16 @@
 }
 
 .lp-hero-desc {
-  margin-top: clamp(14px, 1.8vw, 22px);
+  margin-top: clamp(16px, 2vw, 24px);
   margin-bottom: 0;
-  max-width: 480px;
-  font-size: clamp(15px, 1.1vw, 17px);
-  line-height: 1.55;
+  max-width: 500px;
+  font-size: clamp(15.5px, 1.15vw, 17.5px);
+  line-height: 1.58;
   color: var(--lp-muted-foreground);
 }
 
 .lp-hero-ctas {
-  margin-top: clamp(20px, 2.5vw, 30px);
+  margin-top: clamp(22px, 2.6vw, 32px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -336,7 +369,7 @@
 .lp-features-strip {
   position: relative;
   z-index: 20;
-  margin-top: clamp(28px, 3.5vw, 44px);
+  margin-top: clamp(24px, 3vw, 40px);
   padding-bottom: clamp(20px, 2.5vw, 32px);
   display: flex;
   flex-wrap: wrap;
@@ -383,22 +416,12 @@
 
 /* ── 2. Hero 3D Floating Wallet (Balanced & Pixel-Perfect) ── */
 .lp-hero-wallet {
-  pointer-events: none;
-  position: absolute;
-  right: clamp(2%, 4.5vw, 6%);
-  top: clamp(14%, 17vh, 22%);
+  position: relative;
   z-index: 10;
   filter: drop-shadow(0 34px 56px var(--lp-shadow-blue));
 }
 
-@media (max-width: 1023px) {
-  .lp-hero-wallet {
-    display: none !important;
-  }
-}
-
 .lp-wallet-card {
-  pointer-events: auto;
   position: relative;
   width: clamp(390px, 28vw, 460px);
   min-height: clamp(265px, 19vw, 305px);
