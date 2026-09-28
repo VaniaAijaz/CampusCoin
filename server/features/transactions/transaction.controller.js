@@ -515,6 +515,11 @@ const getDashboardMetrics = async (req, res) => {
 
     const baseNetSavings = baseIncomeTotal - baseExpenseTotal;
 
+    const targetSavingsBase = req.user.monthlySavingsGoal || 0;
+    const baseSavedThisMonth = Math.min(Math.max(baseNetSavings, 0), targetSavingsBase);
+    const adjustedNetSavings = baseNetSavings - baseSavedThisMonth;
+
+
     // Aggregate digital vs cash payment methods
     const [digitalIncAgg, digitalExpAgg, cashIncAgg, cashExpAgg] = await Promise.all([
       Transaction.aggregate([
@@ -606,7 +611,9 @@ const getDashboardMetrics = async (req, res) => {
       currentMonth: {
         income: CurrencyService.fromBase(baseIncomeTotal, userCurrency),
         expense: CurrencyService.fromBase(baseExpenseTotal, userCurrency),
-        netSavings: CurrencyService.fromBase(baseNetSavings, userCurrency),
+        netSavings: CurrencyService.fromBase(adjustedNetSavings, userCurrency),
+        targetSavings: CurrencyService.fromBase(targetSavingsBase, userCurrency),
+        savedThisMonth: CurrencyService.fromBase(baseSavedThisMonth, userCurrency),
         digital: {
           income: CurrencyService.fromBase(baseDigitalInc, userCurrency),
           expense: CurrencyService.fromBase(baseDigitalExp, userCurrency),

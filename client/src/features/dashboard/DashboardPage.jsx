@@ -16,6 +16,7 @@ import {
   CreditCard,
   Banknote,
   Wallet,
+  PiggyBank,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { getDashboardMetrics, getRecentTransactions } from "../transactions/transactionApi";
@@ -225,7 +226,8 @@ export default function DashboardPage() {
   const { metrics, recentTx, budgets, categories } = data || defaultDashboard;
   const income = metrics?.currentMonth?.income || 0;
   const expense = metrics?.currentMonth?.expense || 0;
-  const balance = income - expense;
+  const balance = metrics?.currentMonth?.netSavings ?? (income - expense);
+  const savedThisMonth = metrics?.currentMonth?.savedThisMonth || 0;
   const digitalBal = metrics?.currentMonth?.digital?.balance ?? 
     (recentTx || []).filter(t => t.paymentMethod !== "Cash").reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
   const cashBal = metrics?.currentMonth?.cash?.balance ?? 
@@ -505,18 +507,20 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Transactions */}
+        {/* Saved This Month */}
         <div className="dash-kpi-card di">
           <div className="dash-kpi-header">
-            <span className="dash-kpi-label">Transactions</span>
-            <div className="dash-kpi-icon-box" style={{ background: "#eff6ff", color: "#2563eb" }}>
-              <FileText style={{ width: 18, height: 18 }} />
+            <span className="dash-kpi-label">Monthly Savings</span>
+            <div className="dash-kpi-icon-box" style={{ background: savedThisMonth > 0 ? "#eff6ff" : "#f1f5f9", color: savedThisMonth > 0 ? "#2563eb" : "#64748b" }}>
+              <PiggyBank style={{ width: 18, height: 18 }} />
             </div>
           </div>
-          <div className="dash-kpi-val">{recentTx?.length || 0}</div>
+          <div className="dash-kpi-val" style={{ color: savedThisMonth > 0 ? "#2563eb" : "#0f172a" }}>
+            {formatCurrency(savedThisMonth, cur)}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
-              Logged
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: savedThisMonth > 0 ? "#eff6ff" : "#f1f5f9", color: savedThisMonth > 0 ? "#2563eb" : "#64748b" }}>
+              Achieved
             </span>
             <span className="dash-kpi-hint">Recent records</span>
           </div>
