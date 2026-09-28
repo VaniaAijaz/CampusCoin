@@ -229,7 +229,7 @@ export default function BudgetPage() {
         />
       </div>
 
-      {/* ── Summary KPI Strip (Clean Frosted Cards) ── */}
+      {/* ── Summary KPI Strip ── */}
       <div className="dash-kpi-grid">
         {/* Monthly Limit */}
         <div className="dash-kpi-card">
@@ -369,44 +369,18 @@ export default function BudgetPage() {
           <span>Loading budgets...</span>
         </div>
       ) : budgets.length > 0 ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
           {budgets.map((b) => (
-            <div key={b._id} style={{ position: "relative" }} className="group">
-              <div className="dash-card" style={{ padding: "18px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <BudgetProgressRing
-                  categoryName={b.categoryId?.name || "Category"}
-                  spentAmount={b.spentAmount || 0}
-                  limitAmount={b.limitAmount || 100}
-                  color={b.categoryId?.color || "#2563eb"}
-                  icon={b.categoryId?.icon || "tag"}
-                  onEdit={() => handleOpenSetModal(b)}
-                />
-              </div>
-              <button
-                onClick={() => handleDeleteBudget(b._id)}
-                className="group-hover:!flex"
-                style={{
-                  position: "absolute",
-                  top: 12,
-                  right: 12,
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  border: "1px solid #e2e8f0",
-                  background: "#ffffff",
-                  cursor: "pointer",
-                  display: "none",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#64748b",
-                  fontSize: 12,
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                }}
-                title="Remove Budget Limit"
-              >
-                ✕
-              </button>
-            </div>
+            <BudgetProgressRing
+              key={b._id}
+              categoryName={b.categoryId?.name || "Category"}
+              spentAmount={b.spentAmount || 0}
+              limitAmount={b.limitAmount || 100}
+              color={b.categoryId?.color || "#2563eb"}
+              icon={b.categoryId?.icon || "tag"}
+              onEdit={() => handleOpenSetModal(b)}
+              onDelete={() => handleDeleteBudget(b._id)}
+            />
           ))}
         </div>
       ) : (
