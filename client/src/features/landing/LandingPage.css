@@ -53,23 +53,24 @@
 
 /* ── 1. Showcase Outer Frame & Container ── */
 .lp-showcase-frame {
-  margin: 0 auto;
-  max-width: 1440px;
-  padding: clamp(18px, 4.2vw, 43px) clamp(18px, 3.5vw, 36px) 35px;
-  border-radius: 8px;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(16px, 2.5vw, 36px) clamp(16px, 3vw, 48px);
+  border-radius: 0;
   background: linear-gradient(115deg, var(--lp-frame), oklch(0.93 0.026 244) 70%, oklch(0.83 0.062 242));
 }
 
 .lp-showcase {
   position: relative;
   margin: 0 auto;
-  max-width: 1320px;
-  min-height: 610px;
+  max-width: 1440px;
+  min-height: clamp(680px, 86vh, 880px);
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 16px;
   isolation: isolate;
   background: linear-gradient(150deg, oklch(0.98 0.014 240) 4%, oklch(0.92 0.048 238) 56%, oklch(0.77 0.1 243) 100%);
-  box-shadow: 0 2px 3px oklch(0.3 0.03 250 / 4%);
+  box-shadow: 0 4px 24px oklch(0.3 0.03 250 / 8%);
 }
 
 .lp-showcase::before {
@@ -85,30 +86,30 @@
   position: relative;
   z-index: 10;
   margin: 0 auto;
-  max-width: 1140px;
-  padding-left: clamp(20px, 4vw, 55px);
-  padding-right: clamp(20px, 4vw, 55px);
+  max-width: 1260px;
+  padding-left: clamp(24px, 4vw, 64px);
+  padding-right: clamp(24px, 4vw, 64px);
 }
 
 /* ── Header / Navbar ── */
 .lp-header {
   display: flex;
-  height: 78px;
+  height: 84px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
 }
 
 @media (min-width: 768px) {
   .lp-header {
-    height: 83px;
+    height: 92px;
   }
 }
 
 .lp-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-decoration: none;
   color: var(--lp-foreground);
   flex-shrink: 0;
@@ -117,10 +118,10 @@
 .lp-logo-mark {
   position: relative;
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   overflow: hidden;
-  border-radius: 7px;
+  border-radius: 8px;
   background-color: var(--lp-blue);
   flex-shrink: 0;
 }
@@ -131,7 +132,7 @@
   top: 0;
   width: 100%;
   height: 55%;
-  border-bottom-right-radius: 10px;
+  border-bottom-right-radius: 11px;
   background-color: var(--lp-blue-soft);
 }
 
@@ -145,7 +146,7 @@
 }
 
 .lp-logo-text {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--lp-foreground);
@@ -154,8 +155,8 @@
 .lp-desktop-nav {
   display: flex;
   align-items: center;
-  gap: 26px;
-  font-size: 11px;
+  gap: 30px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -172,7 +173,7 @@
 .lp-desktop-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .lp-mobile-toggle {
@@ -203,23 +204,23 @@
   position: absolute;
   left: 24px;
   right: 24px;
-  top: 70px;
+  top: 80px;
   z-index: 40;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--lp-border);
   background-color: var(--lp-card);
-  padding: 14px;
-  font-size: 14px;
-  box-shadow: 0 10px 30px oklch(0.31 0.08 248 / 18%);
+  padding: 16px;
+  font-size: 15px;
+  box-shadow: 0 12px 36px oklch(0.31 0.08 248 / 20%);
 }
 
 .lp-mobile-nav-link {
   display: block;
-  border-radius: 6px;
-  padding: 8px 12px;
+  border-radius: 8px;
+  padding: 10px 14px;
   font-weight: 500;
   color: var(--lp-foreground);
   text-decoration: none;
@@ -233,7 +234,7 @@
 /* ── Hero Main Content ── */
 .lp-hero-content {
   position: relative;
-  padding-top: clamp(14px, 3.5vw, 45px);
+  padding-top: clamp(20px, 4vw, 55px);
 }
 
 .lp-eyebrow {
@@ -241,12 +242,12 @@
   align-items: center;
   gap: 8px;
   border-radius: 9999px;
-  padding: 5px 12px;
-  font-size: 10px;
+  padding: 6px 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--lp-foreground);
   background-color: oklch(0.89 0.049 248 / 85%);
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .lp-eyebrow-dot {
@@ -257,11 +258,11 @@
 }
 
 .lp-display-heading {
-  font-size: clamp(42px, 4.8vw, 58px);
-  line-height: 1.015;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  max-width: 450px;
+  font-size: clamp(48px, 5.2vw, 68px);
+  line-height: 1.04;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  max-width: 520px;
   margin: 0;
   color: var(--lp-foreground);
 }
@@ -271,29 +272,29 @@
 }
 
 .lp-hero-desc {
-  margin-top: 18px;
+  margin-top: 22px;
   margin-bottom: 0;
-  max-width: 310px;
-  font-size: 13px;
-  line-height: 1.55;
+  max-width: 360px;
+  font-size: 14.5px;
+  line-height: 1.6;
   color: var(--lp-muted-foreground);
 }
 
 .lp-hero-ctas {
-  margin-top: 23px;
+  margin-top: 28px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .lp-btn-primary {
-  height: 38px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  padding: 0 20px;
-  font-size: 11px;
+  padding: 0 24px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 12px;
   background-color: var(--lp-primary);
@@ -301,7 +302,7 @@
   text-decoration: none;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   transition: background-color 0.15s, transform 0.15s;
 }
 
@@ -312,8 +313,8 @@
 
 .lp-btn-circle-arrow {
   display: flex;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
@@ -322,12 +323,12 @@
 }
 
 .lp-btn-ghost {
-  height: 38px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 0 8px;
-  font-size: 11px;
+  padding: 0 12px;
+  font-size: 13px;
   font-weight: 600;
   background: transparent;
   color: var(--lp-foreground);
@@ -344,28 +345,28 @@
 .lp-features-strip {
   position: relative;
   z-index: 20;
-  margin-top: clamp(29px, 5vw, 58px);
-  padding-bottom: 32px;
+  margin-top: clamp(36px, 6vw, 68px);
+  padding-bottom: 36px;
   display: flex;
   flex-wrap: wrap;
-  column-gap: 22px;
-  row-gap: 12px;
+  column-gap: 26px;
+  row-gap: 14px;
 }
 
 .lp-feature-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .lp-feature-icon {
   display: flex;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 9px;
   background-color: oklch(0.86 0.06 242 / 84%);
   color: var(--lp-blue);
   box-shadow: 0 1px 5px oklch(0.34 0.09 248 / 6%);
@@ -379,13 +380,13 @@
 }
 
 .lp-feature-title {
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--lp-foreground);
 }
 
 .lp-feature-detail {
-  font-size: 8px;
+  font-size: 9.5px;
   color: var(--lp-muted-foreground);
 }
 
@@ -393,10 +394,10 @@
 .lp-hero-wallet {
   pointer-events: none;
   position: absolute;
-  right: 8%;
-  top: 21%;
+  right: 6%;
+  top: 18%;
   z-index: 10;
-  filter: drop-shadow(0 25px 35px var(--lp-shadow-blue));
+  filter: drop-shadow(0 28px 40px var(--lp-shadow-blue));
 }
 
 @media (max-width: 1023px) {
@@ -408,14 +409,14 @@
 .lp-wallet-card {
   pointer-events: auto;
   position: relative;
-  width: 315px;
-  height: 220px;
-  padding: 21px 23px 19px;
+  width: 345px;
+  height: 240px;
+  padding: 24px 26px 21px;
   border: 1px solid oklch(1 0 0 / 58%);
-  border-radius: 20px;
+  border-radius: 22px;
   color: var(--lp-primary-foreground);
   background: linear-gradient(121deg, var(--lp-wallet-light) -5%, var(--lp-blue) 35%, var(--lp-wallet-shade) 76%, oklch(0.57 0.15 245));
-  box-shadow: 0 24px 45px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 42%);
+  box-shadow: 0 28px 50px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 42%);
   transform: rotate(13deg) skew(-4deg, -1deg);
   transform-origin: center;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
@@ -423,7 +424,7 @@
 
 .lp-wallet-card:hover {
   transform: rotate(10deg) skew(-2deg, 0deg) translateY(-4px);
-  box-shadow: 0 30px 55px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 50%);
+  box-shadow: 0 34px 60px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 50%);
 }
 
 .lp-wallet-card::after {
@@ -438,22 +439,22 @@
 .lp-wallet-top {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 9px;
+  font-size: 17px;
   font-weight: 600;
 }
 
 .lp-wallet-mark {
   display: inline-block;
-  width: 19px;
-  height: 19px;
-  border-radius: 5px;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
   background: linear-gradient(135deg, oklch(1 0 0 / 95%) 50%, oklch(0.82 0.09 241 / 85%) 50%);
 }
 
 .lp-wallet-sub {
-  margin-top: 23px;
-  font-size: 10px;
+  margin-top: 25px;
+  font-size: 11px;
   opacity: 0.8;
   letter-spacing: 0.04em;
 }
@@ -462,9 +463,9 @@
   margin-top: 4px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 25px;
-  font-weight: 600;
+  gap: 14px;
+  font-size: 28px;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -472,8 +473,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: none;
   background: transparent;
@@ -489,11 +490,11 @@
 }
 
 .lp-wallet-actions {
-  margin-top: 24px;
+  margin-top: 26px;
   display: flex;
   justify-content: space-between;
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -506,11 +507,11 @@
 
 .lp-wallet-action-btn {
   display: flex;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 11px;
+  border-radius: 12px;
   background-color: oklch(1 0 0 / 86%);
   color: var(--lp-blue-deep);
   box-shadow: 0 3px 8px oklch(0.25 0.08 260 / 9%);
@@ -526,13 +527,13 @@
   position: absolute;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  width: 151px;
-  padding: 12px;
+  gap: 12px;
+  width: 168px;
+  padding: 13px;
   border: 1px solid oklch(1 0 0 / 75%);
-  border-radius: 13px;
+  border-radius: 14px;
   background-color: var(--lp-glass);
-  box-shadow: 0 10px 25px oklch(0.31 0.08 248 / 12%);
+  box-shadow: 0 12px 28px oklch(0.31 0.08 248 / 14%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transform: rotate(12deg);
@@ -541,45 +542,45 @@
 
 .lp-notice-1 {
   right: -36px;
-  top: 97px;
+  top: 105px;
 }
 
 .lp-notice-2 {
   right: -16px;
-  top: 180px;
+  top: 195px;
 }
 
 .lp-notice:hover {
   transform: rotate(8deg) translateY(-2px);
-  box-shadow: 0 14px 30px oklch(0.31 0.08 248 / 18%);
+  box-shadow: 0 16px 34px oklch(0.31 0.08 248 / 20%);
 }
 
 .lp-notice-icon-green {
   display: flex;
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: 8px;
   background-color: oklch(0.83 0.1 146);
   color: oklch(0.36 0.12 147);
 }
 
 .lp-notice-icon-blue {
   display: flex;
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: 8px;
   background-color: oklch(0.77 0.09 270);
   color: oklch(0.41 0.14 263);
 }
 
 .lp-notice-text {
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -591,6 +592,7 @@
 
 .lp-notice-text span {
   color: var(--lp-muted-foreground);
+  font-size: 9px;
 }
 
 .lp-fine-spaced {
@@ -642,9 +644,9 @@
 
 /* ── 3. Section Standards ── */
 .lp-section-pad {
-  padding-top: clamp(78px, 10vw, 138px);
-  padding-bottom: clamp(78px, 10vw, 138px);
-  max-width: 1200px;
+  padding-top: clamp(84px, 10vw, 140px);
+  padding-bottom: clamp(84px, 10vw, 140px);
+  max-width: 1260px;
   margin: 0 auto;
   padding-left: 24px;
   padding-right: 24px;
@@ -652,14 +654,14 @@
 
 @media (min-width: 768px) {
   .lp-section-pad {
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-left: 48px;
+    padding-right: 48px;
   }
 }
 
 .lp-section-kicker {
   color: var(--lp-blue);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -667,8 +669,8 @@
 }
 
 .lp-section-heading {
-  font-size: clamp(32px, 4vw, 52px);
-  line-height: 1.16;
+  font-size: clamp(34px, 4.2vw, 54px);
+  line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
@@ -681,17 +683,17 @@
 
 /* ── 4. Solutions Section ── */
 .lp-solutions-header {
-  margin-bottom: 48px;
+  margin-bottom: 52px;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
 }
 
 .lp-solutions-desc {
-  max-width: 320px;
-  font-size: 14px;
+  max-width: 340px;
+  font-size: 15px;
   line-height: 1.75;
   color: var(--lp-muted-foreground);
   margin: 0;
@@ -699,7 +701,7 @@
 
 .lp-solutions-grid {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   grid-template-columns: 1fr;
 }
 
@@ -710,12 +712,12 @@
 }
 
 .lp-solution-card {
-  min-height: 265px;
-  padding: 28px;
+  min-height: 280px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--lp-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background-color: var(--lp-card);
   text-decoration: none;
   color: inherit;
@@ -725,19 +727,19 @@
 .lp-solution-card:hover {
   border-color: var(--lp-blue);
   transform: translateY(-4px);
-  box-shadow: 0 14px 30px var(--lp-shadow-blue);
+  box-shadow: 0 16px 36px var(--lp-shadow-blue);
 }
 
 .lp-solution-icon {
   display: flex;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 10px;
   background-color: var(--lp-blue-soft);
   color: var(--lp-blue);
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .lp-solution-bottom {
@@ -749,7 +751,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 600;
   color: var(--lp-foreground);
 }
@@ -760,8 +762,8 @@
 
 .lp-solution-desc {
   display: block;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--lp-muted-foreground);
 }
 
@@ -781,27 +783,27 @@
 }
 
 .lp-wallet-demo {
-  width: min(100%, 400px);
+  width: min(100%, 420px);
   justify-self: center;
-  border-radius: 16px;
-  padding: 32px;
+  border-radius: 18px;
+  padding: 36px;
   color: var(--lp-primary-foreground);
   background: linear-gradient(125deg, var(--lp-wallet-light), var(--lp-blue-deep) 78%);
-  box-shadow: 0 25px 50px var(--lp-shadow-blue);
+  box-shadow: 0 28px 56px var(--lp-shadow-blue);
 }
 
 .lp-wallet-demo-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .lp-wallet-demo-label {
-  margin-top: 40px;
+  margin-top: 44px;
   margin-bottom: 0;
-  font-size: 12px;
+  font-size: 12.5px;
   opacity: 0.8;
   letter-spacing: 0.04em;
 }
@@ -809,20 +811,20 @@
 .lp-wallet-demo-val {
   margin-top: 8px;
   margin-bottom: 0;
-  font-size: 36px;
-  font-weight: 600;
+  font-size: 40px;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .lp-wallet-demo-grid {
-  margin-top: 40px;
+  margin-top: 44px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.3);
-  padding-top: 20px;
+  padding-top: 24px;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .lp-wallet-demo-action {
@@ -834,13 +836,13 @@
 
 /* ── 6. Spending Insights Demo ── */
 .lp-insights-demo {
-  width: min(100%, 440px);
+  width: min(100%, 460px);
   justify-self: center;
   border: 1px solid var(--lp-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background-color: var(--lp-card);
-  padding: 30px;
-  box-shadow: 0 16px 40px var(--lp-shadow-blue);
+  padding: 34px;
+  box-shadow: 0 18px 44px var(--lp-shadow-blue);
 }
 
 .lp-insights-top {
@@ -852,34 +854,34 @@
 .lp-insights-badge {
   border-radius: 9999px;
   background-color: var(--lp-secondary);
-  padding: 4px 12px;
-  font-size: 11px;
+  padding: 5px 14px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--lp-muted-foreground);
 }
 
 .lp-insights-label {
-  margin-top: 32px;
+  margin-top: 34px;
   margin-bottom: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--lp-muted-foreground);
 }
 
 .lp-insights-amount {
   margin-top: 4px;
   margin-bottom: 0;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 700;
   color: var(--lp-foreground);
   letter-spacing: -0.02em;
 }
 
 .lp-chart-bars {
-  margin-top: 32px;
+  margin-top: 34px;
   display: flex;
-  height: 112px;
+  height: 124px;
   align-items: flex-end;
-  gap: 12px;
+  gap: 14px;
   border-bottom: 1px solid var(--lp-border);
   padding-bottom: 4px;
 }
@@ -897,10 +899,10 @@
 }
 
 .lp-insights-footer {
-  margin-top: 20px;
+  margin-top: 22px;
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--lp-muted-foreground);
 }
 
@@ -923,16 +925,16 @@
   align-items: center;
   gap: 16px;
   border-bottom: 1px solid var(--lp-border);
-  padding: 20px 0;
-  font-size: 14px;
+  padding: 22px 0;
+  font-size: 15px;
   font-weight: 500;
   color: var(--lp-foreground);
 }
 
 .lp-check-icon {
   display: flex;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -943,11 +945,11 @@
 
 /* ── 8. How It Works 3-Step Process ── */
 .lp-steps-grid {
-  margin-top: 48px;
+  margin-top: 52px;
   display: grid;
-  gap: 32px;
+  gap: 36px;
   border-top: 1px solid var(--lp-border);
-  padding-top: 32px;
+  padding-top: 36px;
   grid-template-columns: 1fr;
 }
 
@@ -958,15 +960,15 @@
 }
 
 .lp-step-number {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--lp-blue);
 }
 
 .lp-step-title {
-  margin-top: 16px;
+  margin-top: 18px;
   margin-bottom: 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--lp-foreground);
 }
@@ -974,9 +976,9 @@
 .lp-step-desc {
   margin-top: 12px;
   margin-bottom: 0;
-  max-width: 250px;
-  font-size: 14px;
-  line-height: 1.5;
+  max-width: 270px;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--lp-muted-foreground);
 }
 
@@ -988,25 +990,25 @@
 
 .lp-closing-inner {
   margin: 0 auto;
-  max-width: 1200px;
-  padding: 80px 24px;
+  max-width: 1260px;
+  padding: 88px 24px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 32px;
+  gap: 36px;
 }
 
 @media (min-width: 768px) {
   .lp-closing-inner {
     flex-direction: row;
     align-items: flex-end;
-    padding: 80px 40px;
+    padding: 88px 48px;
   }
 }
 
 .lp-closing-kicker {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1015,8 +1017,8 @@
 }
 
 .lp-closing-heading {
-  font-size: clamp(32px, 4vw, 52px);
-  line-height: 1.16;
+  font-size: clamp(34px, 4.2vw, 54px);
+  line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
@@ -1024,10 +1026,10 @@
 }
 
 .lp-closing-desc {
-  margin-top: 20px;
+  margin-top: 22px;
   margin-bottom: 0;
-  max-width: 440px;
-  font-size: 14px;
+  max-width: 460px;
+  font-size: 15px;
   line-height: 1.75;
   color: rgba(255, 255, 255, 0.75);
 }
@@ -1036,18 +1038,18 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .lp-btn-secondary {
-  height: 44px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 24px;
-  font-size: 14px;
+  padding: 0 28px;
+  font-size: 14.5px;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 10px;
   background-color: var(--lp-secondary);
   color: var(--lp-secondary-foreground);
   text-decoration: none;
@@ -1064,14 +1066,14 @@
 /* ── 10. Footer ── */
 .lp-footer {
   margin: 0 auto;
-  max-width: 1200px;
-  padding: 36px 24px;
+  max-width: 1260px;
+  padding: 40px 24px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--lp-muted-foreground);
 }
 
@@ -1079,8 +1081,8 @@
   .lp-footer {
     flex-direction: row;
     align-items: center;
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-left: 48px;
+    padding-right: 48px;
   }
 }
 
@@ -1100,11 +1102,11 @@
 /* ── Responsive adjustments ── */
 @media (max-width: 760px) {
   .lp-showcase-frame {
-    margin: 12px;
     padding: 12px;
   }
   .lp-showcase {
     min-height: 720px;
+    border-radius: 12px;
   }
   .lp-showcase::before {
     background: linear-gradient(180deg, oklch(0.985 0.009 248 / 75%), transparent 90%);
