@@ -4,10 +4,8 @@ import {
   PiggyBank,
   Target,
   Wallet,
-  ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
-  ShieldCheck,
   Plus,
   Edit3,
   CheckCircle2,
@@ -17,6 +15,9 @@ import {
   Lock,
   Unlock,
   RefreshCw,
+  X,
+  ArrowRight,
+  Info,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import {
@@ -26,6 +27,7 @@ import {
   withdrawSavings,
 } from "./savingsApi";
 import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
+import Portal from "../../components/ui/Portal";
 import toast from "react-hot-toast";
 import "../dashboard/Dashboard.css";
 
@@ -44,10 +46,16 @@ export default function SavingsPage() {
     progressPct: 0,
   });
 
+  // Modal states
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+
   // Form states
   const [editGoalInput, setEditGoalInput] = useState("");
   const [depositInput, setDepositInput] = useState("");
   const [withdrawInput, setWithdrawInput] = useState("");
+
   const [isUpdatingGoal, setIsUpdatingGoal] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -72,9 +80,8 @@ export default function SavingsPage() {
   }, [fetchSummary]);
 
   // 1. Handle Update / Edit Goal Target
-  // Setting a goal (e.g. 50) deducts from overview balance into the goal allocation
   const handleUpdateGoal = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const val = parseFloat(editGoalInput);
     if (isNaN(val) || val < 0) {
       toast.error("Please enter a valid goal amount (0 or more).");
@@ -85,7 +92,8 @@ export default function SavingsPage() {
     try {
       const res = await updateSavingsGoal(val);
       if (res.success) {
-        toast.success(`Savings Goal Target updated to ${formatCurrency(val, cur)}!`);
+        toast.success(`Savings Goal updated to ${formatCurrency(val, cur)}!`);
+        setGoalModalOpen(false);
         await fetchSummary();
         if (refreshUser) refreshUser();
         window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
@@ -98,12 +106,11 @@ export default function SavingsPage() {
   };
 
   // 2. Handle Deposit Savings
-  // Depositing savings (e.g. 25) deducts from remaining goal target and adds to current saved (vault), WITHOUT double-deducting from overview
   const handleDepositSavings = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const val = parseFloat(depositInput);
     if (isNaN(val) || val <= 0) {
-      toast.error("Please enter a valid positive amount to deposit.");
+      toast.error("Please enter a valid positive amount to save.");
       return;
     }
 
@@ -113,6 +120,7 @@ export default function SavingsPage() {
       if (res.success) {
         toast.success(`Saved ${formatCurrency(val, cur)} into your Vault!`);
         setDepositInput("");
+        setDepositModalOpen(false);
         await fetchSummary();
         if (refreshUser) refreshUser();
         window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
@@ -126,7 +134,7 @@ export default function SavingsPage() {
 
   // 3. Handle Withdraw Savings
   const handleWithdrawSavings = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const val = parseFloat(withdrawInput);
     if (isNaN(val) || val <= 0) {
       toast.error("Please enter a valid withdrawal amount.");
@@ -141,8 +149,9 @@ export default function SavingsPage() {
     try {
       const res = await withdrawSavings(val);
       if (res.success) {
-        toast.success(`Withdrew ${formatCurrency(val, cur)} from savings.`);
+        toast.success(`Withdrew ${formatCurrency(val, cur)} back to Overview Balance.`);
         setWithdrawInput("");
+        setWithdrawModalOpen(false);
         await fetchSummary();
         if (refreshUser) refreshUser();
         window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
@@ -159,177 +168,197 @@ export default function SavingsPage() {
     : 0;
 
   return (
-    <div className="dash-root" style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-      {/* ── PAGE HEADER ── */}
+    <div className="dash-root">
+      {/* ── PAGE HEADER (Matching Budgets/Subscriptions/Khata) ── */}
       <div className="dash-page-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--dash-blue)", display: "inline-block" }} />
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--dash-blue)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2563eb", display: "inline-block" }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", letterSpacing: "0.02em" }}>
               Student Financial Vault
             </span>
           </div>
-          <h1 className="dash-page-title">Savings & Goal Allocator</h1>
+          <h1 className="dash-page-title">Savings & Vault</h1>
           <p className="dash-page-desc">
-            Allocate your savings goal from your overall balance and lock funds securely into your vault.
+            Allocate your savings goals, track vault milestones, and safely lock student funds.
           </p>
         </div>
 
         <div className="dash-page-actions">
           <button
+            onClick={() => {
+              setDepositInput("");
+              setDepositModalOpen(true);
+            }}
+            className="dash-btn-primary"
+          >
+            <Plus style={{ width: 16, height: 16 }} />
+            <span>Deposit Savings</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setEditGoalInput(summary.goalAmount.toString());
+              setGoalModalOpen(true);
+            }}
+            className="dash-btn-secondary"
+          >
+            <Target style={{ width: 15, height: 15 }} />
+            <span>Set / Edit Goal</span>
+          </button>
+
+          <button
             onClick={fetchSummary}
             className="dash-btn-secondary"
             title="Refresh balances"
-            style={{ display: "flex", alignItems: "center", gap: "6px" }}
+            style={{ width: 40, height: 40, padding: 0 }}
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            <span>Refresh</span>
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
-      {/* ── 4 KPI SUMMARY STRIP ── */}
-      <div className="dash-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
+      {/* ── 4 SUMMARY KPI CARDS (Exact match with dash-kpi-card design) ── */}
+      <div className="dash-kpi-grid">
         {/* 1. Overview Available Balance */}
-        <div className="dash-kpi-card" style={{ borderLeft: "4px solid #2563eb" }}>
+        <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Overview Balance</span>
-            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-blue-soft)", color: "var(--dash-blue)" }}>
-              <Wallet size={18} />
+            <div className="dash-kpi-icon-box" style={{ background: "#eff6ff", color: "#2563eb" }}>
+              <Wallet style={{ width: 17, height: 17 }} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "#0f172a" }}>
-            {formatCurrency(summary.availableOverviewBalance, cur)}
-          </div>
-          <div className="dash-kpi-hint" style={{ color: "var(--dash-muted)", marginTop: "4px" }}>
-            After goal allocation (Available to spend)
+          <div className="dash-kpi-val">{formatCurrency(summary.availableOverviewBalance, cur)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
+              Available
+            </span>
+            <span className="dash-kpi-hint">After goal deduction</span>
           </div>
         </div>
 
         {/* 2. Target Savings Goal */}
-        <div className="dash-kpi-card" style={{ borderLeft: "4px solid #8b5cf6" }}>
+        <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Goal Target</span>
-            <div className="dash-kpi-icon-box" style={{ background: "#f3e8ff", color: "#8b5cf6" }}>
-              <Target size={18} />
+            <div className="dash-kpi-icon-box" style={{ background: "#f3e8ff", color: "#7c3aed" }}>
+              <Target style={{ width: 17, height: 17 }} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "#8b5cf6" }}>
+          <div className="dash-kpi-val" style={{ color: "#7c3aed" }}>
             {formatCurrency(summary.goalAmount, cur)}
           </div>
-          <div className="dash-kpi-hint" style={{ color: "var(--dash-muted)", marginTop: "4px" }}>
-            Allocated from overview balance
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#f3e8ff", color: "#7c3aed" }}>
+              Allocated
+            </span>
+            <span className="dash-kpi-hint">Reserved from overview</span>
           </div>
         </div>
 
-        {/* 3. Current Saved / In Vault */}
-        <div className="dash-kpi-card" style={{ borderLeft: "4px solid #16a34a" }}>
+        {/* 3. Total Saved in Vault */}
+        <div className="dash-kpi-card">
           <div className="dash-kpi-header">
-            <span className="dash-kpi-label">Total Saved (Vault)</span>
-            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-emerald-soft)", color: "var(--dash-emerald)" }}>
-              <PiggyBank size={18} />
+            <span className="dash-kpi-label">Saved in Vault</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#dcfce7", color: "#16a34a" }}>
+              <PiggyBank style={{ width: 17, height: 17 }} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "var(--dash-emerald)" }}>
+          <div className="dash-kpi-val" style={{ color: "#16a34a" }}>
             {formatCurrency(summary.currentSaved, cur)}
           </div>
-          <div className="dash-kpi-hint" style={{ color: "var(--dash-emerald)", fontWeight: 700, marginTop: "4px" }}>
-            {progressPercentage}% of goal achieved
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#dcfce7", color: "#16a34a" }}>
+              {progressPercentage}% Saved
+            </span>
+            <span className="dash-kpi-hint">Locked safely</span>
           </div>
         </div>
 
-        {/* 4. Remaining Goal to Save */}
-        <div className="dash-kpi-card" style={{ borderLeft: "4px solid #f59e0b" }}>
+        {/* 4. Remaining to Goal */}
+        <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Remaining to Goal</span>
             <div className="dash-kpi-icon-box" style={{ background: "#fef3c7", color: "#d97706" }}>
-              <TrendingUp size={18} />
+              <TrendingUp style={{ width: 17, height: 17 }} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "#d97706" }}>
+          <div className="dash-kpi-val" style={{ color: summary.remainingGoal > 0 ? "#d97706" : "#16a34a" }}>
             {formatCurrency(summary.remainingGoal, cur)}
           </div>
-          <div className="dash-kpi-hint" style={{ color: "var(--dash-muted)", marginTop: "4px" }}>
-            Left to complete this target
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: summary.remainingGoal > 0 ? "#fef3c7" : "#dcfce7", color: summary.remainingGoal > 0 ? "#d97706" : "#16a34a" }}>
+              {summary.remainingGoal > 0 ? "In Progress" : "Completed"}
+            </span>
+            <span className="dash-kpi-hint">Left to reach target</span>
           </div>
         </div>
       </div>
 
-      {/* ── INTERACTIVE GOAL PROGRESS BAR BANNER ── */}
-      <div
-        className="dash-card"
-        style={{
-          background: "linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)",
-          border: "1px solid rgba(219, 234, 254, 0.9)",
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {/* ── MILESTONE PROGRESS CARD ── */}
+      <div className="dash-card" style={{ padding: "22px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "14px",
-                background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                color: "#ffffff",
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "#eff6ff",
+                color: "#2563eb",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
               }}
             >
-              <Sparkles size={22} />
+              <Sparkles style={{ width: 20, height: 20 }} />
             </div>
             <div>
-              <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--dash-foreground)", margin: 0 }}>
-                Savings Goal Milestone Progress
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Savings Goal Milestone
               </h3>
-              <p style={{ fontSize: "12px", color: "var(--dash-muted)", margin: "2px 0 0" }}>
+              <p style={{ fontSize: 12.5, color: "#64748b", margin: "2px 0 0" }}>
                 {summary.currentSaved >= summary.goalAmount && summary.goalAmount > 0
-                  ? "🎉 Goal Target Completed! Outstanding discipline."
-                  : `${formatCurrency(summary.currentSaved, cur)} saved of ${formatCurrency(summary.goalAmount, cur)} allocated target`}
+                  ? "Target achieved! You have successfully fulfilled this savings goal."
+                  : `${formatCurrency(summary.currentSaved, cur)} deposited of ${formatCurrency(summary.goalAmount, cur)} allocated target`}
               </p>
             </div>
           </div>
 
           <span
             style={{
-              padding: "6px 14px",
-              borderRadius: "9999px",
-              background: progressPercentage >= 100 ? "var(--dash-emerald-soft)" : "var(--dash-blue-soft)",
-              color: progressPercentage >= 100 ? "var(--dash-emerald)" : "var(--dash-blue)",
-              fontSize: "13px",
+              padding: "4px 12px",
+              borderRadius: 9999,
+              background: progressPercentage >= 100 ? "#dcfce7" : "#eff6ff",
+              color: progressPercentage >= 100 ? "#16a34a" : "#2563eb",
+              fontSize: 12.5,
               fontWeight: 800,
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
+              gap: 6,
             }}
           >
-            {progressPercentage >= 100 ? <CheckCircle2 size={15} /> : <TrendingUp size={15} />}
-            {progressPercentage}% Complete
+            {progressPercentage >= 100 ? <CheckCircle2 size={14} /> : <TrendingUp size={14} />}
+            {progressPercentage}% Progress
           </span>
         </div>
 
-        {/* Progress Bar Track */}
+        {/* Progress Bar */}
         <div
           style={{
             width: "100%",
-            height: "12px",
-            borderRadius: "9999px",
-            background: "#e2e8f0",
+            height: 10,
+            borderRadius: 9999,
+            background: "#f1f5f9",
             overflow: "hidden",
-            position: "relative",
+            marginBottom: 10,
           }}
         >
           <div
             style={{
               height: "100%",
               width: `${progressPercentage}%`,
-              borderRadius: "9999px",
+              borderRadius: 9999,
               background: progressPercentage >= 100
                 ? "linear-gradient(90deg, #16a34a, #10b981)"
                 : "linear-gradient(90deg, #2563eb, #3b82f6)",
@@ -338,25 +367,25 @@ export default function SavingsPage() {
           />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11.5px", color: "var(--dash-muted)", fontWeight: 600 }}>
-          <span>Saved: {formatCurrency(summary.currentSaved, cur)}</span>
-          <span>Target: {formatCurrency(summary.goalAmount, cur)}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+          <span>Saved: <strong style={{ color: "#0f172a" }}>{formatCurrency(summary.currentSaved, cur)}</strong></span>
+          <span>Target: <strong style={{ color: "#0f172a" }}>{formatCurrency(summary.goalAmount, cur)}</strong></span>
         </div>
       </div>
 
-      {/* ── TWO-COLUMN INTERACTIVE CONSOLE ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
-        {/* CARD 1: EDIT / ALLOCATE GOAL TARGET */}
-        <div className="dash-card" style={{ padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      {/* ── 2 INTERACTIVE ACTION PANELS (MATCHING TAB CARDS) ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
+        {/* PANEL 1: SET / EDIT GOAL TARGET */}
+        <div className="dash-card" style={{ padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "10px",
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
                   background: "#f3e8ff",
-                  color: "#8b5cf6",
+                  color: "#7c3aed",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -365,34 +394,29 @@ export default function SavingsPage() {
                 <Target size={18} />
               </div>
               <div>
-                <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--dash-foreground)", margin: 0 }}>
-                  1. Set / Edit Goal Target
-                </h3>
-                <p style={{ fontSize: "12px", color: "var(--dash-muted)", margin: "2px 0 0" }}>
-                  Allocates funds from Overview Balance to Goal
-                </p>
+                <h3 className="dash-card-title">1. Set / Edit Goal Target</h3>
+                <p className="dash-card-subtitle">Allocates from Overview Balance into Goal</p>
               </div>
             </div>
 
-            <p style={{ fontSize: "12.5px", color: "var(--dash-muted)", lineHeight: 1.5, margin: "0 0 16px" }}>
-              When you set or increase this goal amount, it deducts from your <strong>Overview Total Balance</strong> and assigns it as your active goal allocation.
+            <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, margin: "0 0 16px" }}>
+              Setting a goal amount reserves funds directly from your <strong>Overview Total Balance</strong> and assigns it as your active goal target.
             </p>
 
-            <form onSubmit={handleUpdateGoal} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <form onSubmit={handleUpdateGoal} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label className="dash-form-label">Goal Target Amount ({curSymbol})</label>
                 <div style={{ position: "relative" }}>
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: 14,
                       top: "50%",
                       transform: "translateY(-50%)",
-                      color: "var(--dash-muted)",
+                      color: "#94a3b8",
                       fontWeight: 700,
-                      fontSize: "14px",
+                      fontSize: 14,
                       pointerEvents: "none",
-                      userSelect: "none",
                     }}
                   >
                     {curSymbol}
@@ -408,16 +432,31 @@ export default function SavingsPage() {
                       if (val === "" || /^\d*\.?\d*$/.test(val)) setEditGoalInput(val);
                     }}
                     className="dash-input"
-                    style={{ paddingLeft: curSymbol.length > 2 ? "48px" : "38px", fontWeight: 700, fontSize: "15px" }}
+                    style={{ paddingLeft: curSymbol.length > 2 ? 48 : 36, fontWeight: 700 }}
                   />
                 </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[50, 100, 250, 500].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setEditGoalInput(preset.toString())}
+                    className="dash-btn-secondary"
+                    style={{ height: 30, padding: "0 10px", fontSize: 11.5, borderRadius: 8 }}
+                  >
+                    +{formatCurrency(preset, cur)}
+                  </button>
+                ))}
               </div>
 
               <button
                 type="submit"
                 disabled={isUpdatingGoal}
                 className="dash-btn-primary"
-                style={{ height: "42px", justifyContent: "center", background: "#8b5cf6", borderColor: "#7c3aed" }}
+                style={{ height: 42, justifyContent: "center" }}
               >
                 <Edit3 size={15} />
                 <span>{isUpdatingGoal ? "Allocating..." : "Update Goal Allocation"}</span>
@@ -425,22 +464,22 @@ export default function SavingsPage() {
             </form>
           </div>
 
-          <div style={{ marginTop: "16px", padding: "10px 12px", borderRadius: "10px", background: "var(--dash-alt-bg)", border: "1px solid var(--dash-border)", fontSize: "11.5px", color: "var(--dash-muted)" }}>
-            💡 <strong>Example:</strong> If overview has 100 and you set goal to 50, overview balance becomes 50 and goal allocation becomes 50.
+          <div style={{ marginTop: 18, padding: "10px 12px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0", fontSize: 12, color: "#64748b" }}>
+            💡 <strong>Flow:</strong> Overview $100 &rarr; Goal $50 = Remaining Overview $50, Goal $50.
           </div>
         </div>
 
-        {/* CARD 2: DEPOSIT TO SAVINGS (FULFILL GOAL) */}
-        <div className="dash-card" style={{ padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        {/* PANEL 2: DEPOSIT TO SAVINGS (FULFILL GOAL) */}
+        <div className="dash-card" style={{ padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "10px",
-                  background: "var(--dash-emerald-soft)",
-                  color: "var(--dash-emerald)",
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: "#dcfce7",
+                  color: "#16a34a",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -449,34 +488,29 @@ export default function SavingsPage() {
                 <PiggyBank size={18} />
               </div>
               <div>
-                <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--dash-foreground)", margin: 0 }}>
-                  2. Deposit / Add to Savings
-                </h3>
-                <p style={{ fontSize: "12px", color: "var(--dash-muted)", margin: "2px 0 0" }}>
-                  Deducts from Goal Target into your Vault
-                </p>
+                <h3 className="dash-card-title">2. Add / Deposit to Savings</h3>
+                <p className="dash-card-subtitle">Deducts from Goal Target into Vault</p>
               </div>
             </div>
 
-            <p style={{ fontSize: "12.5px", color: "var(--dash-muted)", lineHeight: 1.5, margin: "0 0 16px" }}>
-              Adding savings fulfills your goal target and moves money into your <strong>Saved Vault</strong> without double-deducting from your overview balance.
+            <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.5, margin: "0 0 16px" }}>
+              Adding savings fulfills your goal target and moves money into your <strong>Vault</strong> without double-deducting from your overview balance.
             </p>
 
-            <form onSubmit={handleDepositSavings} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <form onSubmit={handleDepositSavings} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label className="dash-form-label">Amount to Save ({curSymbol})</label>
                 <div style={{ position: "relative" }}>
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: 14,
                       top: "50%",
                       transform: "translateY(-50%)",
-                      color: "var(--dash-muted)",
+                      color: "#94a3b8",
                       fontWeight: 700,
-                      fontSize: "14px",
+                      fontSize: 14,
                       pointerEvents: "none",
-                      userSelect: "none",
                     }}
                   >
                     {curSymbol}
@@ -492,16 +526,31 @@ export default function SavingsPage() {
                       if (val === "" || /^\d*\.?\d*$/.test(val)) setDepositInput(val);
                     }}
                     className="dash-input"
-                    style={{ paddingLeft: curSymbol.length > 2 ? "48px" : "38px", fontWeight: 700, fontSize: "15px" }}
+                    style={{ paddingLeft: curSymbol.length > 2 ? 48 : 36, fontWeight: 700 }}
                   />
                 </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[10, 25, 50, 100].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setDepositInput(preset.toString())}
+                    className="dash-btn-secondary"
+                    style={{ height: 30, padding: "0 10px", fontSize: 11.5, borderRadius: 8 }}
+                  >
+                    +{formatCurrency(preset, cur)}
+                  </button>
+                ))}
               </div>
 
               <button
                 type="submit"
                 disabled={isDepositing}
                 className="dash-btn-primary"
-                style={{ height: "42px", justifyContent: "center", background: "#16a34a", borderColor: "#15803d" }}
+                style={{ height: 42, justifyContent: "center", background: "linear-gradient(135deg, #16a34a, #15803d)" }}
               >
                 <Plus size={16} />
                 <span>{isDepositing ? "Saving to Vault..." : "Save to Vault"}</span>
@@ -509,70 +558,377 @@ export default function SavingsPage() {
             </form>
           </div>
 
-          <div style={{ marginTop: "16px", padding: "10px 12px", borderRadius: "10px", background: "var(--dash-alt-bg)", border: "1px solid var(--dash-border)", fontSize: "11.5px", color: "var(--dash-muted)" }}>
-            🔒 <strong>Example:</strong> When you add 25 into savings, your remaining goal reduces from 50 to 25, while your overview stays 50.
+          <div style={{ marginTop: 18, padding: "10px 12px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0", fontSize: 12, color: "#64748b" }}>
+            🔒 <strong>Flow:</strong> Goal $50 &rarr; Save $25 = Remaining Goal $25, Vault $25 (Overview remains $50).
           </div>
         </div>
       </div>
 
-      {/* ── WITHDRAW FROM VAULT CARD ── */}
+      {/* ── EMERGENCY WITHDRAWAL BAR ── */}
       {summary.currentSaved > 0 && (
-        <div
-          className="dash-card"
-          style={{
-            padding: "20px 24px",
-            border: "1px dashed var(--dash-border)",
-            background: "#ffffff",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Unlock size={18} color="var(--dash-muted)" />
-              <div>
-                <h4 style={{ fontSize: "14.5px", fontWeight: 800, color: "var(--dash-foreground)", margin: 0 }}>
-                  Need Emergency Access to Your Savings?
-                </h4>
-                <p style={{ fontSize: "12px", color: "var(--dash-muted)", margin: "2px 0 0" }}>
-                  Withdraw funds from your vault back to your overview spending balance.
-                </p>
-              </div>
+        <div className="dash-card" style={{ padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Unlock size={18} />
             </div>
-            <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--dash-emerald)" }}>
-              Vault Balance: {formatCurrency(summary.currentSaved, cur)}
-            </span>
+            <div>
+              <h4 style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Emergency Vault Access
+              </h4>
+              <p style={{ fontSize: 12, color: "#64748b", margin: "2px 0 0" }}>
+                Release locked savings back into your active overview spending balance.
+              </p>
+            </div>
           </div>
 
-          <form onSubmit={handleWithdrawSavings} style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <div style={{ position: "relative", flex: "1 1 200px" }}>
-              <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)", fontWeight: 700, fontSize: "13px", pointerEvents: "none" }}>
-                {curSymbol}
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                required
-                placeholder="Amount to withdraw"
-                value={withdrawInput}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "" || /^\d*\.?\d*$/.test(val)) setWithdrawInput(val);
-                }}
-                className="dash-input"
-                style={{ paddingLeft: curSymbol.length > 2 ? "48px" : "38px" }}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isWithdrawing}
-              className="dash-btn-secondary"
-              style={{ height: "40px", color: "#dc2626", borderColor: "#fecdd3", background: "#fff5f5" }}
-            >
-              <ArrowDownRight size={15} />
-              <span>{isWithdrawing ? "Processing..." : "Withdraw to Balance"}</span>
-            </button>
-          </form>
+          <button
+            onClick={() => {
+              setWithdrawInput("");
+              setWithdrawModalOpen(true);
+            }}
+            className="dash-btn-danger"
+            style={{ height: 38, padding: "0 16px" }}
+          >
+            <ArrowDownRight size={15} />
+            <span>Withdraw from Vault</span>
+          </button>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════ */}
+      {/* ── MODALS (Exact design as Budgets/Subscriptions) ── */}
+      {/* ══════════════════════════════════════════════ */}
+
+      {/* 1. SET / EDIT GOAL MODAL */}
+      <Portal>
+        <AnimatePresence>
+          {goalModalOpen && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setGoalModalOpen(false)}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(15, 23, 42, 0.45)",
+                  backdropFilter: "blur(4px)",
+                }}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                transition={{ duration: 0.18 }}
+                className="dash-card"
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: 440,
+                  padding: 24,
+                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: "#f3e8ff", color: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Target size={18} />
+                    </div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                      Set / Edit Goal Target
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setGoalModalOpen(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 4 }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleUpdateGoal} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <label className="dash-form-label">Goal Target Amount ({curSymbol})</label>
+                    <div style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontWeight: 700, pointerEvents: "none" }}>
+                        {curSymbol}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        required
+                        autoFocus
+                        placeholder="e.g. 50"
+                        value={editGoalInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) setEditGoalInput(val);
+                        }}
+                        className="dash-input"
+                        style={{ paddingLeft: curSymbol.length > 2 ? 48 : 36, fontWeight: 700 }}
+                      />
+                    </div>
+                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                      Deducts from Overview Balance into active Goal Allocation.
+                    </p>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setGoalModalOpen(false)}
+                      className="dash-btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isUpdatingGoal}
+                      className="dash-btn-primary"
+                    >
+                      {isUpdatingGoal ? "Saving..." : "Save Goal"}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
+
+      {/* 2. DEPOSIT SAVINGS MODAL */}
+      <Portal>
+        <AnimatePresence>
+          {depositModalOpen && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setDepositModalOpen(false)}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(15, 23, 42, 0.45)",
+                  backdropFilter: "blur(4px)",
+                }}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                transition={{ duration: 0.18 }}
+                className="dash-card"
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: 440,
+                  padding: 24,
+                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <PiggyBank size={18} />
+                    </div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                      Deposit to Savings Vault
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setDepositModalOpen(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 4 }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleDepositSavings} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <label className="dash-form-label">Amount to Deposit ({curSymbol})</label>
+                    <div style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontWeight: 700, pointerEvents: "none" }}>
+                        {curSymbol}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        required
+                        autoFocus
+                        placeholder="e.g. 25"
+                        value={depositInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) setDepositInput(val);
+                        }}
+                        className="dash-input"
+                        style={{ paddingLeft: curSymbol.length > 2 ? 48 : 36, fontWeight: 700 }}
+                      />
+                    </div>
+                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                      Deducts from Remaining Goal into your Vault (Does not deduct overview).
+                    </p>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setDepositModalOpen(false)}
+                      className="dash-btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isDepositing}
+                      className="dash-btn-primary"
+                      style={{ background: "linear-gradient(135deg, #16a34a, #15803d)" }}
+                    >
+                      {isDepositing ? "Saving..." : "Confirm Deposit"}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
+
+      {/* 3. WITHDRAW FROM VAULT MODAL */}
+      <Portal>
+        <AnimatePresence>
+          {withdrawModalOpen && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setWithdrawModalOpen(false)}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(15, 23, 42, 0.45)",
+                  backdropFilter: "blur(4px)",
+                }}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                transition={{ duration: 0.18 }}
+                className="dash-card"
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  maxWidth: 440,
+                  padding: 24,
+                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: "#fee2e2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Unlock size={18} />
+                    </div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                      Emergency Vault Withdrawal
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setWithdrawModalOpen(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 4 }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleWithdrawSavings} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <label className="dash-form-label" style={{ margin: 0 }}>Amount to Withdraw</label>
+                      <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 700 }}>
+                        Vault: {formatCurrency(summary.currentSaved, cur)}
+                      </span>
+                    </div>
+                    <div style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontWeight: 700, pointerEvents: "none" }}>
+                        {curSymbol}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        required
+                        autoFocus
+                        placeholder="Amount to release"
+                        value={withdrawInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) setWithdrawInput(val);
+                        }}
+                        className="dash-input"
+                        style={{ paddingLeft: curSymbol.length > 2 ? 48 : 36, fontWeight: 700 }}
+                      />
+                    </div>
+                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                      Returns funds from your Vault back into your Overview spending balance.
+                    </p>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawModalOpen(false)}
+                      className="dash-btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isWithdrawing}
+                      className="dash-btn-danger"
+                      style={{ height: 40, padding: "0 16px" }}
+                    >
+                      {isWithdrawing ? "Processing..." : "Confirm Withdrawal"}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
     </div>
   );
 }
