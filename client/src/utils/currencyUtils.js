@@ -1,9 +1,24 @@
 export const getCurrencySymbol = (currency = "USD") => {
-  const code = currency.toUpperCase();
-  if (code === "PKR") return "Rs";
-  if (code === "EUR") return "€";
-  if (code === "GBP") return "£";
-  return "$";
+  const code = (currency || "USD").toUpperCase();
+  switch (code) {
+    case "PKR":
+      return "Rs";
+    case "EUR":
+      return "€";
+    case "GBP":
+      return "£";
+    case "INR":
+      return "₹";
+    case "JPY":
+      return "¥";
+    case "CAD":
+      return "CA$";
+    case "AUD":
+      return "AU$";
+    case "USD":
+    default:
+      return "$";
+  }
 };
 
 export const formatCurrency = (amount, currency = "USD") => {
@@ -25,27 +40,4 @@ export const formatCurrency = (amount, currency = "USD") => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numAmount);
-};
-
-export const getCurrencySymbol = (currency = "USD") => {
-  const code = (currency || "USD").toUpperCase();
-  switch (code) {
-    case "PKR":
-      return "Rs ";
-    case "EUR":
-      return "€";
-    case "GBP":
-      return "£";
-    case "INR":
-      return "₹";
-    case "JPY":
-      return "¥";
-    case "CAD":
-      return "CA$";
-    case "AUD":
-      return "AU$";
-    case "USD":
-    default:
-      return "$";
-  }
 };
