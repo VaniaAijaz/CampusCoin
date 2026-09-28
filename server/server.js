@@ -10,24 +10,25 @@ dotenv.config();
 const connectDB = require("./core/db");
 const { connectRedis } = require("./core/redis");
 const { notFoundHandler, errorHandler } = require("./core/errorMiddleware");
-const { seedAdmin, seedDemoStudent, seedDefaultCategories } = require("./core/seed");
+const { seedAdmin, seedDemoStudent } = require("./core/seed");
 
 // Initialize Database connection & seed defaults
 connectDB().then(async (conn) => {
   if (conn) {
     await seedAdmin();
     await seedDemoStudent();
-    await seedDefaultCategories();
   }
 });
 
 // Initialize Redis
 connectRedis().then(() => {
-  // Sync live market currency exchange rates via Redis
-  const CurrencyService = require("./core/currency.service");
-  CurrencyService.syncRates();
-  // Refresh rates every 12 hours
-  setInterval(() => CurrencyService.syncRates(), 12 * 60 * 60 * 1000);
+  if (process.env.NODE_ENV !== "test") {
+    // Sync live market currency exchange rates via Redis
+    const CurrencyService = require("./core/currency.service");
+    CurrencyService.syncRates();
+    // Refresh rates every 12 hours
+    setInterval(() => CurrencyService.syncRates(), 12 * 60 * 60 * 1000);
+  }
 });
 
 const app = express();
@@ -95,8 +96,8 @@ app.get("/api/announcements", protect, async (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get("/", (req, res) => {
+// Health check endpoints
+const healthPayload = (req, res) => {
   res.json({
     name: "Campus Coin API",
     status: "healthy",
@@ -104,7 +105,9 @@ app.get("/", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
   });
-});
+};
+app.get("/", healthPayload);
+app.get("/api/health", healthPayload);
 
 // Fallback 404 & Global Error Middleware
 app.use(notFoundHandler);

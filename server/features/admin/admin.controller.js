@@ -201,6 +201,7 @@ const generateResetLink = async (req, res) => {
       message: `Password reset link generated for ${user.name}.`,
       token,
       resetUrl,
+      resetLink: resetUrl,
       user: {
         _id: user._id,
         name: user.name,

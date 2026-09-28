@@ -10,7 +10,6 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const [resetToken, setResetToken] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,9 +19,8 @@ export default function ForgotPasswordPage() {
     }
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/forgot-password", { email });
+      await api.post("/auth/forgot-password", { email });
       setSent(true);
-      if (data.token) setResetToken(data.token);
     } catch (err) {
       toast.error(err.response?.data?.message || "Something went wrong.");
     } finally {
@@ -72,32 +70,9 @@ export default function ForgotPasswordPage() {
               Check Your Email
             </h2>
 
-            <p className="auth-form-subtitle" style={{ marginBottom: 24 }}>
-              If an account exists for <strong style={{ color: "var(--auth-foreground)" }}>{email}</strong>, password reset instructions have been dispatched.
+            <p className="auth-form-subtitle" style={{ marginBottom: 28, lineHeight: 1.6 }}>
+              If an account exists for <strong style={{ color: "var(--auth-foreground)" }}>{email}</strong>, password reset instructions with a secure link have been sent to your inbox.
             </p>
-
-            {resetToken && (
-              <div
-                style={{
-                  padding: "14px 16px",
-                  borderRadius: 14,
-                  backgroundColor: "#f1f5f9",
-                  border: "1px solid #e2e8f0",
-                  textAlign: "left",
-                  marginBottom: 24,
-                }}
-              >
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--auth-blue)", display: "block", marginBottom: 4 }}>
-                  Direct Reset URL (Dev Mode):
-                </span>
-                <Link
-                  to={`/reset-password/${resetToken}`}
-                  style={{ fontSize: 13, color: "var(--auth-blue)", textDecoration: "underline", wordBreak: "break-all", fontWeight: 600 }}
-                >
-                  Reset your password now →
-                </Link>
-              </div>
-            )}
 
             <Link
               to="/login"

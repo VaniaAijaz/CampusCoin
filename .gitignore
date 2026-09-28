@@ -31,6 +31,8 @@ dist-ssr/
 build/
 out/
 client/dist/
+test-results/
+playwright-report/
 
 # Logs & Debugging
 *.log

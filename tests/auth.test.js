@@ -13,7 +13,6 @@ describe("Auth Flow Integration Tests (Registration, Login, Verification)", () =
   afterAll(async () => {
     // Cleanup created test records
     await User.deleteMany({ email: { $regex: /@campuscoin\.edu$/ } });
-    await mongoose.connection.close();
   });
 
   describe("POST /api/auth/register", () => {

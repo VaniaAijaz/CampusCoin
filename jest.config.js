@@ -2,7 +2,11 @@ module.exports = {
   testEnvironment: "node",
   testMatch: [
     "**/tests/**/*.test.[jt]s?(x)",
-    "**/tests/**/*.spec.[jt]s?(x)"
+  ],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/tests/e2e/",
+    "/tests/cypress/"
   ],
   setupFilesAfterEnv: ["<rootDir>/tests/setupTests.js"],
   verbose: true,

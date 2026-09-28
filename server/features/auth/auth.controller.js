@@ -453,10 +453,12 @@ const forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
     await user.save();
     
-    const resetUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password/${token}`;
-    sendPasswordResetEmail(user.email, token).catch(console.error);
+    // Dispatch reset email securely via Nodemailer
+    sendPasswordResetEmail(user.email, token).catch((err) => {
+      console.error(`[AUTH] Failed to send password reset email to ${user.email}:`, err);
+    });
 
-    res.json({ success: true, message: "Password reset instructions created.", resetUrl, token });
+    res.json({ success: true, message: "If that email is registered, password reset instructions have been sent to your email." });
   } catch (err) {
     next(err);
   }
