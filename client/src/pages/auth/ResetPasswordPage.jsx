@@ -1,9 +1,10 @@
-import CampusCoinLogo from "../../components/ui/CampusCoinLogo";
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { KeyRound, Eye, EyeOff, Lock, Coins, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
+import { Lock, Eye, EyeOff, ChevronLeft, ArrowRight, ShieldCheck, KeyRound } from "lucide-react";
 import api from "../../core/api";
 import toast from "react-hot-toast";
+import "../../features/auth/AuthPages.css";
 
 export default function ResetPasswordPage() {
   const { token } = useParams();
@@ -38,64 +39,76 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 text-white relative overflow-hidden">
-      {/* Background Refraction Canvas */}
-      <div 
-        className="fixed inset-0 h-screen w-screen bg-cover bg-center -z-20 scale-100"
-        style={{ backgroundImage: "url('/liquid_bg.jpg')" }}
-      />
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] -z-10" />
+    <main className="auth-root" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div className="auth-grid-bg" />
+      <div className="auth-glow-1" />
+      <div className="auth-glow-2" />
 
-      <div className="w-full max-w-md p-8 sm:p-10 rounded-[32px] bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)]">
-        <div className="mb-6">
-          <CampusCoinLogo size="md" />
-        </div>
+      {/* Top Bar */}
+      <div style={{ position: "fixed", top: 24, left: 24, zIndex: 50 }}>
+        <Link to="/login" className="auth-back-link">
+          <ChevronLeft style={{ width: 16, height: 16 }} /> Back to Sign In
+        </Link>
+      </div>
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-black text-white">Create New Password</h2>
-          <p className="text-xs text-white/70 mt-1">
-            Choose a secure password for your Campus Coin account.
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="auth-form-box"
+      >
+        <div className="auth-form-header">
+          <div className="auth-badge-kicker">Account Security</div>
+          <h1 className="auth-form-title">Create New Password</h1>
+          <p className="auth-form-subtitle">
+            Choose a strong, memorable password for your CampusCoin account.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[11px] font-bold text-white/80 uppercase tracking-wider mb-1.5">
+        <form onSubmit={handleSubmit} noValidate>
+          {/* New Password */}
+          <div className="auth-input-group">
+            <label className="auth-input-label" htmlFor="new-password">
               New Password
             </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+            <div className="auth-input-wrapper">
+              <Lock className="auth-input-icon" style={{ width: 17, height: 17 }} />
               <input
+                id="new-password"
                 type={showPass ? "text" : "password"}
                 required
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-11 py-2.5 rounded-full bg-white/10 border border-white/25 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/60 transition-colors"
+                placeholder="At least 6 characters"
+                className="auth-input-field has-toggle"
               />
               <button
                 type="button"
                 onClick={() => setShowPass(!showPass)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                className="auth-pwd-toggle"
+                tabIndex={-1}
+                aria-label="Toggle password visibility"
               >
-                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPass ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
               </button>
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-white/80 uppercase tracking-wider mb-1.5">
-              Confirm Password
+          {/* Confirm Password */}
+          <div className="auth-input-group">
+            <label className="auth-input-label" htmlFor="confirm-password">
+              Confirm New Password
             </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+            <div className="auth-input-wrapper">
+              <Lock className="auth-input-icon" style={{ width: 17, height: 17 }} />
               <input
+                id="confirm-password"
                 type={showPass ? "text" : "password"}
                 required
-                placeholder="••••••••"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 rounded-full bg-white/10 border border-white/25 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/60 transition-colors"
+                placeholder="Re-enter new password"
+                className="auth-input-field"
               />
             </div>
           </div>
@@ -103,29 +116,41 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 h-11 rounded-full bg-white/25 hover:bg-white/35 border border-white/40 text-white font-bold text-xs tracking-wide shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+            className="auth-submit-btn"
           >
             {loading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "#ffffff",
+                  borderRadius: "50%",
+                  display: "inline-block",
+                  animation: "spin 0.6s linear infinite",
+                }}
+              />
             ) : (
               <>
-                <KeyRound className="w-4 h-4" />
-                <span>Reset Password & Continue</span>
+                <KeyRound style={{ width: 16, height: 16 }} />
+                <span>Update Password</span>
+                <ArrowRight style={{ width: 16, height: 16 }} />
               </>
             )}
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-white/10 text-center">
+        <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid #e2e8f0", textAlign: "center" }}>
           <Link
             to="/login"
-            className="text-xs text-white/70 hover:text-white inline-flex items-center gap-1.5 transition-colors font-medium"
+            className="auth-footer-btn"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ChevronLeft style={{ width: 14, height: 14 }} />
             Back to Sign In
           </Link>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </main>
   );
 }

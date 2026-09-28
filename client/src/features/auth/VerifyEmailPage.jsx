@@ -1,18 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, ArrowRight, RefreshCw, ChevronLeft, Sparkles, LogOut } from "lucide-react";
+import { Mail, ArrowRight, RefreshCw, ChevronLeft, ShieldCheck } from "lucide-react";
 import { useAuth } from "./AuthContext";
-import { useTheme } from "../../context/ThemeContext";
 import api from "../../core/api";
-import Iridescence from "../../components/ui/Iridescence";
 import toast from "react-hot-toast";
+import "./AuthPages.css";
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, login: setAuthSession, logout } = useAuth();
-  const { color } = useTheme();
+  const { user, logout } = useAuth();
 
   const tokenParam = searchParams.get("token");
   const emailParam = searchParams.get("email") || user?.email || "";
@@ -139,72 +137,82 @@ export default function VerifyEmailPage() {
     }
   };
 
-
   const handleBackToLogin = () => {
     logout();
     navigate("/login", { replace: true });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
-      {/* Background Iridescence */}
-      <div className="fixed inset-0 -z-20">
-        <Iridescence color={color || [0.06, 0.23, 0.44]} speed={0.8} amplitude={0.12} mouseReact={false} />
-      </div>
-      <div className="fixed inset-0 bg-black/25 -z-10" />
+    <main className="auth-root" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div className="auth-grid-bg" />
+      <div className="auth-glow-1" />
+      <div className="auth-glow-2" />
 
-      {/* Top Escape & Navigation Bar */}
-      <div className="fixed top-6 left-6 z-50 flex items-center gap-3">
+      {/* Top Bar */}
+      <div style={{ position: "fixed", top: 24, left: 24, zIndex: 50, display: "flex", gap: 12 }}>
         <button
           type="button"
           onClick={handleBackToLogin}
-          className="min-h-[44px] px-4 flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all hover:bg-white/20 cursor-pointer"
+          className="auth-back-link"
         >
-          <ChevronLeft className="w-4 h-4" /> Back to Sign In
+          <ChevronLeft style={{ width: 16, height: 16 }} /> Back to Sign In
         </button>
-        <Link
-          to="/"
-          className="min-h-[44px] px-4 flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all hover:bg-white/20"
-        >
-          Home
-        </Link>
       </div>
 
-      {/* Main True Glass Card */}
+      {/* Verification Card */}
       <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-[460px] p-8 md:p-10 rounded-[32px]
-                   bg-gradient-to-br from-white/10 to-white/0
-                   backdrop-blur-[64px] backdrop-saturate-[200%]
-                   border border-white/20 border-b-white/5 border-r-white/5
-                   shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_8px_32px_0_rgba(0,0,0,0.15)]
-                   text-center"
+        className="auth-form-box"
+        style={{ textAlign: "center", maxWidth: 480 }}
       >
         {/* Verification Icon Pod */}
-        <div className="w-16 h-16 mx-auto mb-6 rounded-[20px] bg-white/10 border border-white/25 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]">
-          <Mail className="w-8 h-8 text-white" />
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            margin: "0 auto 20px",
+            borderRadius: 16,
+            backgroundColor: "#dbeafe",
+            color: "var(--auth-blue)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 14px rgba(37,99,235,0.15)",
+          }}
+        >
+          <Mail style={{ width: 26, height: 26 }} />
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">
+        <h1 className="auth-form-title" style={{ fontSize: 28, marginBottom: 8 }}>
           Verify Your Email
         </h1>
 
-        <p className="text-sm text-white/70 max-w-sm mx-auto mb-8 leading-relaxed">
+        <p className="auth-form-subtitle" style={{ maxWidth: 360, margin: "0 auto 28px" }}>
           We sent a 6-digit confirmation code to{" "}
-          <span className="font-semibold text-white">{emailParam || "your email"}</span>. Enter the code below to activate your account.
+          <strong style={{ color: "var(--auth-foreground)" }}>{emailParam || "your email"}</strong>. Enter the code below to activate your account.
         </p>
 
         {autoVerifying ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-4">
-            <span className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-            <p className="text-sm font-medium text-white/80">Verifying secure token...</p>
+          <div style={{ padding: "40px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <span
+              style={{
+                width: 32,
+                height: 32,
+                border: "3px solid #cbd5e1",
+                borderTopColor: "var(--auth-blue)",
+                borderRadius: "50%",
+                display: "inline-block",
+                animation: "spin 0.6s linear infinite",
+              }}
+            />
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--auth-muted)" }}>Verifying secure token...</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* 6-Digit OTP Inputs */}
-            <div className="flex justify-center gap-2.5 sm:gap-3">
+            <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
               {otp.map((digit, idx) => (
                 <input
                   key={idx}
@@ -216,11 +224,29 @@ export default function VerifyEmailPage() {
                   onChange={(e) => handleOtpChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
                   autoFocus={idx === 0}
-                  className="w-12 h-14 sm:w-14 sm:h-16 text-center text-xl font-mono font-bold text-white rounded-[16px]
-                             bg-white/10 border border-white/20
-                             focus:border-white/70 focus:bg-white/15 focus:outline-none
-                             focus:shadow-[0_0_0_3px_rgba(255,255,255,0.15)]
-                             transition-all"
+                  style={{
+                    width: 48,
+                    height: 56,
+                    textAlign: "center",
+                    fontSize: 22,
+                    fontWeight: 800,
+                    fontFamily: "inherit",
+                    borderRadius: 14,
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    color: "var(--auth-foreground)",
+                    outline: "none",
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
+                    transition: "border-color 0.15s, box-shadow 0.15s",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "var(--auth-blue)";
+                    e.target.style.boxShadow = "0 0 0 3.5px rgba(37,99,235,0.15)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#cbd5e1";
+                    e.target.style.boxShadow = "0 2px 6px rgba(0,0,0,0.03)";
+                  }}
                 />
               ))}
             </div>
@@ -229,19 +255,24 @@ export default function VerifyEmailPage() {
             <button
               type="submit"
               disabled={loading || otp.join("").length !== 6}
-              className="w-full min-h-[48px] rounded-full
-                         bg-white hover:bg-white/95 active:scale-[0.98]
-                         text-slate-950 text-sm font-bold tracking-tight
-                         shadow-[0_8px_32px_rgba(255,255,255,0.2)]
-                         transition-all disabled:opacity-40 cursor-pointer
-                         flex items-center justify-center gap-2"
+              className="auth-submit-btn"
             >
               {loading ? (
-                <span className="w-4 h-4 border-2 border-slate-400 border-t-slate-900 rounded-full animate-spin" />
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    border: "2px solid rgba(255,255,255,0.3)",
+                    borderTopColor: "#ffffff",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    animation: "spin 0.6s linear infinite",
+                  }}
+                />
               ) : (
                 <>
                   <span>Activate Account</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight style={{ width: 16, height: 16 }} />
                 </>
               )}
             </button>
@@ -249,16 +280,28 @@ export default function VerifyEmailPage() {
         )}
 
         {/* Resend Action */}
-        <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-white/60">
+        <div
+          style={{
+            marginTop: 28,
+            paddingTop: 20,
+            borderTop: "1px solid #e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 13,
+            color: "var(--auth-muted)",
+          }}
+        >
           <span>Didn&apos;t receive a code?</span>
           <button
             type="button"
             onClick={handleResend}
             disabled={countdown > 0 || resending}
-            className="font-semibold text-white/90 hover:text-white transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+            className="auth-footer-btn"
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
           >
             {resending ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <RefreshCw style={{ width: 14, height: 14, animation: "spin 0.6s linear infinite" }} />
             ) : countdown > 0 ? (
               <span>Resend in {countdown}s</span>
             ) : (
@@ -266,9 +309,8 @@ export default function VerifyEmailPage() {
             )}
           </button>
         </div>
-
-
       </motion.div>
-    </div>
+    </main>
   );
 }
+

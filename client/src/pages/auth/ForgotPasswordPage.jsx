@@ -1,9 +1,10 @@
-import CampusCoinLogo from "../../components/ui/CampusCoinLogo";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, ArrowLeft, Send, Coins } from "lucide-react";
+import { motion } from "framer-motion";
+import { Mail, ChevronLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import api from "../../core/api";
 import toast from "react-hot-toast";
+import "../../features/auth/AuthPages.css";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -30,37 +31,68 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 text-white relative overflow-hidden">
-      {/* Background Refraction Canvas */}
-      <div 
-        className="fixed inset-0 h-screen w-screen bg-cover bg-center -z-20 scale-100"
-        style={{ backgroundImage: "url('/liquid_bg.jpg')" }}
-      />
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] -z-10" />
+    <main className="auth-root" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div className="auth-grid-bg" />
+      <div className="auth-glow-1" />
+      <div className="auth-glow-2" />
 
-      <div className="w-full max-w-md p-8 sm:p-10 rounded-[32px] bg-white/10 backdrop-blur-[40px] backdrop-saturate-[150%] border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)]">
-        <div className="mb-6">
-          <CampusCoinLogo size="md" />
-        </div>
+      {/* Top Bar */}
+      <div style={{ position: "fixed", top: 24, left: 24, zIndex: 50 }}>
+        <Link to="/login" className="auth-back-link">
+          <ChevronLeft style={{ width: 16, height: 16 }} /> Back to Sign In
+        </Link>
+      </div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="auth-form-box"
+      >
         {sent ? (
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-6 h-6" />
+          <div style={{ textAlign: "center" }}>
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                backgroundColor: "#bbf7d0",
+                color: "#15803d",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px",
+                boxShadow: "0 4px 14px rgba(22,163,74,0.15)",
+              }}
+            >
+              <CheckCircle2 style={{ width: 28, height: 28 }} />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Check Your Email</h2>
-            <p className="text-xs text-white/70 mb-5 leading-relaxed">
-              If an account exists for <strong className="text-white">{email}</strong>, a recovery token has been issued.
+
+            <h2 className="auth-form-title" style={{ fontSize: 26, marginBottom: 8 }}>
+              Check Your Email
+            </h2>
+
+            <p className="auth-form-subtitle" style={{ marginBottom: 24 }}>
+              If an account exists for <strong style={{ color: "var(--auth-foreground)" }}>{email}</strong>, password reset instructions have been dispatched.
             </p>
 
             {resetToken && (
-              <div className="p-3.5 rounded-[20px] bg-white/10 border border-white/20 text-left mb-5">
-                <span className="text-[10px] uppercase font-bold text-sky-300 block mb-1">
-                  Dev Mode Direct Reset URL:
+              <div
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: 14,
+                  backgroundColor: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  textAlign: "left",
+                  marginBottom: 24,
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--auth-blue)", display: "block", marginBottom: 4 }}>
+                  Direct Reset URL (Dev Mode):
                 </span>
                 <Link
                   to={`/reset-password/${resetToken}`}
-                  className="text-xs text-sky-300 hover:text-white underline break-all font-medium block"
+                  style={{ fontSize: 13, color: "var(--auth-blue)", textDecoration: "underline", wordBreak: "break-all", fontWeight: 600 }}
                 >
                   Reset your password now →
                 </Link>
@@ -69,34 +101,37 @@ export default function ForgotPasswordPage() {
 
             <Link
               to="/login"
-              className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 text-white font-bold text-xs transition-all shadow-sm"
+              className="auth-submit-btn"
+              style={{ textDecoration: "none" }}
             >
               Return to Sign In
             </Link>
           </div>
         ) : (
           <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-black text-white">Reset Password</h2>
-              <p className="text-xs text-white/70 mt-1">
-                Enter your registered campus email to receive a recovery link.
+            <div className="auth-form-header">
+              <div className="auth-badge-kicker">Security Recovery</div>
+              <h1 className="auth-form-title">Reset Password</h1>
+              <p className="auth-form-subtitle">
+                Enter your registered campus email to receive recovery instructions.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-white/80 uppercase tracking-wider mb-1.5">
+            <form onSubmit={handleSubmit} noValidate>
+              <div className="auth-input-group">
+                <label className="auth-input-label" htmlFor="reset-email">
                   Campus Email Address
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+                <div className="auth-input-wrapper">
+                  <Mail className="auth-input-icon" style={{ width: 17, height: 17 }} />
                   <input
+                    id="reset-email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@campuscoin.com"
-                    className="w-full pl-11 pr-4 py-2.5 rounded-full bg-white/10 border border-white/25 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/60 transition-colors"
+                    placeholder="student@university.edu"
+                    className="auth-input-field"
                   />
                 </div>
               </div>
@@ -104,31 +139,43 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 h-11 rounded-full bg-white/25 hover:bg-white/35 border border-white/40 text-white font-bold text-xs tracking-wide shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                className="auth-submit-btn"
               >
                 {loading ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span
+                    style={{
+                      width: 18,
+                      height: 18,
+                      border: "2px solid rgba(255,255,255,0.3)",
+                      borderTopColor: "#ffffff",
+                      borderRadius: "50%",
+                      display: "inline-block",
+                      animation: "spin 0.6s linear infinite",
+                    }}
+                  />
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
                     <span>Send Reset Instructions</span>
+                    <ArrowRight style={{ width: 16, height: 16 }} />
                   </>
                 )}
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-white/10 text-center">
+            <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid #e2e8f0", textAlign: "center" }}>
               <Link
                 to="/login"
-                className="text-xs text-white/70 hover:text-white inline-flex items-center gap-1.5 transition-colors font-medium"
+                className="auth-footer-btn"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ChevronLeft style={{ width: 14, height: 14 }} />
                 Back to Sign In
               </Link>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </main>
   );
 }
+
