@@ -346,33 +346,30 @@ const sendMonthlyStatementEmail = async (email, monthName, totalIn, totalOut) =>
   await sendEmail(email, `Your ${monthName} Statement is Ready — Campus Coin`, html);
 };
 
-// ── 5. Email Verification (OTP + Link) ───────────────────────────────────────
-const sendVerificationEmail = async (email, name, otp, link) => {
+// ── 5. Email Verification (6-Digit Activation Code) ──────────────────────────
+const sendVerificationEmail = async (email, name, otp) => {
   const firstName = (name || "there").split(" ")[0];
   const content = `
-    <h1 class="title">Verify your email ✉️</h1>
-    <p class="lead">Hi <strong>${firstName}</strong>, welcome to Campus Coin! Enter the code below in the app to activate your student financial portal.</p>
+    <h1 class="title">Activate your account ✉️</h1>
+    <p class="lead">Hi <strong>${firstName}</strong>, welcome to Campus Coin! Enter the 6-digit activation code below in the app to verify your email and complete registration.</p>
 
     <div class="otp-box">
-      <p class="otp-label">Your Verification Code</p>
+      <p class="otp-label">Your 6-Digit Activation Code</p>
       <p class="otp-code">${(otp || "------").toString().split("").join(" ")}</p>
-      <p class="otp-expiry">Expires in 24 hours · Do not share this code</p>
+      <p class="otp-expiry">Expires in 24 hours · Do not share this code with anyone</p>
     </div>
 
-    <p style="font-size:14px;color:#475569;text-align:center;margin-bottom:20px;">
-      Or click the button below to verify instantly without entering the code.
-    </p>
-
-    <div class="cta-wrap">
-      <a href="${link}" class="cta-btn">Verify Email Instantly →</a>
+    <div class="info-box" style="background:#eff6ff;border-color:#bfdbfe;">
+      <p class="info-box-title" style="color:#2563eb;">🔒 Security Notice</p>
+      <p style="font-size:13px;color:#1e40af;margin:0;">Campus Coin staff will never ask for your 6-digit code. If you didn't create an account with this email address, you can safely ignore this message.</p>
     </div>
 
     <p style="font-size:12px;color:#94a3b8;text-align:center;">
-      If you didn't register for Campus Coin, please safely disregard this email.
+      Smart finance for smart students · Techwiz 7 Entry
     </p>
   `;
-  const html = generateBaseTemplate("Verify Your Campus Coin Account", "Confirm your email to activate Campus Coin.", content);
-  return await sendEmail(email, "Verify Your Campus Coin Account — OTP Inside 🪙", html);
+  const html = generateBaseTemplate("Activate Your Campus Coin Account", "Your 6-digit account activation code.", content);
+  return await sendEmail(email, "Activate Your Campus Coin Account — Verification Code 🪙", html);
 };
 
 // ── 6. Budget Alert Email (alias for tests) ───────────────────────────────────
