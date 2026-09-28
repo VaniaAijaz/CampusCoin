@@ -1,5 +1,5 @@
 export const formatCurrency = (amount, currency = "USD") => {
-  const code = currency.toUpperCase();
+  const code = (currency || "USD").toUpperCase();
   const numAmount = Number(amount) || 0;
   
   if (code === "PKR") {
@@ -17,4 +17,27 @@ export const formatCurrency = (amount, currency = "USD") => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numAmount);
+};
+
+export const getCurrencySymbol = (currency = "USD") => {
+  const code = (currency || "USD").toUpperCase();
+  switch (code) {
+    case "PKR":
+      return "Rs ";
+    case "EUR":
+      return "€";
+    case "GBP":
+      return "£";
+    case "INR":
+      return "₹";
+    case "JPY":
+      return "¥";
+    case "CAD":
+      return "CA$";
+    case "AUD":
+      return "AU$";
+    case "USD":
+    default:
+      return "$";
+  }
 };

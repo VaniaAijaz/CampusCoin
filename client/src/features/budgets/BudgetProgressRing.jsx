@@ -1,31 +1,36 @@
 import { useMemo } from "react";
-import { AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
+import { formatCurrency } from "../../utils/currencyUtils";
 
 export default function BudgetProgressRing({
   categoryName = "General",
   spentAmount = 0,
   limitAmount = 100,
   icon = "tag",
-  color = "#6366F1",
+  color = "#2563eb",
   onEdit,
 }) {
+  const { user } = useAuth();
+  const cur = user?.currency || "USD";
+
   const { percentage, remaining, status, strokeColor, statusBadge } = useMemo(() => {
     const rawPct = limitAmount > 0 ? (spentAmount / limitAmount) * 100 : 0;
     const roundedPct = Math.round(rawPct);
     const rem = limitAmount - spentAmount;
 
     let stat = "safe";
-    let stroke = "#10B981"; // Emerald
-    let badge = { text: "On Track", icon: CheckCircle2, color: "text-brand-mint bg-brand-mint/10 border-brand-mint/20" };
+    let stroke = "#16a34a"; // Emerald
+    let badge = { text: "On Track", icon: CheckCircle2, bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0" };
 
     if (rawPct >= 100) {
       stat = "danger";
-      stroke = "#EF4444"; // Tailwind red-500
-      badge = { text: "Cap Exceeded", icon: AlertTriangle, color: "text-red-500 bg-red-500/10 border-red-500/20" };
+      stroke = "#dc2626"; // Red
+      badge = { text: "Cap Exceeded", icon: AlertTriangle, bg: "#fee2e2", color: "#dc2626", border: "#fecdd3" };
     } else if (rawPct >= 75) {
       stat = "warning";
-      stroke = "#F59E0B"; // Amber
-      badge = { text: "Approaching Limit", icon: TrendingUp, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" };
+      stroke = "#f59e0b"; // Amber
+      badge = { text: "Near Limit", icon: TrendingUp, bg: "#fef3c7", color: "#d97706", border: "#fde68a" };
     }
 
     return {
@@ -38,63 +43,93 @@ export default function BudgetProgressRing({
   }, [spentAmount, limitAmount]);
 
   // SVG circle calculations
-  const size = 110;
+  const size = 114;
   const strokeWidth = 9;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  // Clamp progress to 100 for SVG stroke dashoffset
   const progressRatio = Math.min(100, Math.max(0, percentage)) / 100;
   const strokeDashoffset = circumference - progressRatio * circumference;
 
   const StatusIcon = statusBadge.icon;
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-5 shadow-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
-      {/* Background radial highlight */}
-      <div
-        className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-20 transition-opacity group-hover:opacity-40"
-        style={{ backgroundColor: strokeColor }}
-      />
-
+    <div
+      style={{
+        width: "100%",
+        background: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        border: "1px solid rgba(226, 232, 240, 0.9)",
+        borderRadius: 18,
+        padding: "18px",
+        boxShadow: "0 4px 20px -2px rgba(37, 99, 235, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        fontFamily: "var(--dash-font)",
+        transition: "all 0.18s ease",
+      }}
+    >
       {/* Top Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2.5">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md text-xs font-bold"
-            style={{ backgroundColor: `${color}33`, border: `1px solid ${color}66` }}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              background: `${color}15`,
+              border: `1px solid ${color}30`,
+              color: color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              fontWeight: 800,
+            }}
           >
             ₵
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white group-hover:text-brand-primary/80 transition-colors">
+            <h4 style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.01em" }}>
               {categoryName}
             </h4>
-            <p className="text-2xs text-zinc-400">
-              Cap: <span className="text-zinc-200 font-medium">${limitAmount.toFixed(0)}</span>
+            <p style={{ fontSize: 11.5, color: "#64748b", margin: "2px 0 0", fontWeight: 500 }}>
+              Cap: <span style={{ fontWeight: 700, color: "#0f172a" }}>{formatCurrency(limitAmount, cur)}</span>
             </p>
           </div>
         </div>
 
-        {/* Gamified Status Badge */}
+        {/* Status Badge */}
         <span
-          className={`text-2xs font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1 ${statusBadge.color}`}
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "3px 9px",
+            borderRadius: 9999,
+            background: statusBadge.bg,
+            color: statusBadge.color,
+            border: `1px solid ${statusBadge.border}`,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}
         >
-          <StatusIcon className="w-3 h-3" />
+          <StatusIcon style={{ width: 12, height: 12 }} />
           {statusBadge.text}
         </span>
       </div>
 
       {/* Center Circular Progress Ring */}
-      <div className="flex items-center justify-center my-2 relative">
-        <svg width={size} height={size} className="transform -rotate-90">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "10px 0", position: "relative" }}>
+        <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
           {/* Background track */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke="currentColor"
+            stroke="#f1f5f9"
             strokeWidth={strokeWidth}
-            className="text-white/10"
             fill="transparent"
           />
           {/* Animated active progress */}
@@ -108,35 +143,33 @@ export default function BudgetProgressRing({
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             fill="transparent"
-            className="transition-all duration-700 ease-out"
+            style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1)" }}
           />
         </svg>
 
         {/* Center Percentage Display */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-xl font-bold tracking-tight text-white leading-none">
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.02em", color: "#0f172a", lineHeight: 1 }}>
             {percentage}%
           </span>
-          <span className="text-3xs text-zinc-400 mt-1 uppercase font-medium">Spent</span>
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>
+            Spent
+          </span>
         </div>
       </div>
 
       {/* Footer Metrics & Cap Status */}
-      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
         <div>
-          <span className="text-zinc-400 text-2xs block">Used</span>
-          <span className="font-semibold text-white">${spentAmount.toFixed(2)}</span>
+          <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600, display: "block" }}>Used</span>
+          <span style={{ fontWeight: 800, color: "#0f172a" }}>{formatCurrency(spentAmount, cur)}</span>
         </div>
-        <div className="text-right">
-          <span className="text-zinc-400 text-2xs block">
-            {remaining >= 0 ? "Left to Spend" : "Over Budget"}
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600, display: "block" }}>
+            {remaining >= 0 ? "Safe to Spend" : "Over Limit"}
           </span>
-          <span
-            className={`font-semibold ${
-              remaining >= 0 ? "text-brand-mint" : "text-brand-coral"
-            }`}
-          >
-            {remaining >= 0 ? `$${remaining.toFixed(2)}` : `-$${Math.abs(remaining).toFixed(2)}`}
+          <span style={{ fontWeight: 800, color: remaining >= 0 ? "#16a34a" : "#dc2626" }}>
+            {remaining >= 0 ? formatCurrency(remaining, cur) : `-${formatCurrency(Math.abs(remaining), cur)}`}
           </span>
         </div>
       </div>
@@ -146,7 +179,8 @@ export default function BudgetProgressRing({
         <button
           type="button"
           onClick={onEdit}
-          className="mt-3 w-full py-1.5 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white text-2xs font-medium border border-white/5 transition-all text-center cursor-pointer"
+          className="dash-btn-secondary"
+          style={{ marginTop: 12, width: "100%", height: 34, fontSize: 12, borderRadius: 10 }}
         >
           Adjust Monthly Cap
         </button>

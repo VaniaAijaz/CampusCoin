@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PieChart, Plus, AlertTriangle, Calendar, X, Target, CheckCircle2, Clock } from "lucide-react";
+import { PieChart, Plus, AlertTriangle, X, Target, CheckCircle2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import BudgetProgressRing from "./BudgetProgressRing";
 import { getBudgets, setBudget, deleteBudget, getBudgetAlerts } from "./budgetApi";
@@ -8,6 +8,8 @@ import { getCategories } from "../categories/categoryApi";
 import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
+import { useAuth } from "../auth/AuthContext";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import "../dashboard/Dashboard.css";
 
 const getCurrentMonthStr = () => {
@@ -28,6 +30,10 @@ const formatMonthLabel = (s) => {
 };
 
 export default function BudgetPage() {
+  const { user } = useAuth();
+  const cur = user?.currency || "USD";
+  const curSymbol = getCurrencySymbol(cur);
+
   const [searchParams] = useSearchParams();
   const urlOpen = searchParams.get("open");
   const urlCategory = searchParams.get("category");
@@ -58,43 +64,45 @@ export default function BudgetPage() {
       ]);
       if (bRes.success) setBudgetsState(bRes.budgets);
       if (aRes.success) setAlerts(aRes.alerts);
-      if (cRes.success && cRes.categories) {
-        setCategories(cRes.categories);
-        if (urlCategory && !selectedCatId) {
-          const matched = cRes.categories.find((c) => c.name?.toLowerCase() === urlCategory.toLowerCase());
-          if (matched) setSelectedCatId(matched._id);
-        }
-      }
+      if (cRes.success) setCategories(cRes.categories);
     } catch {
       toast.error("Couldn't load budget data.");
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth, selectedCatId, urlCategory]);
+  }, [selectedMonth]);
 
   useEffect(() => {
     fetchBudgetData();
   }, [fetchBudgetData]);
 
+  useEffect(() => {
+    if (urlCategory && categories.length > 0 && !selectedCatId) {
+      const match = categories.find((c) => c.name.toLowerCase() === urlCategory.toLowerCase());
+      if (match) setSelectedCatId(match._id);
+    }
+  }, [urlCategory, categories, selectedCatId]);
+
   const summary = useMemo(() => {
-    let totalCap = 0,
-      totalSpent = 0,
-      safeCount = 0,
-      warnCount = 0,
-      overCount = 0;
+    const totalCap = budgets.reduce((acc, b) => acc + (b.limitAmount || 0), 0);
+    const totalSpent = budgets.reduce((acc, b) => acc + (b.spentAmount || 0), 0);
+    const remainingBudget = Math.max(0, totalCap - totalSpent);
+
+    let safeCount = 0;
+    let warnCount = 0;
+    let overCount = 0;
+
     budgets.forEach((b) => {
-      const cap = Number(b.limitAmount) || 0,
-        spent = Number(b.spentAmount) || 0;
-      totalCap += cap;
-      totalSpent += spent;
-      const pct = cap > 0 ? (spent / cap) * 100 : 0;
+      const pct = b.limitAmount > 0 ? (b.spentAmount / b.limitAmount) * 100 : 0;
       if (pct >= 100) overCount++;
       else if (pct >= 75) warnCount++;
       else safeCount++;
     });
+
     return {
       totalCap,
       totalSpent,
+      remainingBudget,
       safeCount,
       warnCount,
       overCount,
@@ -165,13 +173,18 @@ export default function BudgetPage() {
   };
 
   const isCurrentActive = selectedMonth === currentMonthStr;
-  const isNextActive = selectedMonth === nextMonthStr;
 
   return (
     <div className="dash-root">
       {/* ── Page Header ── */}
       <div className="dash-page-header">
         <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2563eb", display: "inline-block" }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", letterSpacing: "0.02em" }}>
+              Monthly Allocations
+            </span>
+          </div>
           <h1 className="dash-page-title">Budgets</h1>
           <p className="dash-page-desc">Set limits for your spending and track category progress in real time.</p>
         </div>
@@ -216,64 +229,84 @@ export default function BudgetPage() {
         />
       </div>
 
-      {/* ── Summary KPI Strip ── */}
+      {/* ── Summary KPI Strip (Clean Frosted Cards) ── */}
       <div className="dash-kpi-grid">
+        {/* Monthly Limit */}
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#dbeafe", color: "#2563eb" }}>
-              <Target style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Monthly Limit</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#eff6ff", color: "#2563eb" }}>
+              <Target style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value">${summary.totalCap.toFixed(2)}</div>
-            <p className="dash-kpi-label">Monthly Limit</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#eff6ff", color: "#2563eb" }}>
-            Planned
-          </span>
+          <div className="dash-kpi-val">{formatCurrency(summary.totalCap, cur)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
+              Planned
+            </span>
+            <span className="dash-kpi-hint">Total monthly cap</span>
+          </div>
         </div>
 
+        {/* Total Spent */}
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#fee2e2", color: "#dc2626" }}>
-              <PieChart style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Total Spent</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#fee2e2", color: "#dc2626" }}>
+              <PieChart style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value">${summary.totalSpent.toFixed(2)}</div>
-            <p className="dash-kpi-label">Total Spent</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#fee2e2", color: "#dc2626" }}>
-            {summary.overallPct}% spent
-          </span>
+          <div className="dash-kpi-val" style={{ color: "#dc2626" }}>
+            {formatCurrency(summary.totalSpent, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#fee2e2", color: "#dc2626" }}>
+              {summary.overallPct}% spent
+            </span>
+            <span className="dash-kpi-hint">Of total limits</span>
+          </div>
         </div>
 
+        {/* Remaining Budget */}
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#dcfce7", color: "#16a34a" }}>
-              <CheckCircle2 style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Remaining Budget</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#dcfce7", color: "#16a34a" }}>
+              <CheckCircle2 style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value">${Math.max(0, summary.totalCap - summary.totalSpent).toFixed(2)}</div>
-            <p className="dash-kpi-label">Remaining Budget</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#dcfce7", color: "#16a34a" }}>
-            Safe to spend
-          </span>
+          <div className="dash-kpi-val" style={{ color: "#16a34a" }}>
+            {formatCurrency(summary.remainingBudget, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#dcfce7", color: "#16a34a" }}>
+              Safe to spend
+            </span>
+            <span className="dash-kpi-hint">Available buffer</span>
+          </div>
         </div>
 
+        {/* Budget Status */}
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#fef3c7", color: "#d97706" }}>
-              <Clock style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Budget Status</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#fef3c7", color: "#d97706" }}>
+              <Clock style={{ width: 17, height: 17 }} />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "6px 0 8px" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#16a34a" }}>{summary.safeCount} On Track</span>
-              <span style={{ color: "#cbd5e1" }}>·</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#d97706" }}>{summary.warnCount} Warn</span>
-              <span style={{ color: "#cbd5e1" }}>·</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#dc2626" }}>{summary.overCount} Over</span>
-            </div>
-            <p className="dash-kpi-label">Budget Status</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#fef3c7", color: "#d97706" }}>
-            {budgets.length} configured
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "4px 0 2px" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#16a34a" }}>{summary.safeCount} On Track</span>
+            <span style={{ color: "#cbd5e1" }}>·</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#d97706" }}>{summary.warnCount} Warn</span>
+            <span style={{ color: "#cbd5e1" }}>·</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#dc2626" }}>{summary.overCount} Over</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#fef3c7", color: "#d97706" }}>
+              {budgets.length} configured
+            </span>
+            <span className="dash-kpi-hint">Categories active</span>
+          </div>
         </div>
       </div>
 
@@ -339,7 +372,7 @@ export default function BudgetPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 18 }}>
           {budgets.map((b) => (
             <div key={b._id} style={{ position: "relative" }} className="group">
-              <div className="dash-card" style={{ padding: "22px 18px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div className="dash-card" style={{ padding: "18px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <BudgetProgressRing
                   categoryName={b.categoryId?.name || "Category"}
                   spentAmount={b.spentAmount || 0}
@@ -497,7 +530,7 @@ export default function BudgetPage() {
 
                   <div>
                     <label style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                      Monthly Limit ($)
+                      Monthly Limit ({curSymbol.trim()})
                     </label>
                     <input
                       type="number"
