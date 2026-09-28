@@ -1,242 +1,280 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  Tag,
-  Plus,
-  Trash2,
-  Edit2,
-  Check,
-  Palette,
-  Shield,
-  User,
-} from "lucide-react";
-import {
-  getCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-} from "./categoryApi";
+import { Tag, Plus, Trash2, Edit2, Check, X } from "lucide-react";
+import { getCategories, createCategory, updateCategory, deleteCategory } from "./categoryApi";
 import { getCategoryIcon } from "../../core/categoryIcons";
 import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 
+/* ── exact landing page tokens ── */
+const C = {
+  hero:        "oklch(0.115 0.018 255)",
+  heroFg:      "oklch(0.985 0.003 250)",
+  heroLine:    "oklch(0.31 0.025 255)",
+  brand:       "oklch(0.59 0.22 262)",
+  brandSoft:   "oklch(0.93 0.06 262)",
+  highlight:   "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth:      "oklch(0.64 0.17 157)",
+  growthSoft:  "oklch(0.94 0.05 158)",
+  background:  "oklch(0.99 0.003 250)",
+  foreground:  "oklch(0.16 0.025 260)",
+  muted:       "oklch(0.5 0.025 255)",
+  border:      "oklch(0.9 0.012 255)",
+  altBg:       "oklch(0.965 0.01 254)",
+};
+const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+
 const PRESET_COLORS = [
-  "#6366F1", "#10B981", "#F59E0B", "#F43F5E",
-  "#8B5CF6", "#06B6D4", "#EC4899", "#14B8A6",
-  "#F97316", "#3B82F6", "#64748B", "#E11D48",
+  "oklch(0.59 0.22 262)",  // brand
+  "oklch(0.64 0.17 157)",  // growth
+  "oklch(0.88 0.18 157)",  // highlight
+  "oklch(0.61 0.23 290)",  // purple
+  "oklch(0.73 0.18 252)",  // blue-muted
+  "oklch(0.83 0.17 70)",   // amber
+  "oklch(0.59 0.18 230)",  // teal
+  "oklch(0.5 0.025 255)",  // slate
+  "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6",
 ];
 
+const inputStyle = {
+  width: "100%", padding: "10px 14px", borderRadius: 999,
+  background: C.altBg, border: `1.5px solid ${C.border}`,
+  fontSize: 13, color: C.foreground, outline: "none",
+  fontFamily: M.fontFamily, transition: "border-color 0.15s", boxSizing: "border-box",
+};
+
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState([]);
-  const [activeTab, setActiveTab] = useState("all"); // "all" | "expense" | "income"
-  const [loading, setLoading] = useState(true);
+  const [categories,  setCategories]  = useState([]);
+  const [activeTab,   setActiveTab]   = useState("all");
+  const [loading,     setLoading]     = useState(true);
+  const [modalOpen,   setModalOpen]   = useState(false);
+  const [editingCat,  setEditingCat]  = useState(null);
+  const [name,        setName]        = useState("");
+  const [type,        setType]        = useState("expense");
+  const [color,       setColor]       = useState(PRESET_COLORS[0]);
+  const [saving,      setSaving]      = useState(false);
+  const [itemToDelete,setItemToDelete]= useState(null);
 
-  // Modal State
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingCat, setEditingCat] = useState(null);
-  const [name, setName] = useState("");
-  const [type, setType] = useState("expense");
-  const [color, setColor] = useState("#6366F1");
-  const [saving, setSaving] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-
+  /* ── all logic exactly preserved ── */
   const fetchCats = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getCategories();
       if (res.success) setCategories(res.categories);
-    } catch {
-      toast.error("Failed to load categories.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load categories."); }
+    finally { setLoading(false); }
   }, []);
 
-  useEffect(() => {
-    fetchCats();
-  }, [fetchCats]);
+  useEffect(() => { fetchCats(); }, [fetchCats]);
 
-  const filteredCategories = categories.filter((c) => {
-    if (activeTab === "all") return true;
-    return c.type === activeTab;
-  });
+  const filteredCategories = categories.filter(c => activeTab === "all" || c.type === activeTab);
 
   const handleOpenModal = (cat = null) => {
-    if (cat) {
-      setEditingCat(cat);
-      setName(cat.name);
-      setType(cat.type);
-      setColor(cat.color || "#6366F1");
-    } else {
-      setEditingCat(null);
-      setName("");
-      setType("expense");
-      setColor("#6366F1");
-    }
+    if (cat) { setEditingCat(cat); setName(cat.name); setType(cat.type); setColor(cat.color || PRESET_COLORS[0]); }
+    else      { setEditingCat(null); setName(""); setType("expense"); setColor(PRESET_COLORS[0]); }
     setModalOpen(true);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!name.trim()) {
-      toast.error("Category name is required.");
-      return;
-    }
+    if (!name.trim()) { toast.error("Category name is required."); return; }
     setSaving(true);
     try {
       if (editingCat) {
         const res = await updateCategory(editingCat._id, { name: name.trim(), color });
-        if (res.success) {
-          toast.success("Category updated!");
-          setModalOpen(false);
-          fetchCats();
-        }
+        if (res.success) { toast.success("Category updated!"); setModalOpen(false); fetchCats(); }
       } else {
         const res = await createCategory({ name: name.trim(), type, color });
-        if (res.success) {
-          toast.success("Custom category added!");
-          setModalOpen(false);
-          fetchCats();
-        }
+        if (res.success) { toast.success("Category added!"); setModalOpen(false); fetchCats(); }
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save category.");
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.message || "Failed to save category."); }
+    finally { setSaving(false); }
   };
 
-  const handleDelete = (id) => {
-    setItemToDelete(id);
-  };
-
-  const confirmDelete = async () => {
+  const handleDelete    = (id) => setItemToDelete(id);
+  const confirmDelete   = async () => {
     if (!itemToDelete) return;
     try {
       const res = await deleteCategory(itemToDelete);
-      if (res.success) {
-        toast.success("Category removed.");
-        fetchCats();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete category.");
-    } finally {
-      setItemToDelete(null);
-    }
+      if (res.success) { toast.success("Category removed."); fetchCats(); }
+    } catch (err) { toast.error(err.response?.data?.message || "Failed to delete."); }
+    finally { setItemToDelete(null); }
   };
 
+  const expCount = categories.filter(c => c.type === "expense").length;
+  const incCount = categories.filter(c => c.type === "income").length;
+
+  const tabs = [
+    { key: "all",     label: `All (${categories.length})` },
+    { key: "expense", label: `Expenses (${expCount})` },
+    { key: "income",  label: `Income (${incCount})` },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* ── HEADER ── */}
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Tag className="w-6 h-6 text-brand-primary" />
-            Category Management
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Standard campus tags and personalized custom student categories.
+          <p style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.14em", color:C.brand, margin:"0 0 6px" }}>
+            Organisation
+          </p>
+          <h1 style={{ fontSize:"clamp(1.6rem,4vw,2.4rem)", fontWeight:900, color:C.foreground, margin:0, letterSpacing:"-0.03em", lineHeight:1 }}>
+            Categories
+          </h1>
+          <p style={{ fontSize:14, color:C.muted, margin:"6px 0 0", fontWeight:500 }}>
+            Default campus tags and your custom spending labels.
           </p>
         </div>
-
-        <button
-          onClick={() => handleOpenModal()}
-          className="self-start sm:self-auto min-h-[44px] py-2 px-4 rounded-xl bg-gradient-to-r from-brand-primary via-brand-primary to-brand-ai hover:from-brand-primary hover:to-violet-700 text-white text-xs font-semibold shadow-lg shadow-brand-primary/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+        <button onClick={() => handleOpenModal()} style={{
+          display:"inline-flex", alignItems:"center", gap:7, height:42, padding:"0 22px", borderRadius:999,
+          background:C.highlight, color:C.highlightFg, border:"none", fontSize:14, fontWeight:800, cursor:"pointer", ...M,
+          boxShadow:`0 4px 16px ${C.highlight}55`, transition:"background 0.15s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background="oklch(0.82 0.18 157)"}
+          onMouseLeave={e => e.currentTarget.style.background=C.highlight}
         >
-          <Plus className="w-4 h-4" />
-          <span>New Category</span>
+          <Plus style={{ width:15 }} /> New Category
         </button>
       </div>
 
-      {/* Type Filter Tabs */}
-      <div className="flex flex-wrap p-1 rounded-2xl bg-black/40 border border-white/10 w-fit text-xs font-medium gap-1">
-        <button
-          onClick={() => setActiveTab("all")}
-          className={`min-h-[40px] py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-            activeTab === "all" ? "bg-brand-primary text-brand-dark font-bold shadow-sm" : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          All Categories ({categories.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("expense")}
-          className={`min-h-[40px] py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-            activeTab === "expense" ? "bg-brand-primary text-brand-dark font-bold shadow-sm" : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          Expenses ({categories.filter((c) => c.type === "expense").length})
-        </button>
-        <button
-          onClick={() => setActiveTab("income")}
-          className={`min-h-[40px] py-2 px-4 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-            activeTab === "income" ? "bg-brand-primary text-brand-dark font-bold shadow-sm" : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          Incomes ({categories.filter((c) => c.type === "income").length})
-        </button>
+      {/* ── SUMMARY STRIP ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:0, border:`1px solid ${C.border}`, borderRadius:8, overflow:"hidden", background:C.border }}>
+        {[
+          { label:"Total Categories", value:categories.length, accent:C.brand,  soft:C.brandSoft  },
+          { label:"Expense Tags",     value:expCount,          accent:C.growth,  soft:C.growthSoft },
+          { label:"Income Tags",      value:incCount,          accent:C.brand,   soft:C.brandSoft  },
+        ].map(s => (
+          <div key={s.label} style={{ background:"#fff", padding:"18px 22px" }}>
+            <div style={{ width:38, height:38, borderRadius:"50%", background:s.soft, color:s.accent, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}>
+              <Tag style={{ width:16 }} />
+            </div>
+            <div style={{ fontSize:"clamp(1.6rem,3vw,2.2rem)", fontWeight:900, color:s.accent, letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>
+              {s.value}
+            </div>
+            <p style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{s.label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Categories Grid */}
+      {/* ── FILTER TABS ── */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
+            padding:"8px 18px", borderRadius:999, cursor:"pointer", ...M,
+            fontSize:13, fontWeight: activeTab===t.key ? 700 : 500,
+            background: activeTab===t.key ? C.hero : "#fff",
+            color: activeTab===t.key ? C.heroFg : C.muted,
+            border:`1.5px solid ${activeTab===t.key ? C.hero : C.border}`,
+            transition:"all 0.15s",
+          }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── GRID ── */}
       {loading ? (
-        <div className="py-20 text-center text-xs text-zinc-400 flex items-center justify-center gap-2">
-          <span className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+        <div style={{ padding:"60px 0", display:"flex", alignItems:"center", justifyContent:"center", gap:10, color:C.muted, fontSize:14 }}>
+          <span style={{ width:18, height:18, border:`2px solid ${C.border}`, borderTopColor:C.brand, borderRadius:"50%", display:"inline-block", animation:"spin 0.7s linear infinite" }} />
           Loading categories...
         </div>
+      ) : filteredCategories.length === 0 ? (
+        <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"60px 20px", display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
+          <div style={{ width:52, height:52, borderRadius:"50%", background:C.brandSoft, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <Tag style={{ width:22, color:C.brand }} />
+          </div>
+          <div style={{ textAlign:"center" }}>
+            <p style={{ fontSize:17, fontWeight:800, color:C.foreground, margin:"0 0 6px" }}>No categories found</p>
+            <p style={{ fontSize:13, color:C.muted, margin:0 }}>Create your first custom category.</p>
+          </div>
+          <button onClick={() => handleOpenModal()} style={{
+            display:"inline-flex", alignItems:"center", gap:7, height:40, padding:"0 20px", borderRadius:999,
+            background:C.highlight, color:C.highlightFg, border:"none", fontSize:13, fontWeight:800, cursor:"pointer", ...M,
+          }}>
+            <Plus style={{ width:13 }} /> Add Category
+          </button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {filteredCategories.map((cat) => {
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
+          {filteredCategories.map((cat, i) => {
             const isDefault = cat.isDefault;
+            /* Cycle bento colors for default cats, white for custom */
+            const bentoSchemes = [
+              { bg:C.brand,      fg:C.heroFg,     badge:"rgba(255,255,255,0.2)" },
+              { bg:C.hero,       fg:C.heroFg,     badge:"rgba(255,255,255,0.15)" },
+              { bg:C.growthSoft, fg:C.foreground, badge:`${C.growth}20` },
+              { bg:C.highlight,  fg:C.highlightFg,badge:`${C.highlightFg}20` },
+            ];
+            const scheme = isDefault ? bentoSchemes[i % bentoSchemes.length] : { bg:"#fff", fg:C.foreground, badge:C.altBg };
+
             return (
-              <div
-                key={cat._id}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 rounded-2xl p-4 sm:p-5 shadow-xl transition-all duration-300 flex items-center justify-between gap-3 group min-w-0"
+              <div key={cat._id} style={{
+                background: scheme.bg, borderRadius:8,
+                border: isDefault ? "none" : `1.5px solid ${C.border}`,
+                padding:"18px 18px",
+                display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
+                transition:"all 0.15s",
+                minHeight:80,
+                position:"relative",
+              }}
+                className="group"
+                onMouseEnter={e => !isDefault && (e.currentTarget.style.background=C.brandSoft)}
+                onMouseLeave={e => !isDefault && (e.currentTarget.style.background=scheme.bg)}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md"
-                    style={{ backgroundColor: `${cat.color}25`, border: `1px solid ${cat.color}66` }}
-                  >
+                <div style={{ display:"flex", alignItems:"center", gap:12, minWidth:0, flex:1 }}>
+                  {/* Icon */}
+                  <div style={{
+                    width:40, height:40, borderRadius:10, flexShrink:0,
+                    background: isDefault ? "rgba(255,255,255,0.15)" : `${cat.color || C.brand}15`,
+                    border: isDefault ? "1px solid rgba(255,255,255,0.2)" : `1px solid ${cat.color || C.brand}30`,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    color: isDefault ? scheme.fg : (cat.color || C.brand),
+                  }}>
                     {getCategoryIcon(cat.name, "w-5 h-5")}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-sm md:text-base font-bold text-white group-hover:text-brand-primary/90 transition-colors truncate">
+
+                  <div style={{ minWidth:0 }}>
+                    <h4 style={{ fontSize:14, fontWeight:700, color:scheme.fg, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                       {cat.name}
                     </h4>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <span
-                        className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                          cat.type === "income"
-                            ? "bg-brand-mint/15 text-brand-mint border border-brand-mint/30"
-                            : "bg-brand-coral/15 text-brand-coral border border-brand-coral/30"
-                        }`}
-                      >
+                    <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
+                      <span style={{
+                        fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:999,
+                        background: scheme.badge,
+                        color: cat.type==="income" ? (isDefault ? C.highlight : C.growth) : (isDefault ? "rgba(255,255,255,0.8)" : C.brand),
+                        textTransform:"uppercase", letterSpacing:"0.06em",
+                      }}>
                         {cat.type}
                       </span>
-                      <span className="text-xs text-zinc-500">•</span>
-                      <span className="text-[11px] text-zinc-400 font-medium">
+                      <span style={{ fontSize:10, color: isDefault ? "rgba(255,255,255,0.45)" : C.muted, fontWeight:500 }}>
                         {isDefault ? "Default" : "Custom"}
                       </span>
                     </div>
                   </div>
                 </div>
 
+                {/* Actions — only for custom */}
                 {!isDefault && (
-                  <div className="flex items-center gap-1 shrink-0 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleOpenModal(cat)}
-                      className="min-h-[44px] min-w-[44px] rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Edit"
-                      aria-label={`Edit ${cat.name}`}
+                  <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0, opacity:0, transition:"opacity 0.15s" }} className="group-hover:!opacity-100">
+                    <button onClick={() => handleOpenModal(cat)} style={{
+                      width:30, height:30, borderRadius:"50%", border:`1px solid ${C.border}`, background:"transparent",
+                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.muted, transition:"all 0.12s",
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background=C.brandSoft; e.currentTarget.style.color=C.brand; }}
+                      onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.muted; }}
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 style={{ width:12 }} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(cat._id)}
-                      className="min-h-[44px] min-w-[44px] rounded-xl text-zinc-400 hover:text-brand-coral hover:bg-brand-coral/10 flex items-center justify-center transition-colors cursor-pointer"
-                      title="Delete"
-                      aria-label={`Delete ${cat.name}`}
+                    <button onClick={() => handleDelete(cat._id)} style={{
+                      width:30, height:30, borderRadius:"50%", border:`1px solid ${C.border}`, background:"transparent",
+                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.muted, transition:"all 0.12s",
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background=C.growthSoft; e.currentTarget.style.color=C.growth; }}
+                      onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.muted; }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 style={{ width:12 }} />
                     </button>
                   </div>
                 )}
@@ -246,98 +284,104 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* Modal: Create or Edit Category */}
+      {/* ── MODAL ── */}
       {modalOpen && (
         <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div
-              className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white/[0.03] backdrop-blur-[64px] border border-white/10 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2 drop-shadow-sm">
-                <Tag className="w-5 h-5 text-brand-primary" />
-                {editingCat ? "Edit Category" : "New Custom Category"}
-              </h3>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
+          <div style={{ position:"fixed", inset:0, zIndex:50, display:"flex", alignItems:"center", justifyContent:"center", padding:16, background:"rgba(0,0,0,0.45)", backdropFilter:"blur(4px)" }}
+            onClick={() => setModalOpen(false)}>
+            <div style={{ width:"100%", maxWidth:420, background:"#fff", borderRadius:16, border:`1.5px solid ${C.border}`, boxShadow:"0 24px 64px rgba(0,0,0,0.12)", padding:"28px 28px 24px", ...M }}
+              onClick={e => e.stopPropagation()}>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-white/70 mb-1">
-                  Category Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Lab Supplies, Gym, Tech Gear"
-                  className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs outline-none focus:border-brand-primary transition-colors placeholder:text-white/30"
-                />
-              </div>
-
-              {!editingCat && (
+              {/* Header */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, paddingBottom:16, borderBottom:`1px solid ${C.border}` }}>
                 <div>
-                  <label className="block text-xs font-bold text-white/70 mb-1">
-                    Category Type
-                  </label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 text-white text-xs outline-none focus:border-brand-primary transition-colors"
-                  >
-                    <option value="expense" className="bg-[#0B0F19]">Expense</option>
-                    <option value="income" className="bg-[#0B0F19]">Income</option>
-                  </select>
+                  <p style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.14em", color:C.brand, margin:"0 0 4px" }}>Organisation</p>
+                  <h3 style={{ fontSize:20, fontWeight:900, color:C.foreground, margin:0, letterSpacing:"-0.02em" }}>
+                    {editingCat ? "Edit Category" : "New Category"}
+                  </h3>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-white/70 mb-2">
-                  Category Color Accent
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {PRESET_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setColor(c)}
-                      className={`w-7 h-7 rounded-lg transition-transform flex items-center justify-center cursor-pointer ${
-                        color === c ? "scale-110 ring-2 ring-white" : ""
-                      }`}
-                      style={{ backgroundColor: c }}
-                    >
-                      {color === c && <Check className="w-3.5 h-3.5 text-white" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold text-xs border border-white/10 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-3 rounded-xl bg-white/20 hover:bg-white/30 border border-white/40 text-white font-bold text-xs shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : editingCat ? "Update Category" : "Create Category"}
+                <button onClick={() => setModalOpen(false)} style={{ width:32, height:32, borderRadius:"50%", border:`1.5px solid ${C.border}`, background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.muted }}>
+                  <X style={{ width:14 }} />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSave} style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                {/* Name */}
+                <div>
+                  <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:8 }}>Category Name</label>
+                  <input type="text" required placeholder="e.g. Lab Supplies, Gym, Tech Gear" value={name} onChange={e => setName(e.target.value)}
+                    style={inputStyle}
+                    onFocus={e => e.target.style.borderColor=C.brand}
+                    onBlur={e => e.target.style.borderColor=C.border}
+                  />
+                </div>
+
+                {/* Type — only when creating */}
+                {!editingCat && (
+                  <div>
+                    <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:8 }}>Type</label>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:4, background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
+                      {["expense","income"].map(t => (
+                        <button key={t} type="button" onClick={() => setType(t)} style={{
+                          padding:"9px 0", borderRadius:8, cursor:"pointer", textTransform:"capitalize",
+                          background: type===t ? C.hero : "transparent",
+                          color: type===t ? C.heroFg : C.muted,
+                          border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
+                        }}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Color picker */}
+                <div>
+                  <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:10 }}>Color Accent</label>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, padding:"14px", background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
+                    {PRESET_COLORS.map(pc => (
+                      <button key={pc} type="button" onClick={() => setColor(pc)} style={{
+                        width:30, height:30, borderRadius:8, background:pc, border: color===pc ? `3px solid ${C.foreground}` : "2px solid transparent",
+                        cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                        transform: color===pc ? "scale(1.15)" : "scale(1)", transition:"all 0.12s",
+                        flexShrink:0,
+                      }}>
+                        {color===pc && <Check style={{ width:12, color:"#fff", strokeWidth:3 }} />}
+                      </button>
+                    ))}
+                    {/* Custom color input */}
+                    <div style={{ position:"relative" }}>
+                      <input type="color" value={color} onChange={e => setColor(e.target.value)}
+                        style={{ width:30, height:30, borderRadius:8, border:`1.5px solid ${C.border}`, cursor:"pointer", padding:2, background:"#fff" }}
+                        title="Custom color"
+                      />
+                    </div>
+                  </div>
+                  {/* Preview */}
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, padding:"10px 14px", background:C.altBg, borderRadius:999, border:`1px solid ${C.border}` }}>
+                    <span style={{ width:12, height:12, borderRadius:"50%", background:color, display:"block", flexShrink:0 }} />
+                    <span style={{ fontSize:13, fontWeight:600, color:C.foreground }}>{name || "Preview"}</span>
+                    <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:999, background:`${color}18`, color, marginLeft:"auto" }}>{type}</span>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:4 }}>
+                  <button type="button" onClick={() => setModalOpen(false)} style={{ padding:"11px 0", borderRadius:999, cursor:"pointer", background:"#fff", border:`1.5px solid ${C.border}`, fontSize:14, fontWeight:600, color:C.muted, ...M }}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={saving} style={{
+                    padding:"11px 0", borderRadius:999, cursor:"pointer",
+                    background:C.highlight, color:C.highlightFg,
+                    border:"none", fontSize:14, fontWeight:800, ...M,
+                    opacity: saving ? 0.7 : 1, boxShadow:`0 4px 14px ${C.highlight}55`,
+                  }}>
+                    {saving ? "Saving…" : editingCat ? "Update" : "Create"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         </Portal>
       )}
 
@@ -349,6 +393,8 @@ export default function CategoriesPage() {
         message="Are you sure you want to delete this category?"
         confirmText="Delete"
       />
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

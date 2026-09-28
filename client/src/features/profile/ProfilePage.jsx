@@ -1,53 +1,83 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Lock, PiggyBank, GraduationCap, DollarSign, Save, LogOut, Sun, Moon, Check, ChevronDown, Crown, Ban, Zap, Shield } from "lucide-react";
+import {
+  User, Lock, PiggyBank, GraduationCap, DollarSign,
+  Save, LogOut, Check, ChevronDown, Crown, Shield,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import api from "../../core/api";
 import toast from "react-hot-toast";
 
+/* ── exact landing page tokens ── */
+const C = {
+  hero:        "oklch(0.115 0.018 255)",
+  heroFg:      "oklch(0.985 0.003 250)",
+  heroLine:    "oklch(0.31 0.025 255)",
+  brand:       "oklch(0.59 0.22 262)",
+  brandSoft:   "oklch(0.93 0.06 262)",
+  highlight:   "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth:      "oklch(0.64 0.17 157)",
+  growthSoft:  "oklch(0.94 0.05 158)",
+  foreground:  "oklch(0.16 0.025 260)",
+  muted:       "oklch(0.5 0.025 255)",
+  border:      "oklch(0.9 0.012 255)",
+  altBg:       "oklch(0.965 0.01 254)",
+};
+const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+
+const inputSt = {
+  width:"100%", padding:"10px 14px", borderRadius:999,
+  background:C.altBg, border:`1.5px solid ${C.border}`,
+  fontSize:13, color:C.foreground, outline:"none",
+  fontFamily:M.fontFamily, transition:"border-color 0.15s", boxSizing:"border-box",
+};
+
+/* reusable section card */
+const Section = ({ label, title, children, style }) => (
+  <div style={{
+    background:"#fff", border:`1.5px solid ${C.border}`,
+    borderRadius:8, padding:"24px 24px 20px", ...style,
+  }}>
+    <p style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.14em", color:C.brand, margin:"0 0 5px" }}>{label}</p>
+    <h3 style={{ fontSize:18, fontWeight:900, color:C.foreground, margin:"0 0 20px", letterSpacing:"-0.02em", paddingBottom:16, borderBottom:`1px solid ${C.border}` }}>{title}</h3>
+    {children}
+  </div>
+);
+
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth();
   const { toggleMode, isDark, themes, themeId, selectTheme } = useTheme();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const queryClient = useQueryClient();
 
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
   const currencyRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (currencyRef.current && !currencyRef.current.contains(e.target)) {
-        setCurrencyDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const h = (e) => { if (currencyRef.current && !currencyRef.current.contains(e.target)) setCurrencyDropdownOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
   const currencies = [
-    { value: "USD", label: "USD ($)" },
-    { value: "EUR", label: "EUR (€)" },
-    { value: "PKR", label: "PKR (Rs)" },
+    { value:"USD", label:"USD ($)" },
+    { value:"EUR", label:"EUR (€)" },
+    { value:"PKR", label:"PKR (Rs)" },
   ];
 
   const handleCurrencyChange = async (val) => {
     setCurrencyDropdownOpen(false);
     if (form.currency === val) return;
-    
-    setForm(prev => ({ ...prev, currency: val }));
-    
+    setForm(p => ({ ...p, currency: val }));
     try {
       const { data } = await api.put("/users/profile/currency", { currency_preference: val });
-      if (data.success) {
-        updateUser(data.user);
-        queryClient.invalidateQueries();
-        toast.success(`Currency changed to ${val}`);
-      }
+      if (data.success) { updateUser(data.user); queryClient.invalidateQueries(); toast.success(`Currency changed to ${val}`); }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update currency.");
-      setForm(prev => ({ ...prev, currency: user?.currency || "USD" }));
+      setForm(p => ({ ...p, currency: user?.currency || "USD" }));
     }
   };
 
@@ -59,15 +89,10 @@ export default function ProfilePage() {
     currency: user?.currency || "USD",
   });
 
-  const [passwords, setPasswords] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
+  const [passwords, setPasswords] = useState({ currentPassword:"", newPassword:"", confirmPassword:"" });
   const [savingProfile, setSavingProfile] = useState(false);
-  const [changingPass, setChangingPass] = useState(false);
-  const [subscribing, setSubscribing] = useState(false);
+  const [changingPass,  setChangingPass]  = useState(false);
+  const [subscribing,   setSubscribing]   = useState(false);
 
   const isPremium = Boolean(user?.isPremium || user?.plan === "premium");
 
@@ -75,395 +100,318 @@ export default function ProfilePage() {
     setSubscribing(true);
     try {
       const { data } = await api.post("/users/upgrade-premium");
-      if (data.success) {
-        updateUser(data.user);
-        toast.success("Upgraded to CampusCoin Premium ($2/mo)! All ads removed.");
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to upgrade subscription.");
-    } finally {
-      setSubscribing(false);
-    }
+      if (data.success) { updateUser(data.user); toast.success("Upgraded to CampusCoin Premium!"); }
+    } catch (err) { toast.error(err.response?.data?.message || "Failed to upgrade."); }
+    finally { setSubscribing(false); }
   };
 
   const handleDowngradePremium = async () => {
     setSubscribing(true);
     try {
       const { data } = await api.post("/users/cancel-premium");
-      if (data.success) {
-        updateUser(data.user);
-        toast.success("Downgraded to Free tier. Standard ads enabled.");
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update subscription.");
-    } finally {
-      setSubscribing(false);
-    }
+      if (data.success) { updateUser(data.user); toast.success("Downgraded to Free tier."); }
+    } catch (err) { toast.error(err.response?.data?.message || "Failed to update."); }
+    finally { setSubscribing(false); }
   };
 
   useEffect(() => {
-    if (user) {
-      setForm({
-        name: user.name || "",
-        academicYear: user.academicYear || "",
-        monthlyAllowanceBaseline: user.monthlyAllowanceBaseline || 0,
-        monthlySavingsGoal: user.monthlySavingsGoal || 0,
-        currency: user.currency || "USD",
-      });
-    }
+    if (user) setForm({ name:user.name||"", academicYear:user.academicYear||"", monthlyAllowanceBaseline:user.monthlyAllowanceBaseline||0, monthlySavingsGoal:user.monthlySavingsGoal||0, currency:user.currency||"USD" });
   }, [user]);
 
   const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    setSavingProfile(true);
+    e.preventDefault(); setSavingProfile(true);
     try {
       const { data } = await api.put("/auth/profile", form);
-      if (data.success) {
-        updateUser(data.user);
-        toast.success("Profile updated successfully!");
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update profile.");
-    } finally {
-      setSavingProfile(false);
-    }
+      if (data.success) { updateUser(data.user); toast.success("Profile updated!"); }
+    } catch (err) { toast.error(err.response?.data?.message || "Failed to update profile."); }
+    finally { setSavingProfile(false); }
   };
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (passwords.newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters.");
-      return;
-    }
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      toast.error("New passwords do not match.");
-      return;
-    }
-
+    if (passwords.newPassword.length < 6) { toast.error("New password must be at least 6 characters."); return; }
+    if (passwords.newPassword !== passwords.confirmPassword) { toast.error("Passwords do not match."); return; }
     setChangingPass(true);
     try {
-      const { data } = await api.put("/auth/change-password", {
-        currentPassword: passwords.currentPassword,
-        newPassword: passwords.newPassword,
-      });
-      if (data.success) {
-        toast.success("Password updated successfully!");
-        setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to change password.");
-    } finally {
-      setChangingPass(false);
-    }
+      const { data } = await api.put("/auth/change-password", { currentPassword:passwords.currentPassword, newPassword:passwords.newPassword });
+      if (data.success) { toast.success("Password updated!"); setPasswords({ currentPassword:"", newPassword:"", confirmPassword:"" }); }
+    } catch (err) { toast.error(err.response?.data?.message || "Failed to change password."); }
+    finally { setChangingPass(false); }
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
+    <div style={{ ...M, display:"flex", flexDirection:"column", gap:20, maxWidth:900, margin:"0 auto" }}>
+
+      {/* ── HEADER ── */}
       <div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-          <User className="w-6 h-6 text-brand-primary" />
-          Student Account & Preferences
-        </h2>
-        <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-          Configure personal baseline allowances, savings targets, and security settings.
+        <p style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.14em", color:C.brand, margin:"0 0 6px" }}>Account</p>
+        <h1 style={{ fontSize:"clamp(1.6rem,4vw,2.4rem)", fontWeight:900, color:C.foreground, margin:0, letterSpacing:"-0.03em", lineHeight:1 }}>
+          Profile & Settings
+        </h1>
+        <p style={{ fontSize:14, color:C.muted, margin:"6px 0 0", fontWeight:500 }}>
+          Manage your personal info, preferences and security settings.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Card Summary */}
-        <div className="md:col-span-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center justify-between">
-          <div className="flex flex-col items-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-brand-primary via-brand-primary to-brand-ai flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-brand-primary/30 mb-4">
-              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+      <div style={{ display:"grid", gridTemplateColumns:"260px 1fr", gap:20, alignItems:"start" }}>
+
+        {/* ── LEFT: Identity card — dark hero panel ── */}
+        <div style={{
+          background:C.hero, borderRadius:8,
+          padding:"28px 24px",
+          position:"relative", overflow:"hidden",
+          display:"flex", flexDirection:"column", alignItems:"center", gap:0,
+        }}>
+          {/* grid overlay */}
+          <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.12,
+            backgroundImage:`linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
+            backgroundSize:"48px 48px" }} />
+
+          <div style={{ position:"relative", zIndex:1, width:"100%", display:"flex", flexDirection:"column", alignItems:"center" }}>
+            {/* Avatar — landing page brandMark style */}
+            <div style={{
+              width:72, height:72, borderRadius:20,
+              background:`linear-gradient(135deg, ${C.brand}, oklch(0.61 0.23 290))`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:28, fontWeight:900, color:"#fff",
+              boxShadow:`0 12px 32px ${C.brand}55`, marginBottom:16,
+            }}>
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
             </div>
-            <h3 className="text-lg font-bold text-white">{user?.name}</h3>
-            <p className="text-xs text-zinc-400">{user?.email}</p>
-            <span className="mt-2 text-3xs uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full bg-brand-primary text-brand-dark/20 text-brand-primary/80 border border-brand-primary/30">
-              {user?.role === "admin" ? "Campus Admin" : "Active Student"}
+
+            <h3 style={{ fontSize:17, fontWeight:800, color:C.heroFg, margin:"0 0 4px", textAlign:"center" }}>{user?.name}</h3>
+            <p style={{ fontSize:12, color:"rgba(255,255,255,0.5)", margin:"0 0 10px", textAlign:"center" }}>{user?.email}</p>
+
+            <span style={{
+              fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em",
+              padding:"3px 12px", borderRadius:999,
+              background: user?.role==="admin" ? `${C.highlight}22` : `${C.brand}30`,
+              color: user?.role==="admin" ? C.highlight : "rgba(255,255,255,0.7)",
+              border:`1px solid ${user?.role==="admin" ? C.highlight+"40" : "rgba(255,255,255,0.15)"}`,
+            }}>
+              {user?.role==="admin" ? "Campus Admin" : "Active Student"}
             </span>
-          </div>
 
-          <div className="w-full mt-6 pt-4 border-t border-white/5 space-y-2 text-xs text-left">
-            <div className="flex justify-between text-zinc-400">
-              <span>Academic Year:</span>
-              <span className="text-white font-medium">{user?.academicYear || "Unspecified"}</span>
-            </div>
-            <div className="flex justify-between text-zinc-400">
-              <span>Baseline Allowance:</span>
-              <span className="text-brand-mint font-semibold">${user?.monthlyAllowanceBaseline || 0}</span>
-            </div>
-            <div className="flex justify-between text-zinc-400">
-              <span>Savings Goal:</span>
-              <span className="text-brand-primary font-semibold">${user?.monthlySavingsGoal || 0}</span>
-            </div>
-          </div>
-
-          {/* Theme Matrix Customization Card */}
-          <div className="w-full mt-6 pt-4 border-t border-white/10 space-y-3 text-xs text-left">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-white">Appearance Mode:</span>
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold flex items-center gap-1.5 cursor-pointer text-2xs transition-all shadow-sm"
-              >
-                {isDark ? <Sun className="w-3.5 h-3.5 text-amber-300" /> : <Moon className="w-3.5 h-3.5 text-blue-400" />}
-                <span>{isDark ? "Dark Mode" : "Light Mode"}</span>
-              </button>
+            {/* Stats */}
+            <div style={{ width:"100%", marginTop:20, paddingTop:16, borderTop:`1px solid ${C.heroLine}`, display:"flex", flexDirection:"column", gap:10 }}>
+              {[
+                { label:"Academic Year",       value:user?.academicYear || "Unspecified"                    },
+                { label:"Monthly Allowance",   value:`$${user?.monthlyAllowanceBaseline || 0}`              },
+                { label:"Savings Goal",        value:`$${user?.monthlySavingsGoal || 0}`                    },
+                { label:"Preferred Currency",  value:user?.currency || "USD"                                },
+              ].map(r => (
+                <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.45)", fontWeight:500 }}>{r.label}</span>
+                  <span style={{ fontSize:12, color:C.heroFg, fontWeight:700 }}>{r.value}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <span className="font-semibold text-white">Color Palette:</span>
-              <div className="flex items-center gap-2">
-                {themes.map((th) => (
-                  <button
-                    key={th.id}
-                    type="button"
-                    onClick={() => selectTheme(th.id)}
-                    title={th.name}
-                    className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
-                      themeId === th.id
-                        ? "scale-110 border-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-                        : "border-white/30 opacity-70 hover:opacity-100"
-                    }`}
-                    style={{
-                      backgroundColor: `rgb(${Math.round(th.color[0] * 255)}, ${Math.round(th.color[1] * 255)}, ${Math.round(th.color[2] * 255)})`,
-                    }}
-                  >
-                    {themeId === th.id && <Check className="w-3 h-3 text-white" />}
-                  </button>
-                ))}
+            {/* Theme toggles */}
+            <div style={{ width:"100%", marginTop:16, paddingTop:16, borderTop:`1px solid ${C.heroLine}`, display:"flex", flexDirection:"column", gap:10 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <span style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:500 }}>Appearance</span>
+                <button onClick={toggleMode} style={{
+                  padding:"5px 12px", borderRadius:999, cursor:"pointer",
+                  background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)",
+                  color:C.heroFg, fontSize:11, fontWeight:600, ...M,
+                }}>
+                  {isDark ? "Dark Mode" : "Light Mode"}
+                </button>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <span style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:500 }}>Palette</span>
+                <div style={{ display:"flex", gap:6 }}>
+                  {themes.map(th => (
+                    <button key={th.id} onClick={() => selectTheme(th.id)} title={th.name} style={{
+                      width:22, height:22, borderRadius:"50%", cursor:"pointer",
+                      border: themeId===th.id ? "2px solid #fff" : "2px solid rgba(255,255,255,0.2)",
+                      background:`rgb(${Math.round(th.color[0]*255)},${Math.round(th.color[1]*255)},${Math.round(th.color[2]*255)})`,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      transform: themeId===th.id ? "scale(1.15)" : "scale(1)", transition:"all 0.15s",
+                    }}>
+                      {themeId===th.id && <Check style={{ width:10, color:"#fff", strokeWidth:3 }} />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Highly Visible Log Out Action for Mobile & Desktop */}
-          <button
-            type="button"
-            onClick={async () => {
+            {/* Sign out */}
+            <button onClick={async () => {
               try { await api.post("/users/logout-session"); } catch (_) {}
-              logout();
-              navigate("/login");
+              logout(); navigate("/login");
+            }} style={{
+              width:"100%", marginTop:20,
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+              padding:"11px 0", borderRadius:999, cursor:"pointer",
+              background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)",
+              color:"rgba(255,255,255,0.6)", fontSize:13, fontWeight:600, ...M, transition:"all 0.15s",
             }}
-            className="w-full mt-6 py-3 px-4 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-95 min-h-[44px]"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out / Log Out</span>
-          </button>
+              onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.12)"; e.currentTarget.style.color=C.heroFg; }}
+              onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.color="rgba(255,255,255,0.6)"; }}
+            >
+              <LogOut style={{ width:14 }} /> Sign Out
+            </button>
+          </div>
         </div>
 
-        {/* Profile Edit Form */}
-        <div className="md:col-span-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl space-y-6">
-          <form onSubmit={handleProfileSubmit} className="space-y-4">
-            <h3 className="text-base font-bold text-white pb-3 border-b border-white/10 flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-brand-primary" />
-              Academic & Financial Profile
-            </h3>
+        {/* ── RIGHT: forms ── */}
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                />
+          {/* Profile form */}
+          <Section label="Academic Profile" title="Personal Information">
+            <form onSubmit={handleProfileSubmit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                {[
+                  { label:"Full Name",    field:"name",         type:"text",   placeholder:"Your full name" },
+                  { label:"Academic Year",field:"academicYear", type:"text",   placeholder:"e.g. Year 2, Sophomore" },
+                  { label:"Monthly Allowance ($)", field:"monthlyAllowanceBaseline", type:"number", placeholder:"0", step:"10", min:"0" },
+                  { label:"Savings Goal ($)",      field:"monthlySavingsGoal",       type:"number", placeholder:"0", step:"10", min:"0" },
+                ].map(f => (
+                  <div key={f.field}>
+                    <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:7 }}>{f.label}</label>
+                    <input type={f.type} required={f.field==="name"} placeholder={f.placeholder}
+                      step={f.step} min={f.min}
+                      value={form[f.field]} onChange={e => setForm(p => ({ ...p, [f.field]: f.type==="number" ? Number(e.target.value) : e.target.value }))}
+                      style={inputSt}
+                      onFocus={e => e.target.style.borderColor=C.brand}
+                      onBlur={e => e.target.style.borderColor=C.border}
+                    />
+                  </div>
+                ))}
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Academic Year</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Sophomore, Year 2"
-                  value={form.academicYear}
-                  onChange={(e) => setForm({ ...form, academicYear: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1">
-                  <DollarSign className="w-3.5 h-3.5 text-zinc-400" />
-                  Monthly Baseline Allowance ($)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="10"
-                  value={form.monthlyAllowanceBaseline}
-                  onChange={(e) => setForm({ ...form, monthlyAllowanceBaseline: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1">
-                  <PiggyBank className="w-3.5 h-3.5 text-zinc-400" />
-                  Monthly Savings Goal (Base)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="10"
-                  value={form.monthlySavingsGoal}
-                  onChange={(e) => setForm({ ...form, monthlySavingsGoal: Number(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                />
-              </div>
-              
-              <div ref={currencyRef} className="relative sm:col-span-2">
-                <label className="block text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1">
-                  Preferred Currency
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setCurrencyDropdownOpen(!currencyDropdownOpen)}
-                  className="w-full px-3 py-2 rounded-xl bg-black/10 border border-white/10 text-white text-xs flex items-center justify-between transition-colors hover:bg-black/20"
-                >
-                  <span>{currencies.find(c => c.value === form.currency)?.label || "Select Currency"}</span>
-                  <ChevronDown className="w-4 h-4 text-white/50" />
+              {/* Currency */}
+              <div ref={currencyRef} style={{ position:"relative" }}>
+                <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:7 }}>Currency</label>
+                <button type="button" onClick={() => setCurrencyDropdownOpen(o => !o)} style={{
+                  ...inputSt, display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", textAlign:"left",
+                }}>
+                  <span>{currencies.find(c => c.value===form.currency)?.label || "Select"}</span>
+                  <ChevronDown style={{ width:14, color:C.muted, flexShrink:0 }} />
                 </button>
                 {currencyDropdownOpen && (
-                  <div className="absolute top-full mt-1 w-full rounded-xl bg-white/20 backdrop-blur-[80px] shadow-2xl border border-white/20 overflow-hidden z-50 flex flex-col">
+                  <div style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:"#fff", border:`1.5px solid ${C.border}`, borderRadius:12, overflow:"hidden", zIndex:50, boxShadow:"0 8px 24px rgba(0,0,0,0.08)" }}>
                     {currencies.map(c => (
-                      <button
-                        key={c.value}
-                        type="button"
-                        onClick={() => handleCurrencyChange(c.value)}
-                        className={`px-3 py-2 text-left text-xs text-white transition-colors hover:bg-white/10 ${form.currency === c.value ? "bg-white/15 font-bold" : ""}`}
-                      >
+                      <button key={c.value} type="button" onClick={() => handleCurrencyChange(c.value)} style={{
+                        display:"block", width:"100%", padding:"10px 14px", textAlign:"left",
+                        fontSize:13, fontWeight: form.currency===c.value ? 700 : 500,
+                        color: form.currency===c.value ? C.brand : C.foreground,
+                        background: form.currency===c.value ? C.brandSoft : "#fff",
+                        border:"none", cursor:"pointer", ...M, transition:"background 0.1s",
+                      }}>
                         {c.label}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={savingProfile}
-                className="py-2 px-4 rounded-xl bg-brand-primary text-brand-dark hover:bg-brand-primary text-brand-dark text-xs font-semibold shadow-md shadow-brand-primary/30 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{savingProfile ? "Saving..." : "Save Preferences"}</span>
-              </button>
-            </div>
-          </form>
+              <div>
+                <button type="submit" disabled={savingProfile} style={{
+                  display:"inline-flex", alignItems:"center", gap:7,
+                  height:42, padding:"0 22px", borderRadius:999,
+                  background:C.highlight, color:C.highlightFg,
+                  border:"none", fontSize:14, fontWeight:800, cursor:"pointer", ...M,
+                  opacity:savingProfile ? 0.7 : 1, boxShadow:`0 4px 16px ${C.highlight}55`,
+                }}>
+                  <Save style={{ width:14 }} />
+                  {savingProfile ? "Saving…" : "Save Profile"}
+                </button>
+              </div>
+            </form>
+          </Section>
 
-          {/* Membership Tier & Monetization Section (Free with Ads vs Premium $2/mo Ad-Free) */}
-          <div className="pt-6 border-t border-white/10 space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Crown className="w-4 h-4 text-amber-300" />
-              Membership & Monetization Tier
-            </h3>
-
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-sm text-white">
-                    {isPremium ? "CampusCoin Premium Tier" : "CampusCoin Free Tier"}
+          {/* Membership */}
+          <Section label="Subscription" title="Membership Tier">
+            <div style={{
+              display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
+              padding:"18px 20px", borderRadius:8,
+              background: isPremium ? C.growthSoft : C.altBg,
+              border:`1.5px solid ${isPremium ? C.growth+"40" : C.border}`,
+              flexWrap:"wrap",
+            }}>
+              <div>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                  <Crown style={{ width:18, color: isPremium ? C.growth : C.muted }} />
+                  <span style={{ fontSize:15, fontWeight:800, color:C.foreground }}>
+                    {isPremium ? "CampusCoin Premium" : "CampusCoin Free"}
                   </span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                    isPremium
-                      ? "bg-amber-500/20 text-amber-300 border-amber-400/40"
-                      : "bg-white/10 text-white/70 border-white/20"
-                  }`}>
-                    {isPremium ? "Ad-Free Pro" : "Standard (Ad-Supported)"}
+                  <span style={{
+                    fontSize:10, fontWeight:800, padding:"2px 9px", borderRadius:999,
+                    textTransform:"uppercase", letterSpacing:"0.07em",
+                    background: isPremium ? `${C.growth}20` : C.border,
+                    color: isPremium ? C.growth : C.muted,
+                  }}>
+                    {isPremium ? "Ad-Free" : "Ad-Supported"}
                   </span>
                 </div>
-                <p className="text-xs text-white/70">
+                <p style={{ fontSize:13, color:C.muted, margin:0 }}>
                   {isPremium
-                    ? "Your account is 100% ad-free! Google AdSense banners are completely hidden."
-                    : "Free accounts display student-relevant Google AdSense ads. Upgrade for $2/mo (PKR 500) to remove all ads."}
+                    ? "Your account is fully ad-free. All Google AdSense banners are hidden."
+                    : "Free accounts show student-relevant ads. Upgrade for $2/mo to remove all ads."}
                 </p>
               </div>
-
-              <div className="shrink-0">
-                {isPremium ? (
-                  <button
-                    type="button"
-                    onClick={handleDowngradePremium}
-                    disabled={subscribing}
-                    className="min-h-[40px] px-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white/80 hover:text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {subscribing ? "Updating..." : "Downgrade to Free"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleUpgradePremium}
-                    disabled={subscribing}
-                    className="min-h-[40px] px-5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Crown className="w-3.5 h-3.5" />
-                    <span>{subscribing ? "Activating..." : "Upgrade ($2 / PKR 500)"}</span>
-                  </button>
-                )}
-              </div>
+              {isPremium ? (
+                <button onClick={handleDowngradePremium} disabled={subscribing} style={{
+                  padding:"9px 18px", borderRadius:999, cursor:"pointer",
+                  background:"#fff", border:`1.5px solid ${C.border}`,
+                  fontSize:13, fontWeight:600, color:C.muted, ...M,
+                  opacity:subscribing ? 0.6 : 1,
+                }}>
+                  {subscribing ? "Updating…" : "Downgrade to Free"}
+                </button>
+              ) : (
+                <button onClick={handleUpgradePremium} disabled={subscribing} style={{
+                  display:"inline-flex", alignItems:"center", gap:7,
+                  height:40, padding:"0 20px", borderRadius:999, cursor:"pointer",
+                  background:"linear-gradient(135deg, #f59e0b, #d97706)",
+                  color:"#1c1917", border:"none", fontSize:13, fontWeight:800, ...M,
+                  opacity:subscribing ? 0.6 : 1, boxShadow:"0 4px 14px #f59e0b44",
+                }}>
+                  <Crown style={{ width:13 }} />
+                  {subscribing ? "Activating…" : "Upgrade — $2 / PKR 500"}
+                </button>
+              )}
             </div>
-          </div>
+          </Section>
 
-          {/* Change Password Form */}
-          <form onSubmit={handlePasswordSubmit} className="pt-6 border-t border-white/10 space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Lock className="w-4 h-4 text-brand-primary" />
-              Security & Password
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Current Password</label>
-                <input
-                  type="password"
-                  required
-                  value={passwords.currentPassword}
-                  onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                  placeholder="••••••••"
-                />
+          {/* Password */}
+          <Section label="Security" title="Change Password">
+            <form onSubmit={handlePasswordSubmit} style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
+                {[
+                  { label:"Current Password",  field:"currentPassword"  },
+                  { label:"New Password",       field:"newPassword"      },
+                  { label:"Confirm Password",   field:"confirmPassword"  },
+                ].map(f => (
+                  <div key={f.field}>
+                    <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:7 }}>{f.label}</label>
+                    <input type="password" required placeholder="••••••••" value={passwords[f.field]}
+                      onChange={e => setPasswords(p => ({ ...p, [f.field]: e.target.value }))}
+                      style={inputSt}
+                      onFocus={e => e.target.style.borderColor=C.brand}
+                      onBlur={e => e.target.style.borderColor=C.border}
+                    />
+                  </div>
+                ))}
               </div>
-
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={passwords.newPassword}
-                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                  placeholder="••••••••"
-                />
+                <button type="submit" disabled={changingPass} style={{
+                  display:"inline-flex", alignItems:"center", gap:7,
+                  height:42, padding:"0 22px", borderRadius:999,
+                  background:C.hero, color:C.heroFg,
+                  border:"none", fontSize:14, fontWeight:800, cursor:"pointer", ...M,
+                  opacity:changingPass ? 0.7 : 1,
+                }}>
+                  <Lock style={{ width:14 }} />
+                  {changingPass ? "Updating…" : "Update Password"}
+                </button>
               </div>
+            </form>
+          </Section>
 
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Confirm New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={passwords.confirmPassword}
-                  onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white text-xs"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={changingPass}
-                className="py-2 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>{changingPass ? "Updating Password..." : "Update Password"}</span>
-              </button>
-            </div>
-          </form>
         </div>
       </div>
     </div>
