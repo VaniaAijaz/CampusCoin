@@ -1,3 +1,11 @@
+export const getCurrencySymbol = (currency = "USD") => {
+  const code = currency.toUpperCase();
+  if (code === "PKR") return "Rs";
+  if (code === "EUR") return "€";
+  if (code === "GBP") return "£";
+  return "$";
+};
+
 export const formatCurrency = (amount, currency = "USD") => {
   const code = (currency || "USD").toUpperCase();
   const numAmount = Number(amount) || 0;

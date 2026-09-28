@@ -14,6 +14,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import toast from "react-hot-toast";
+import { formatCurrency } from "../../utils/currencyUtils";
 import { generateStatementPDF } from "./StatementGenerator";
 import { useAuth } from "../auth/AuthContext";
 import AdSenseAd from "../../components/ads/AdSenseAd";
@@ -32,7 +33,7 @@ const CHART_COLORS = [
 ];
 
 /* Custom clean tooltip */
-const ChartTip = ({ active, payload, label }) => {
+const ChartTip = ({ active, payload, label, cur }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -50,7 +51,7 @@ const ChartTip = ({ active, payload, label }) => {
       {payload.map((p, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, marginBottom: 2 }}>
           <span style={{ color: p.fill || p.color, fontWeight: 600 }}>{p.name}:</span>
-          <span style={{ color: "#0f172a", fontWeight: 800 }}>${Number(p.value).toFixed(2)}</span>
+          <span style={{ color: "#0f172a", fontWeight: 800 }}>{formatCurrency(p.value, cur)}</span>
         </div>
       ))}
     </div>
@@ -164,7 +165,7 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="dash-kpi-val" style={{ color: "var(--dash-emerald)" }}>
-            ${inc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(inc, user?.currency)}
           </div>
           <div className="dash-kpi-hint">Stipends, shifts & allowances</div>
         </div>
@@ -177,7 +178,7 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="dash-kpi-val" style={{ color: "var(--dash-foreground)" }}>
-            ${exp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(exp, user?.currency)}
           </div>
           <div className="dash-kpi-hint">All campus & personal spending</div>
         </div>
@@ -193,7 +194,7 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="dash-kpi-val" style={{ color: bal >= 0 ? "var(--dash-emerald)" : "var(--dash-danger)" }}>
-            {bal >= 0 ? "+" : "-"}${Math.abs(bal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {bal >= 0 ? "+" : "-"}{formatCurrency(Math.abs(bal), user?.currency)}
           </div>
           <div className="dash-kpi-hint">{bal >= 0 ? "You saved money this period" : "Spending exceeded your income"}</div>
         </div>
@@ -230,7 +231,7 @@ export default function ReportsPage() {
                         <Cell key={i} fill={e.fill} />
                       ))}
                     </Pie>
-                    <Tooltip content={<ChartTip />} />
+                    <Tooltip content={<ChartTip cur={user?.currency} />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -256,7 +257,7 @@ export default function ReportsPage() {
                       {cat.name}
                     </span>
                     <span style={{ fontWeight: 700, color: "var(--dash-foreground)", flexShrink: 0 }}>
-                      ${Number(cat.total).toFixed(0)}
+                      {formatCurrency(cat.total, user?.currency)}
                     </span>
                   </div>
                 ))}
@@ -311,7 +312,7 @@ export default function ReportsPage() {
                           {cat.count} expenses
                         </span>
                         <span style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--dash-blue)" }}>
-                          ${Number(cat.total).toFixed(2)}
+                          {formatCurrency(cat.total, user?.currency)}
                         </span>
                       </div>
                     </div>
@@ -364,7 +365,7 @@ export default function ReportsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} fontFamily="var(--dash-font)" />
               <YAxis stroke="#94a3b8" fontSize={11} width={52} tickLine={false} axisLine={false} tickFormatter={(v) => formatCompactAxis(v, user?.currency || "USD")} fontFamily="var(--dash-font)" />
-              <Tooltip content={<ChartTip />} cursor={{ fill: "rgba(37, 99, 235, 0.04)" }} />
+              <Tooltip content={<ChartTip cur={user?.currency} />} cursor={{ fill: "rgba(37, 99, 235, 0.04)" }} />
               <Bar dataKey="income" name="Income" fill="var(--dash-emerald)" radius={[6, 6, 0, 0]} maxBarSize={32} />
               <Bar dataKey="expense" name="Expense" fill="var(--dash-blue)" radius={[6, 6, 0, 0]} maxBarSize={32} />
             </BarChart>
@@ -410,7 +411,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} fontFamily="var(--dash-font)" />
                 <YAxis stroke="#94a3b8" fontSize={11} width={52} tickLine={false} axisLine={false} tickFormatter={(v) => formatCompactAxis(v, user?.currency || "USD")} fontFamily="var(--dash-font)" />
-                <Tooltip content={<ChartTip />} cursor={{ stroke: "rgba(37, 99, 235, 0.2)", strokeWidth: 1 }} />
+                <Tooltip content={<ChartTip cur={user?.currency} />} cursor={{ stroke: "rgba(37, 99, 235, 0.2)", strokeWidth: 1 }} />
                 <Area type="monotone" dataKey="income" name="Income" stroke="#16a34a" strokeWidth={2.5} fill="url(#dInc)" dot={false} />
                 <Area type="monotone" dataKey="expense" name="Expense" stroke="#2563eb" strokeWidth={2.5} fill="url(#dExp)" dot={false} />
               </AreaChart>

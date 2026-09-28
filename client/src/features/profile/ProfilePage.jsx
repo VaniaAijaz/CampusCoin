@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
 import api from "../../core/api";
 import toast from "react-hot-toast";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import "../dashboard/Dashboard.css";
 
 export default function ProfilePage() {
@@ -185,8 +186,8 @@ export default function ProfilePage() {
           }}>
             {[
               { label: "Academic Year", value: user?.academicYear || "Not set" },
-              { label: "Monthly Allowance", value: `$${user?.monthlyAllowanceBaseline || 0}` },
-              { label: "Savings Goal", value: `$${user?.monthlySavingsGoal || 0}` },
+              { label: "Monthly Allowance", value: formatCurrency(user?.monthlyAllowanceBaseline || 0, user?.currency) },
+              { label: "Savings Goal", value: formatCurrency(user?.monthlySavingsGoal || 0, user?.currency) },
               { label: "Preferred Currency", value: user?.currency || "USD" },
             ].map(r => (
               <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px" }}>
@@ -250,7 +251,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="dash-form-label">Monthly Allowance ($)</label>
+                  <label className="dash-form-label">Monthly Allowance ({getCurrencySymbol(user?.currency)})</label>
                   <input
                     type="number"
                     step="10"

@@ -1,8 +1,9 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import { format, addDays, isWithinInterval } from "date-fns";
 import { getTransactions } from "../transactions/transactionApi";
 import { getSubscriptions } from "../subscriptions/subscriptionApi";
+import { formatCurrency } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 
 export const generateStatementPDF = async (user, endDateStr) => {
@@ -103,7 +104,7 @@ export const generateStatementPDF = async (user, endDateStr) => {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(amountColor);
-      doc.text(`$${amount.toFixed(2)}`, x + boxWidth / 2, boxY + 15, { align: "center" });
+      doc.text(formatCurrency(amount, user?.currency), x + boxWidth / 2, boxY + 15, { align: "center" });
     };
 
     drawSummaryBox(14, "Total Inflow", totalInflow, "#10B981");
@@ -121,12 +122,12 @@ export const generateStatementPDF = async (user, endDateStr) => {
       tx.description || "N/A",
       tx.categoryId?.name || "Uncategorized",
       { 
-        content: tx.type === "income" ? `+$${tx.amount.toFixed(2)}` : `-$${tx.amount.toFixed(2)}`,
+        content: tx.type === "income" ? `+${formatCurrency(tx.amount, user?.currency)}` : `-${formatCurrency(tx.amount, user?.currency)}`,
         styles: { textColor: tx.type === "income" ? "#10B981" : "#1E293B" }
       }
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 100,
       head: [["Date", "Description", "Category", "Amount"]],
       body: tableRows,
@@ -174,10 +175,10 @@ export const generateStatementPDF = async (user, endDateStr) => {
         sub.name || "Subscription",
         sub.billing_cycle,
         format(new Date(sub.renewal_date), "MMM d, yyyy"),
-        `$${sub.amount.toFixed(2)}`
+        formatCurrency(sub.amount, user?.currency)
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: finalY + 5,
         head: [["Service", "Cycle", "Upcoming Date", "Amount"]],
         body: radarRows,

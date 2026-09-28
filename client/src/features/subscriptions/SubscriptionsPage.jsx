@@ -5,9 +5,12 @@ import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAuth } from "../auth/AuthContext";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import "../dashboard/Dashboard.css";
 
 export default function SubscriptionsPage() {
+  const { user } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -144,7 +147,7 @@ export default function SubscriptionsPage() {
             <div className="dash-kpi-icon-wrap" style={{ background: "#fee2e2", color: "#dc2626" }}>
               <CreditCard style={{ width: 20, height: 20 }} />
             </div>
-            <div className="dash-kpi-value">${totalMonthlyBurn.toFixed(2)}</div>
+            <div className="dash-kpi-value">{formatCurrency(totalMonthlyBurn, user?.currency)}</div>
             <p className="dash-kpi-label">Monthly Cost</p>
           </div>
           <span className="dash-kpi-badge" style={{ background: "#fee2e2", color: "#dc2626" }}>
@@ -157,7 +160,7 @@ export default function SubscriptionsPage() {
             <div className="dash-kpi-icon-wrap" style={{ background: "#dcfce7", color: "#16a34a" }}>
               <Calendar style={{ width: 20, height: 20 }} />
             </div>
-            <div className="dash-kpi-value">${(totalMonthlyBurn * 12).toFixed(2)}</div>
+            <div className="dash-kpi-value">{formatCurrency(totalMonthlyBurn * 12, user?.currency)}</div>
             <p className="dash-kpi-label">Yearly Commitment</p>
           </div>
           <span className="dash-kpi-badge" style={{ background: "#dcfce7", color: "#16a34a" }}>
@@ -230,7 +233,7 @@ export default function SubscriptionsPage() {
                   </div>
 
                   <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em", margin: "14px 0 4px" }}>
-                    ${Number(sub.amount).toFixed(2)}
+                    {formatCurrency(sub.amount, user?.currency)}
                   </div>
                 </div>
 
@@ -351,7 +354,7 @@ export default function SubscriptionsPage() {
 
                   <div>
                     <label style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                      Cost Amount ($)
+                      Cost Amount ({getCurrencySymbol(user?.currency)})
                     </label>
                     <input
                       type="number"
