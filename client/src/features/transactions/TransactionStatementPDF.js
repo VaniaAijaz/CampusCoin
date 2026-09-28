@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
+import { formatCurrency, getCurrencySymbol } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 
 export const generateTransactionsPDF = async (user, transactions, filters = {}) => {
@@ -13,7 +14,7 @@ export const generateTransactionsPDF = async (user, transactions, filters = {}) 
     }
 
     const cur = user?.currency || "USD";
-    const curSymbol = cur === "PKR" ? "Rs " : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur === "INR" ? "₹" : "$";
+    const curSymbol = getCurrencySymbol(cur);
 
     // 1. Compute summary
     let totalInflow = 0;
@@ -59,7 +60,12 @@ export const generateTransactionsPDF = async (user, transactions, filters = {}) 
     doc.setFont("helvetica", "normal");
     doc.setTextColor(subtleColor);
     doc.text(`Student: ${user?.name || "Campus Student"}`, pageWidth - 14, 26, { align: "right" });
-    doc.text(`Generated on: ${format(new Date(), "MMM d, yyyy 'at' h:mm a")}`, pageWidth - 14, 31, { align: "right" });
+    
+    let genDateStr = "Today";
+    try {
+      genDateStr = format(new Date(), "MMM d, yyyy 'at' h:mm a");
+    } catch {}
+    doc.text(`Generated on: ${genDateStr}`, pageWidth - 14, 31, { align: "right" });
 
     // Horizontal Separator
     doc.setDrawColor(226, 232, 240);
@@ -85,10 +91,10 @@ export const generateTransactionsPDF = async (user, transactions, filters = {}) 
       doc.setTextColor(subtleColor);
       doc.text(title.toUpperCase(), x + 8, boxY + 7);
 
-      doc.setFontSize(12);
+      doc.setFontSize(11.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(amountColor);
-      doc.text(`${prefix}${curSymbol}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, x + 8, boxY + 16);
+      doc.text(`${prefix}${formatCurrency(amount, cur)}`, x + 8, boxY + 16);
     };
 
     drawSummaryBox(14, "Total Money In", totalInflow, emeraldColor, "+");
@@ -104,8 +110,13 @@ export const generateTransactionsPDF = async (user, transactions, filters = {}) 
     const tableRows = transactions.map((tx) => {
       const isInc = tx.type === "income";
       const amtNum = Number(tx.amount) || 0;
-      const formattedAmt = `${isInc ? "+" : "-"}${curSymbol}${amtNum.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      const dateStr = tx.date ? format(new Date(tx.date), "MMM d, yyyy") : "N/A";
+      const formattedAmt = `${isInc ? "+" : "-"}${formatCurrency(amtNum, cur)}`;
+      
+      let dateStr = "N/A";
+      try {
+        if (tx.date) dateStr = format(new Date(tx.date), "MMM d, yyyy");
+      } catch {}
+
       const catName = tx.categoryId?.name || tx.category || "General";
       const desc = tx.description || "-";
       const method = tx.paymentMethod || "Digital Bank";
@@ -124,7 +135,7 @@ export const generateTransactionsPDF = async (user, transactions, filters = {}) 
       ];
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 84,
       head: [["Date", "Category", "Description", "Method", "Type", "Amount"]],
       body: tableRows,
@@ -163,7 +174,12 @@ export const generateTransactionsPDF = async (user, transactions, filters = {}) 
       );
     }
 
-    const filename = `CampusCoin_Transactions_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+    let dateFileName = "all";
+    try {
+      dateFileName = format(new Date(), "yyyy-MM-dd");
+    } catch {}
+    
+    const filename = `CampusCoin_Transactions_${dateFileName}.pdf`;
     doc.save(filename);
     toast.success("PDF Statement downloaded successfully!", { id: loadingToast });
   } catch (error) {
