@@ -477,8 +477,8 @@ export default function Layout() {
         )}
 
         <main style={{ flex: 1, padding: isMobile ? "16px" : "24px 28px 40px", maxWidth: 1240, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
-          <AnimatePresence mode="wait">
-            <motion.div key={location.pathname} variants={PAGE_VARIANTS} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.15, ease: "easeOut" }}>
+          <AnimatePresence>
+            <motion.div key={location.pathname} variants={PAGE_VARIANTS} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.12, ease: "easeOut" }}>
               <Outlet context={{ openQuickAdd: () => setQuickAddOpen(true) }} />
             </motion.div>
           </AnimatePresence>

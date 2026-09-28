@@ -47,10 +47,8 @@ const register = async (req, res, next) => {
     const token = generateToken({ id: user._id, role: user.role });
     setTokenCookie(res, token);
     
-    // Dispatch verification email with OTP and direct link
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-    const verifyLink = `${clientUrl}/app/verify?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
-    sendVerificationEmail(user.email, user.name, verificationOtp, verifyLink).catch(console.error);
+    // Dispatch verification email with 6-digit OTP
+    sendVerificationEmail(user.email, user.name, verificationOtp).catch(console.error);
 
     res.status(201).json({
       success: true,
@@ -139,9 +137,7 @@ const resendVerification = async (req, res, next) => {
     user.verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save();
 
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-    const verifyLink = `${clientUrl}/app/verify?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
-    await sendVerificationEmail(user.email, user.name, verificationOtp, verifyLink);
+    await sendVerificationEmail(user.email, user.name, verificationOtp);
 
     res.json({
       success: true,
@@ -454,7 +450,7 @@ const forgotPassword = async (req, res, next) => {
     await user.save();
     
     // Dispatch reset email securely via Nodemailer
-    sendPasswordResetEmail(user.email, token).catch((err) => {
+    await sendPasswordResetEmail(user.email, token).catch((err) => {
       console.error(`[AUTH] Failed to send password reset email to ${user.email}:`, err);
     });
 

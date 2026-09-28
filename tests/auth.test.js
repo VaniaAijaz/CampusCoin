@@ -11,8 +11,8 @@ describe("Auth Flow Integration Tests (Registration, Login, Verification)", () =
   let authToken = "";
 
   afterAll(async () => {
-    // Cleanup created test records
-    await User.deleteMany({ email: { $regex: /@campuscoin\.edu$/ } });
+    // Cleanup created test records for this suite
+    await User.deleteMany({ email: { $regex: /^test_student_/ } });
   });
 
   describe("POST /api/auth/register", () => {

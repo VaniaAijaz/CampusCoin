@@ -3,19 +3,14 @@ const nodemailer = require("nodemailer");
 const emailUser = process.env.EMAIL_USER;
 const emailPass = (process.env.EMAIL_PASS || process.env.EMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
 
-// Create Nodemailer Transporter
+// ── Nodemailer Transporter ────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: "gmail",
-  auth: {
-    user: emailUser,
-    pass: emailPass,
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
+  auth: { user: emailUser, pass: emailPass },
+  tls: { rejectUnauthorized: false },
 });
 
-// Reusable utility function
+// ── Core Send Utility ─────────────────────────────────────────────────────────
 const sendEmail = async (to, subject, htmlTemplate) => {
   try {
     const info = await transporter.sendMail({
@@ -28,242 +23,356 @@ const sendEmail = async (to, subject, htmlTemplate) => {
     return info;
   } catch (error) {
     console.error(`Error sending email to ${to}:`, error);
-    // Do not throw to avoid crashing the server
   }
 };
 
-// Faux Glassmorphism Base Template
-const generateBaseTemplate = (title, content) => `
-<!DOCTYPE html>
-<html>
+// ── Premium Base Template ─────────────────────────────────────────────────────
+// Clean white card design matching the Campus Coin brand (sky-blue + indigo)
+const generateBaseTemplate = (title, previewText, content) => `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
   <title>${title}</title>
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #0B0D0E;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: #D4D4D8;
+      margin: 0; padding: 0;
+      background: linear-gradient(150deg, #f0f7ff 0%, #e0f2fe 50%, #dbeafe 100%);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      color: #0f172a;
     }
-    .wrapper {
-      width: 100%;
-      table-layout: fixed;
-      background-color: #0B0D0E;
-      padding: 40px 20px;
-    }
-    .main-table {
-      background-color: #14171A;
+    .wrapper { width: 100%; padding: 48px 20px; background: linear-gradient(150deg, #f0f7ff 0%, #e0f2fe 50%, #dbeafe 100%); }
+    .card {
+      background: #ffffff;
       margin: 0 auto;
       width: 100%;
-      max-width: 600px;
-      border-radius: 16px;
-      border: 1px solid #27272A;
-      border-spacing: 0;
+      max-width: 580px;
+      border-radius: 20px;
+      border: 1px solid rgba(172, 217, 251, 0.6);
+      box-shadow: 0 4px 32px rgba(37, 99, 235, 0.08), 0 1px 4px rgba(0,0,0,0.04);
       overflow: hidden;
     }
-    .logo-container {
+    /* Header strip */
+    .header {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+      padding: 36px 40px 32px;
       text-align: center;
-      padding: 30px 20px 10px;
+      position: relative;
     }
-    .logo-text {
-      color: #3B82F6;
+    .header-logo-mark {
+      display: inline-block;
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      margin-bottom: 14px;
+      line-height: 48px;
       font-size: 24px;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: -0.5px;
     }
-    .content-area {
-      padding: 20px 40px 40px;
+    .header-brand {
+      font-size: 22px; font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.4px;
+      margin: 0 0 4px;
     }
-    h1, h2 {
-      color: #FFFFFF;
-      margin-top: 0;
+    .header-sub {
+      font-size: 12px; font-weight: 600;
+      color: rgba(255,255,255,0.65);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    /* Body */
+    .body { padding: 40px 40px 32px; }
+    .title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 12px; letter-spacing: -0.3px; }
+    .lead { font-size: 15px; color: #475569; line-height: 1.65; margin: 0 0 28px; }
+    /* Info box */
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin-bottom: 28px;
+    }
+    .info-box-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; margin: 0 0 14px; }
+    /* CTA Button */
+    .cta-wrap { text-align: center; margin-bottom: 28px; }
+    .cta-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 999px;
+      font-size: 14px;
       font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
     }
-    p {
-      line-height: 1.6;
-      margin-top: 0;
+    .cta-btn-danger {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+    }
+    .cta-btn-green {
+      background: linear-gradient(135deg, #059669, #10b981);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    /* OTP Box */
+    .otp-box {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .otp-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.65); margin: 0 0 12px; }
+    .otp-code { font-size: 40px; font-weight: 800; letter-spacing: 10px; color: #ffffff; font-family: 'Courier New', monospace; margin: 0 0 10px; }
+    .otp-expiry { font-size: 12px; color: rgba(255,255,255,0.6); margin: 0; }
+    /* Step list */
+    .step { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 28px;
+    }
+    .step-text { font-size: 14px; color: #334155; line-height: 1.5; padding-top: 5px; }
+    .step-text strong { color: #0f172a; }
+    /* Stat row */
+    .stat-row { display: flex; gap: 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 28px; }
+    .stat-cell { flex: 1; padding: 18px 16px; text-align: center; background: #f8fafc; }
+    .stat-cell + .stat-cell { border-left: 1px solid #e2e8f0; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin: 0 0 6px; }
+    .stat-value { font-size: 20px; font-weight: 800; margin: 0; }
+    /* Progress bar */
+    .progress-track { background: #e2e8f0; border-radius: 99px; height: 10px; overflow: hidden; margin-bottom: 8px; }
+    .progress-fill { height: 100%; border-radius: 99px; }
+    /* Warning box */
+    .warning-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #92400e;
+      line-height: 1.5;
       margin-bottom: 24px;
     }
-    .cta-button {
-      display: inline-block;
-      background-color: #3B82F6;
-      color: #FFFFFF;
-      text-decoration: none;
-      padding: 14px 28px;
-      border-radius: 50px;
-      font-weight: 600;
-      text-align: center;
-      margin-top: 10px;
-      margin-bottom: 10px;
-    }
-    .footer {
-      text-align: center;
-      padding-top: 30px;
-      font-size: 12px;
-      color: #71717A;
+    /* Divider */
+    .divider { border: 0; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+    /* Footer */
+    .footer { padding: 24px 40px 32px; text-align: center; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+    .footer-brand { font-size: 13px; font-weight: 800; color: #2563eb; margin: 0 0 6px; }
+    .footer-tagline { font-size: 11px; color: #94a3b8; margin: 0 0 14px; }
+    .footer-links { font-size: 11px; color: #cbd5e1; }
+    .footer-links a { color: #94a3b8; text-decoration: none; }
+    @media (max-width: 600px) {
+      .body { padding: 28px 24px 24px; }
+      .header { padding: 28px 24px 24px; }
+      .footer { padding: 20px 24px 24px; }
+      .otp-code { font-size: 32px; letter-spacing: 6px; }
+      .stat-row { flex-direction: column; }
+      .stat-cell + .stat-cell { border-left: 0; border-top: 1px solid #e2e8f0; }
     }
   </style>
 </head>
 <body>
   <div class="wrapper">
-    <table class="main-table" align="center">
-      <tr>
-        <td class="logo-container">
-          <h2 class="logo-text">Campus Coin</h2>
-        </td>
-      </tr>
-      <tr>
-        <td class="content-area">
-          ${content}
-          <div class="footer">
-            &copy; ${new Date().getFullYear()} Campus Coin. Built for Techwiz 7.<br>
-            If you have any questions, please reply to this email.
-          </div>
-        </td>
-      </tr>
-    </table>
+    <div class="card">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-logo-mark">🪙</div>
+        <p class="header-brand">Campus Coin</p>
+        <p class="header-sub">Student Financial Hub</p>
+      </div>
+      <!-- Body -->
+      <div class="body">
+        ${content}
+      </div>
+      <!-- Footer -->
+      <div class="footer">
+        <p class="footer-brand">Campus Coin</p>
+        <p class="footer-tagline">Smart finance for smart students · Techwiz 7 Entry</p>
+        <p class="footer-links">
+          © ${new Date().getFullYear()} Campus Coin. All rights reserved.<br>
+          <a href="${process.env.CLIENT_URL || "http://localhost:5173"}">Visit Dashboard</a>
+          &nbsp;·&nbsp;
+          <a href="mailto:${process.env.EMAIL_USER || "support@campuscoin.pk"}">Contact Support</a>
+        </p>
+      </div>
+    </div>
   </div>
 </body>
-</html>
-`;
+</html>`;
 
-// 1. New Account Welcome
+// ── 1. Welcome Email ──────────────────────────────────────────────────────────
 const sendWelcomeEmail = async (email, name) => {
+  const firstName = (name || "Student").split(" ")[0];
   const content = `
-    <h1>Welcome to Campus Coin, ${name}!</h1>
-    <p>Your financial hub is ready. We've built Campus Coin to help you track the everyday, plan for what matters, and make the most of student life.</p>
-    
-    <div style="background-color: #0B0D0E; padding: 20px; border-radius: 12px; border: 1px solid #27272A; margin-bottom: 24px;">
-      <h3 style="color: #FFFFFF; margin-top: 0;">Getting Started is Easy:</h3>
-      <ol style="margin-bottom: 0; padding-left: 20px; color: #D4D4D8;">
-        <li style="margin-bottom: 10px;"><strong>Add your first transaction:</strong> Log an income or expense.</li>
-        <li style="margin-bottom: 10px;"><strong>Set a budget:</strong> Cap spending on food, transit, or fun.</li>
-        <li><strong>Check AI insights:</strong> Get tailored advice based on your habits.</li>
-      </ol>
+    <h1 class="title">Welcome aboard, ${firstName}! 🎉</h1>
+    <p class="lead">Your Campus Coin account is ready. We've built a financial hub designed specifically for student life — track income, control spending, and let AI guide your money decisions.</p>
+
+    <div class="info-box">
+      <p class="info-box-title">Get started in 3 steps</p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Log your first transaction</strong> — add an income source or an expense in seconds.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Set monthly budgets</strong> — cap spending on food, transit, or entertainment.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Check AI Insights</strong> — get tailored financial advice based on your real habits.</div>
+      </div>
     </div>
 
-    <div style="text-align: center;">
-      <a href="${process.env.CLIENT_URL}/app" class="cta-button">Go to Dashboard</a>
-    </div>
-  `;
-
-  const html = generateBaseTemplate("Welcome to Campus Coin", content);
-  await sendEmail(email, "Welcome to Campus Coin! Your financial hub is ready.", html);
-};
-
-// 2. Password Reset Request
-const sendPasswordResetEmail = async (email, resetToken) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-  const content = `
-    <h1>Password Reset Request</h1>
-    <p>We received a request to reset your password for your Campus Coin account. You can securely reset it by clicking the button below.</p>
-    
-    <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${resetUrl}" class="cta-button">Reset Password</a>
+    <div class="cta-wrap">
+      <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/app" class="cta-btn cta-btn-green">Open My Dashboard →</a>
     </div>
 
-    <p style="font-size: 13px; color: #71717A;">
-      ⚠️ <strong>If you didn't request this, safely ignore this email.</strong> Your password will remain unchanged, and this link will expire in 15 minutes.
+    <p style="font-size:13px;color:#94a3b8;text-align:center;">
+      If you didn't create this account, please disregard this email.
     </p>
   `;
-
-  const html = generateBaseTemplate("Password Reset Request", content);
-  await sendEmail(email, "Campus Coin - Password Reset Request", html);
+  const html = generateBaseTemplate("Welcome to Campus Coin", "Your student financial hub is ready.", content);
+  await sendEmail(email, `Welcome to Campus Coin, ${firstName}! 🪙 Your hub is ready.`, html);
 };
 
-// 3. Budget Limit Alert
+// ── 2. Password Reset Email ───────────────────────────────────────────────────
+const sendPasswordResetEmail = async (email, resetToken) => {
+  const resetUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password/${resetToken}`;
+  const content = `
+    <h1 class="title">Reset your password</h1>
+    <p class="lead">We received a request to reset the password for your Campus Coin account. Click the button below to set a new one — this link expires in <strong>1 hour</strong>.</p>
+
+    <div class="cta-wrap">
+      <a href="${resetUrl}" class="cta-btn">Reset Password →</a>
+    </div>
+
+    <hr class="divider">
+
+    <div class="warning-box">
+      ⚠️ <strong>Didn't request this?</strong> If you didn't ask for a password reset, safely ignore this email. Your password will remain unchanged and the link will expire automatically.
+    </div>
+
+    <p style="font-size:12px;color:#cbd5e1;text-align:center;">
+      For security, never share this email with anyone. Campus Coin will never ask for your password.
+    </p>
+  `;
+  const html = generateBaseTemplate("Password Reset — Campus Coin", "Reset your Campus Coin password securely.", content);
+  await sendEmail(email, "Campus Coin — Password Reset Request", html);
+};
+
+// ── 3. Budget Alert Email ─────────────────────────────────────────────────────
 const sendBudgetAlertEmail = async (email, categoryName, spentAmount, limitAmount) => {
   const percentage = Math.min(Math.round((spentAmount / limitAmount) * 100), 100);
-  
+  const isOver = percentage >= 100;
+  const fillColor = isOver ? "#ef4444" : percentage >= 90 ? "#f97316" : "#eab308";
   const content = `
-    <h1 style="color: #E11D48;">⚠️ Budget Alert</h1>
-    <p>You've reached <strong>${percentage}%</strong> of your <strong>${categoryName}</strong> budget for this month.</p>
-    
-    <div style="background-color: #0B0D0E; padding: 20px; border-radius: 12px; border: 1px solid #27272A; margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #FFFFFF; font-weight: 600;">
-        <span>Spent: $${spentAmount.toFixed(2)}</span>
-        <span>Limit: $${limitAmount.toFixed(2)}</span>
-      </div>
-      
-      <!-- Faux Progress Bar -->
-      <div style="width: 100%; height: 8px; background-color: #27272A; border-radius: 4px; overflow: hidden;">
-        <div style="width: ${percentage}%; height: 100%; background-color: #E11D48; border-radius: 4px;"></div>
-      </div>
-    </div>
-    
-    <p style="font-size: 14px; background-color: #3B82F620; border-left: 4px solid #3B82F6; padding: 12px; color: #FFFFFF;">
-      <strong>Quick Tip:</strong> Consider pausing spending in this category for the rest of the week to ensure you don't break your cap!
-    </p>
+    <h1 class="title">${isOver ? "🚨 Budget Exceeded" : "⚠️ Budget Warning"}</h1>
+    <p class="lead">You've used <strong>${percentage}%</strong> of your <strong>${categoryName}</strong> budget for this month. ${isOver ? "You've gone over your limit." : "You're close to your limit — time to slow down spending."}</p>
 
-    <div style="text-align: center;">
-      <a href="${process.env.CLIENT_URL}/app/budget" class="cta-button">Review Budgets</a>
-    </div>
-  `;
-
-  const html = generateBaseTemplate(`Budget Alert: ${categoryName}`, content);
-  await sendEmail(email, `⚠️ Action Required: ${categoryName} Budget Alert`, html);
-};
-
-// 4. Monthly Statement Ready
-const sendMonthlyStatementEmail = async (email, monthName, totalIn, totalOut) => {
-  const content = `
-    <h1>Your ${monthName} Statement is Ready</h1>
-    <p>Your official financial statement for the month of ${monthName} is now available in your Campus Coin dashboard.</p>
-    
-    <div style="background-color: #0B0D0E; padding: 20px; border-radius: 12px; border: 1px solid #27272A; margin-bottom: 24px; text-align: center;">
-      <h3 style="color: #FFFFFF; margin-top: 0; margin-bottom: 20px;">Executive Summary</h3>
-      
-      <table width="100%" cellspacing="0" cellpadding="0" style="table-layout: fixed;">
+    <div class="info-box">
+      <p class="info-box-title">${categoryName} Budget Status</p>
+      <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:14px;">
         <tr>
-          <td style="text-align: center; border-right: 1px solid #27272A;">
-            <div style="color: #71717A; font-size: 12px; margin-bottom: 4px;">Total Inflow</div>
-            <div style="color: #10B981; font-weight: bold; font-size: 18px;">+$${totalIn.toFixed(2)}</div>
-          </td>
-          <td style="text-align: center;">
-            <div style="color: #71717A; font-size: 12px; margin-bottom: 4px;">Total Outflow</div>
-            <div style="color: #F43F5E; font-weight: bold; font-size: 18px;">-$${totalOut.toFixed(2)}</div>
-          </td>
+          <td style="font-size:13px;color:#475569;">Spent</td>
+          <td style="font-size:15px;font-weight:800;color:#ef4444;text-align:right;">$${Number(spentAmount).toFixed(2)}</td>
         </tr>
-    <div style="text-align: center;">
-      <a href="${process.env.CLIENT_URL}/app/reports" class="cta-button">Download PDF Statement</a>
+        <tr>
+          <td style="font-size:13px;color:#475569;padding-top:4px;">Budget Limit</td>
+          <td style="font-size:15px;font-weight:800;color:#0f172a;text-align:right;padding-top:4px;">$${Number(limitAmount).toFixed(2)}</td>
+        </tr>
+      </table>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${percentage}%;background:${fillColor};"></div>
+      </div>
+      <p style="font-size:12px;color:#94a3b8;text-align:right;margin-top:6px;">${percentage}% used</p>
+    </div>
+
+    <div class="info-box" style="background:#eff6ff;border-color:#bfdbfe;">
+      <p class="info-box-title" style="color:#2563eb;">💡 Quick Tip</p>
+      <p style="font-size:14px;color:#1e40af;margin:0;">Consider pausing ${categoryName.toLowerCase()} spending for the rest of the month. Review recurring items — you may find subscriptions or habits that can be trimmed.</p>
+    </div>
+
+    <div class="cta-wrap">
+      <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/app/budget" class="cta-btn cta-btn-danger">Review My Budgets →</a>
     </div>
   `;
-
-  const html = generateBaseTemplate(`${monthName} Statement Ready`, content);
-  await sendEmail(email, `Your ${monthName} Statement is Ready`, html);
+  const html = generateBaseTemplate(`Budget Alert: ${categoryName}`, `You've used ${percentage}% of your ${categoryName} budget.`, content);
+  await sendEmail(email, `${isOver ? "🚨" : "⚠️"} ${categoryName} Budget ${isOver ? "Exceeded" : "Warning"} — Campus Coin`, html);
 };
 
-// 5. Email Verification with OTP & One-Click Link
-const sendVerificationEmail = async (email, name, otp, link) => {
+// ── 4. Monthly Statement Email ────────────────────────────────────────────────
+const sendMonthlyStatementEmail = async (email, monthName, totalIn, totalOut) => {
+  const net = totalIn - totalOut;
+  const isPositive = net >= 0;
   const content = `
-    <h1>Verify Your Account</h1>
-    <p>Hi ${name || "there"}, welcome to Campus Coin! Please confirm your email address to activate your student financial portal.</p>
-    
-    <div style="background-color: #0B0D0E; padding: 24px; border-radius: 16px; border: 1px solid #27272A; margin: 24px 0; text-align: center;">
-      <p style="margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #A1A1AA;">Your 6-Digit Verification Code</p>
-      <div style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #FFFFFF; font-family: monospace; padding: 12px 0;">
-        ${otp}
+    <h1 class="title">${monthName} Summary 📊</h1>
+    <p class="lead">Your financial statement for <strong>${monthName}</strong> is ready. Here's a quick snapshot of how your money moved this month.</p>
+
+    <div class="stat-row">
+      <div class="stat-cell">
+        <p class="stat-label">Total Income</p>
+        <p class="stat-value" style="color:#059669;">+$${Number(totalIn).toFixed(2)}</p>
       </div>
-      <p style="margin: 8px 0 0; font-size: 12px; color: #71717A;">This code expires in 24 hours.</p>
+      <div class="stat-cell">
+        <p class="stat-label">Total Expenses</p>
+        <p class="stat-value" style="color:#ef4444;">-$${Number(totalOut).toFixed(2)}</p>
+      </div>
+      <div class="stat-cell">
+        <p class="stat-label">Net Balance</p>
+        <p class="stat-value" style="color:${isPositive ? "#2563eb" : "#ef4444"};">${isPositive ? "+" : ""}$${Math.abs(net).toFixed(2)}</p>
+      </div>
     </div>
 
-    <div style="text-align: center; margin: 28px 0 20px;">
-      <a href="${link}" class="cta-button">Verify Email Instantly</a>
+    <div class="cta-wrap">
+      <a href="${process.env.CLIENT_URL || "http://localhost:5173"}/app/reports" class="cta-btn">View Full Report →</a>
+    </div>
+  `;
+  const html = generateBaseTemplate(`${monthName} Statement — Campus Coin`, `Your ${monthName} financial summary is ready.`, content);
+  await sendEmail(email, `Your ${monthName} Statement is Ready — Campus Coin`, html);
+};
+
+// ── 5. Email Verification (6-Digit Activation Code) ──────────────────────────
+const sendVerificationEmail = async (email, name, otp) => {
+  const firstName = (name || "there").split(" ")[0];
+  const content = `
+    <h1 class="title">Activate your account ✉️</h1>
+    <p class="lead">Hi <strong>${firstName}</strong>, welcome to Campus Coin! Enter the 6-digit activation code below in the app to verify your email and complete registration.</p>
+
+    <div class="otp-box">
+      <p class="otp-label">Your 6-Digit Activation Code</p>
+      <p class="otp-code">${(otp || "------").toString().split("").join(" ")}</p>
+      <p class="otp-expiry">Expires in 24 hours · Do not share this code with anyone</p>
     </div>
 
-    <p style="font-size: 12px; color: #71717A; text-align: center; margin-top: 16px;">
-      If you did not register for a Campus Coin account, you can safely disregard this message.
+    <div class="info-box" style="background:#eff6ff;border-color:#bfdbfe;">
+      <p class="info-box-title" style="color:#2563eb;">🔒 Security Notice</p>
+      <p style="font-size:13px;color:#1e40af;margin:0;">Campus Coin staff will never ask for your 6-digit code. If you didn't create an account with this email address, you can safely ignore this message.</p>
+    </div>
+
+    <p style="font-size:12px;color:#94a3b8;text-align:center;">
+      Smart finance for smart students · Techwiz 7 Entry
     </p>
   `;
-
-  const html = generateBaseTemplate("Verify Your Campus Coin Account", content);
-  return await sendEmail(email, "Verify Your Campus Coin Account (OTP Inside)", html);
+  const html = generateBaseTemplate("Activate Your Campus Coin Account", "Your 6-digit account activation code.", content);
+  return await sendEmail(email, "Activate Your Campus Coin Account — Verification Code 🪙", html);
 };
 
+// ── 6. Budget Alert Email (alias for tests) ───────────────────────────────────
 module.exports = {
   transporter,
   sendEmail,
@@ -271,5 +380,5 @@ module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendBudgetAlertEmail,
-  sendMonthlyStatementEmail
+  sendMonthlyStatementEmail,
 };

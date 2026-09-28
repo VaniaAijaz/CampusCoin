@@ -18,7 +18,6 @@ import {
   TrendingDown,
   RotateCcw,
   Wallet,
-  Calendar,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { getTransactions, deleteTransaction, importTransactionsCSV } from "./transactionApi";
