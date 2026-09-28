@@ -8,6 +8,7 @@ COPY package*.json ./
 # Copy client and server (Workspaces)
 COPY client ./client
 COPY server ./server
+COPY .env* ./
 
 # Install all dependencies
 RUN npm install
@@ -32,6 +33,7 @@ COPY package*.json ./
 # Copy built client from builder stage
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/server ./server
+COPY --from=builder /app/.env* ./
 
 # Install only production dependencies
 RUN npm install --omit=dev
