@@ -253,7 +253,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
                 </div>
 
                 <div style={{ marginTop: 3, fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em" }}>
-                  ₹ 2,48,500
+                  $2,485.00
                 </div>
 
                 <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600 }}>
@@ -285,7 +285,7 @@ export default function SplitAuthPage({ defaultMode = "login" }) {
                   <ArrowDownToLine style={{ width: 13, height: 13 }} />
                 </span>
                 <div>
-                  <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>+ ₹75.00 received</strong>
+                  <strong style={{ display: "block", fontSize: 12, fontWeight: 700 }}>+$75.00 received</strong>
                   <span style={{ fontSize: 10, color: "var(--auth-muted)" }}>Instant Campus Transfer</span>
                 </div>
               </div>

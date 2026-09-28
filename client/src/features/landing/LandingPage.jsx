@@ -242,7 +242,7 @@ export default function LandingPage() {
                   <div className="lp-wallet-sub">Campus Wallet</div>
 
                   <div className="lp-wallet-balance-row">
-                    <span>{balanceVisible ? "₹ 2,48,500" : "₹ ••,•••"}</span>
+                    <span>{balanceVisible ? "$2,485.00" : "$••••••"}</span>
                     <button
                       type="button"
                       className="lp-wallet-eye"
@@ -292,7 +292,7 @@ export default function LandingPage() {
                   </span>
                   <span className="lp-notice-text">
                     <strong>Money received</strong>
-                    <strong style={{ color: "#16a34a" }}>+ ₹75.00</strong>
+                    <strong style={{ color: "#16a34a" }}>+$75.00</strong>
                     <span>Today, 9:41 AM</span>
                   </span>
                 </div>
@@ -438,7 +438,7 @@ export default function LandingPage() {
               <Wallet style={{ width: 24, height: 24 }} />
             </div>
             <p className="lp-wallet-demo-label">Available balance</p>
-            <p className="lp-wallet-demo-val">₹ 2,48,500</p>
+            <p className="lp-wallet-demo-val">$2,485.00</p>
             <div className="lp-wallet-demo-grid">
               <span className="lp-wallet-demo-action">
                 <Send style={{ width: 22, height: 22 }} />
@@ -465,7 +465,7 @@ export default function LandingPage() {
             <span className="lp-insights-badge">This month</span>
           </div>
           <p className="lp-insights-label">Your spending at a glance</p>
-          <p className="lp-insights-amount">₹ 12,480</p>
+          <p className="lp-insights-amount">$1,248.00</p>
           <div className="lp-chart-bars">
             {[42, 75, 55, 88, 62, 100, 70, 85].map((height, i) => (
               <span
