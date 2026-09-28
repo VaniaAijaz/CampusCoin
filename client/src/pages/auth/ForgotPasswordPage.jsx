@@ -136,17 +136,6 @@ export default function ForgotPasswordPage() {
                 )}
               </button>
             </form>
-
-            <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid #e2e8f0", textAlign: "center" }}>
-              <Link
-                to="/login"
-                className="auth-footer-btn"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                <ChevronLeft style={{ width: 14, height: 14 }} />
-                Back to Sign In
-              </Link>
-            </div>
           </div>
         )}
       </motion.div>

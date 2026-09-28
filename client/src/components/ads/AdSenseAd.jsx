@@ -132,7 +132,6 @@ export default function AdSenseAd({
   const { user } = useAuth();
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
   const [isReadyToShow, setIsReadyToShow] = useState(false);
   const [isGoogleFilled, setIsGoogleFilled] = useState(false);
 
@@ -146,9 +145,6 @@ export default function AdSenseAd({
 
   // 1. STRICT AD-FREE CHECK: Free users see ads; Premium users ($2/month ≈ PKR 500) see NO ads!
   const isPremium = Boolean(user?.isPremium || user?.plan === "premium");
-  if (isPremium) {
-    return null;
-  }
 
   // 2. Read Configuration from Environment Variables
   const env = import.meta.env;
@@ -174,6 +170,8 @@ export default function AdSenseAd({
 
   // 3. Isolated DOM Insertion & Safe Cleanup to Prevent React Reconciliation Collisions
   useEffect(() => {
+    if (isPremium) return undefined;
+
     let isMounted = true;
 
     const showTimer = setTimeout(() => {
@@ -248,9 +246,9 @@ export default function AdSenseAd({
         containerRef.current.innerHTML = "";
       }
     };
-  }, [publisherId, slotId, delayMs, isTestMode, adFormat, fullWidthResponsive]);
+  }, [publisherId, slotId, delayMs, isTestMode, adFormat, fullWidthResponsive, isPremium]);
 
-  if (!isReadyToShow) {
+  if (isPremium || !isReadyToShow) {
     return null;
   }
 
