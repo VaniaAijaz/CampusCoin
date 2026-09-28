@@ -9,11 +9,8 @@ const getCategories = async (req, res) => {
     const filter = {
       $or: [
         { isDefault: true },
-        { is_default: true },
         { userId: null },
-        { user_id: null },
         { userId: req.user._id },
-        { user_id: req.user._id },
       ],
     };
     if (type) filter.type = type;

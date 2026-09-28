@@ -73,6 +73,17 @@ const CATEGORY_CHART_COLORS = [
   "oklch(0.5 0.025 255)", // slate
 ];
 
+const DEFAULT_STUDENT_CATEGORIES = [
+  { _id: "def_food", name: "Food & Dining", icon: "utensils", color: "#F59E0B" },
+  { _id: "def_transport", name: "Transport", icon: "bus", color: "#3B82F6" },
+  { _id: "def_books", name: "Books & Supplies", icon: "book", color: "#8B5CF6" },
+  { _id: "def_hostel", name: "Hostel & Rent", icon: "home", color: "#64748B" },
+  { _id: "def_shopping", name: "Shopping", icon: "shopping-bag", color: "#EC4899" },
+  { _id: "def_entertainment", name: "Entertainment", icon: "film", color: "#10B981" },
+  { _id: "def_subs", name: "Subscriptions", icon: "repeat", color: "#06B6D4" },
+  { _id: "def_tuition", name: "Tuition & Fees", icon: "graduation-cap", color: "#6366F1" },
+];
+
 const ChartTooltip = ({ active, payload, label, cur }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -165,7 +176,7 @@ const defaultDashboard = {
   recentTx: [],
   budgets: [],
   subscriptions: [],
-  categories: [],
+  categories: DEFAULT_STUDENT_CATEGORIES,
 };
 
 export default function DashboardPage() {
@@ -208,9 +219,9 @@ export default function DashboardPage() {
               ? subsRes.value.subscriptions || []
               : [],
           categories:
-            catsRes.status === "fulfilled" && catsRes.value?.success
-              ? catsRes.value.categories || []
-              : [],
+            catsRes.status === "fulfilled" && catsRes.value?.categories?.length > 0
+              ? catsRes.value.categories
+              : DEFAULT_STUDENT_CATEGORIES,
         };
       } catch {
         return defaultDashboard;
@@ -266,29 +277,31 @@ export default function DashboardPage() {
       if (b.name) breakdownMap[b.name.toLowerCase().trim()] = b;
     });
 
-    // If categories exist in categories tab, map every category with its spent amount:
-    if (categories && categories.length > 0) {
-      return categories
-        .filter((c) => c.type === "expense" || !c.type)
-        .map((cat) => {
-          const idKey = cat._id?.toString();
-          const nameKey = cat.name?.toLowerCase().trim();
-          const matched = (idKey && breakdownMap[idKey]) || (nameKey && breakdownMap[nameKey]);
+    const sourceCats = (categories && categories.length > 0) ? categories : DEFAULT_STUDENT_CATEGORIES;
+    const seenNames = new Set();
+    const list = [];
 
-          return {
-            _id: cat._id,
-            name: cat.name,
-            icon: cat.icon,
-            color: cat.color,
-            total: matched ? Number(matched.total) || 0 : 0,
-            count: matched ? Number(matched.count) || 0 : 0,
-          };
-        })
-        .sort((a, b) => b.total - a.total);
-    }
+    sourceCats
+      .filter((c) => c.type === "expense" || !c.type)
+      .forEach((cat) => {
+        const normName = cat.name?.toLowerCase().trim();
+        if (normName && seenNames.has(normName)) return;
+        if (normName) seenNames.add(normName);
 
-    // Fallback to breakdown directly if categories tab list is empty
-    return breakdown;
+        const idKey = cat._id?.toString();
+        const matched = (idKey && breakdownMap[idKey]) || (normName && breakdownMap[normName]);
+
+        list.push({
+          _id: cat._id,
+          name: cat.name,
+          icon: cat.icon || "tag",
+          color: cat.color || "#0118A3",
+          total: matched ? Number(matched.total) || 0 : 0,
+          count: matched ? Number(matched.count) || 0 : 0,
+        });
+      });
+
+    return list.sort((a, b) => b.total - a.total);
   }, [metrics?.categoryBreakdown, categories]);
 
   const totalCategorizedExpense = useMemo(() => {
@@ -861,168 +874,134 @@ export default function DashboardPage() {
                 Categories & Monthly Spending
               </h3>
               <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
-                {categoriesList.length} configured · Total: <strong>{formatCurrency(totalCategorizedExpense, cur)}</strong>
+                {categoriesList.length} categories · Total: <strong>{formatCurrency(totalCategorizedExpense, cur)}</strong>
               </span>
             </div>
 
-            {categoriesList.length > 0 ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-                  gap: 10,
-                  maxHeight: 320,
-                  overflowY: "auto",
-                  paddingRight: 4,
-                }}
-              >
-                {categoriesList.map((cat, i) => {
-                  const spent = Number(cat.total) || 0;
-                  const pct = totalCategorizedExpense > 0 ? Math.round((spent / totalCategorizedExpense) * 100) : 0;
-                  const catColor = cat.color || CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length];
-                  const hasSpent = spent > 0;
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gap: 10,
+                maxHeight: 320,
+                overflowY: "auto",
+                paddingRight: 4,
+              }}
+            >
+              {categoriesList.map((cat, i) => {
+                const spent = Number(cat.total) || 0;
+                const pct = totalCategorizedExpense > 0 ? Math.round((spent / totalCategorizedExpense) * 100) : 0;
+                const catColor = cat.color || CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length];
+                const hasSpent = spent > 0;
 
-                  return (
-                    <Link
-                      key={cat._id || i}
-                      to={`/app/transactions?categoryId=${cat._id}&category=${encodeURIComponent(cat.name || "")}`}
-                      title={`Click to view ${cat.name} transactions`}
+                return (
+                  <Link
+                    key={cat._id || i}
+                    to={`/app/transactions?categoryId=${cat._id}&category=${encodeURIComponent(cat.name || "")}`}
+                    title={`Click to view ${cat.name} transactions`}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      padding: "12px 14px",
+                      borderRadius: 8,
+                      background: hasSpent ? C.altBg : "#fafafa",
+                      border: `1px solid ${hasSpent ? C.border : "oklch(0.93 0.008 255)"}`,
+                      textDecoration: "none",
+                      transition: "all 0.15s",
+                      opacity: hasSpent ? 1 : 0.82,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = C.brand;
+                      e.currentTarget.style.background = "#fff";
+                      e.currentTarget.style.opacity = "1";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = hasSpent ? C.border : "oklch(0.93 0.008 255)";
+                      e.currentTarget.style.background = hasSpent ? C.altBg : "#fafafa";
+                      e.currentTarget.style.opacity = hasSpent ? "1" : "0.82";
+                    }}
+                  >
+                    <div
                       style={{
                         display: "flex",
-                        flexDirection: "column",
+                        alignItems: "center",
                         justifyContent: "space-between",
-                        padding: "12px 14px",
-                        borderRadius: 8,
-                        background: hasSpent ? C.altBg : "#fafafa",
-                        border: `1px solid ${hasSpent ? C.border : "oklch(0.93 0.008 255)"}`,
-                        textDecoration: "none",
-                        transition: "all 0.15s",
-                        opacity: hasSpent ? 1 : 0.82,
+                        marginBottom: 8,
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = C.brand;
-                        e.currentTarget.style.background = "#fff";
-                        e.currentTarget.style.opacity = "1";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = hasSpent ? C.border : "oklch(0.93 0.008 255)";
-                        e.currentTarget.style.background = hasSpent ? C.altBg : "#fafafa";
-                        e.currentTarget.style.opacity = hasSpent ? "1" : "0.82";
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                            background: `${catColor}20`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <CategoryIcon categoryName={cat.name} className="w-4 h-4" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <p
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 800,
+                              color: C.foreground,
+                              margin: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {cat.name}
+                          </p>
+                          <span style={{ fontSize: 10, color: C.muted }}>
+                            {hasSpent ? `${cat.count} txs · ${pct}% of total` : "0 transactions"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 900,
+                          color: hasSpent ? C.foreground : C.muted,
+                          letterSpacing: "-0.02em",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {formatCurrency(spent, cur)}
+                      </span>
+                    </div>
+
+                    {/* Visual progress bar */}
+                    <div
+                      style={{
+                        height: 4,
+                        background: `${C.border}`,
+                        borderRadius: 99,
+                        overflow: "hidden",
+                        marginTop: 4,
                       }}
                     >
                       <div
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                          <div
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 8,
-                              background: `${catColor}20`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <CategoryIcon categoryName={cat.name} className="w-4 h-4" />
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <p
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 800,
-                                color: C.foreground,
-                                margin: 0,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {cat.name}
-                            </p>
-                            <span style={{ fontSize: 10, color: C.muted }}>
-                              {hasSpent ? `${cat.count} txs · ${pct}% of total` : "0 transactions"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <span
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 900,
-                            color: hasSpent ? C.foreground : C.muted,
-                            letterSpacing: "-0.02em",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {formatCurrency(spent, cur)}
-                        </span>
-                      </div>
-
-                      {/* Visual progress bar */}
-                      <div
-                        style={{
-                          height: 4,
-                          background: `${C.border}`,
+                          height: "100%",
+                          width: `${Math.min(100, pct)}%`,
+                          background: hasSpent ? catColor : "transparent",
                           borderRadius: 99,
-                          overflow: "hidden",
-                          marginTop: 4,
+                          transition: "width 0.4s",
                         }}
-                      >
-                        <div
-                          style={{
-                            height: "100%",
-                            width: `${Math.min(100, pct)}%`,
-                            background: hasSpent ? catColor : "transparent",
-                            borderRadius: 99,
-                            transition: "width 0.4s",
-                          }}
-                        />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div
-                style={{
-                  padding: "36px 0",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                }}
-              >
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    background: C.altBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: C.muted,
-                  }}
-                >
-                  <Tag style={{ width: 18 }} />
-                </div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: C.foreground, margin: 0 }}>
-                  No categories found
-                </p>
-                <p style={{ fontSize: 12, color: C.muted, margin: 0, textAlign: "center", maxWidth: 360 }}>
-                  View your Category Tab to customize your spending categories.
-                </p>
-              </div>
-            )}
+                      />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
