@@ -80,32 +80,31 @@ export default function LandingPage() {
                 <button
                   type="button"
                   className="lp-btn-ghost"
-                  style={{ height: "auto", padding: 0, fontSize: 13.5, gap: 4 }}
+                  style={{ height: "auto", padding: 0, gap: 6 }}
                   onClick={() => setProductsOpen(!productsOpen)}
                   aria-expanded={productsOpen}
                 >
-                  Products <ChevronDown style={{ width: 14, height: 14 }} />
+                  Products <ChevronDown style={{ width: 16, height: 16 }} />
                 </button>
                 {productsOpen && (
                   <div
                     style={{
                       position: "absolute",
                       left: 0,
-                      top: 30,
+                      top: 34,
                       zIndex: 30,
-                      width: 190,
-                      borderRadius: 10,
+                      width: 210,
+                      borderRadius: 12,
                       border: "1px solid var(--lp-border)",
                       backgroundColor: "var(--lp-card)",
-                      padding: 8,
-                      boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                      padding: 10,
+                      boxShadow: "0 14px 34px rgba(0,0,0,0.14)",
                     }}
                     onMouseLeave={() => setProductsOpen(false)}
                   >
                     <a
                       href="#wallet"
                       className="lp-mobile-nav-link"
-                      style={{ fontSize: 13 }}
                       onClick={() => setProductsOpen(false)}
                     >
                       Campus wallet
@@ -113,7 +112,6 @@ export default function LandingPage() {
                     <a
                       href="#spending"
                       className="lp-mobile-nav-link"
-                      style={{ fontSize: 13 }}
                       onClick={() => setProductsOpen(false)}
                     >
                       Spending insights
@@ -134,7 +132,7 @@ export default function LandingPage() {
               <Link
                 to="/login"
                 className="lp-btn-ghost"
-                style={{ fontSize: 13.5, padding: "8px 14px", height: "auto" }}
+                style={{ padding: "10px 20px", height: "auto", fontSize: "16px" }}
               >
                 Log In
               </Link>
@@ -142,7 +140,7 @@ export default function LandingPage() {
                 type="button"
                 onClick={handleGetStarted}
                 className="lp-btn-primary"
-                style={{ height: 38, padding: "0 20px", fontSize: 12, borderRadius: 12 }}
+                style={{ height: 48, padding: "0 26px", borderRadius: 16, fontSize: "16px" }}
               >
                 Get Started
               </button>
@@ -155,7 +153,7 @@ export default function LandingPage() {
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               onClick={() => setMenuOpen(!menuOpen)}
             >
-              {menuOpen ? <X style={{ width: 24, height: 24 }} /> : <Menu style={{ width: 24, height: 24 }} />}
+              {menuOpen ? <X style={{ width: 26, height: 26 }} /> : <Menu style={{ width: 26, height: 26 }} />}
             </button>
           </header>
 
@@ -172,11 +170,11 @@ export default function LandingPage() {
                   {label}
                 </a>
               ))}
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--lp-border)", paddingTop: 12 }}>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--lp-border)", paddingTop: 14 }}>
                 <Link
                   to="/login"
                   className="lp-btn-secondary"
-                  style={{ width: "100%", justifyContent: "center", height: 40, fontSize: 14 }}
+                  style={{ width: "100%", justifyContent: "center", height: 44, fontSize: 15 }}
                   onClick={() => setMenuOpen(false)}
                 >
                   Log In
@@ -184,7 +182,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   className="lp-btn-primary"
-                  style={{ width: "100%", justifyContent: "center", height: 40, fontSize: 14 }}
+                  style={{ width: "100%", justifyContent: "center", height: 44, fontSize: 15 }}
                   onClick={() => {
                     setMenuOpen(false);
                     handleGetStarted();
@@ -221,25 +219,25 @@ export default function LandingPage() {
               <button type="button" onClick={handleGetStarted} className="lp-btn-primary">
                 Get Started
                 <span className="lp-btn-circle-arrow">
-                  <ArrowRight style={{ width: 14, height: 14 }} />
+                  <ArrowRight style={{ width: 15, height: 15 }} />
                 </span>
               </button>
               <a href="#solutions" className="lp-btn-ghost">
-                Explore features <ArrowRight style={{ width: 14, height: 14 }} />
+                Explore features <ArrowRight style={{ width: 16, height: 16 }} />
               </a>
             </div>
           </div>
 
           {/* Bottom 3 Feature Pills */}
           <div className="lp-features-strip">
-            <Feature icon={<Wallet style={{ width: 19, height: 19 }} />} title="Pay & Receive" detail="Everyday money" />
+            <Feature icon={<Wallet style={{ width: 22, height: 22 }} />} title="Pay & Receive" detail="Everyday money" />
             <Feature
-              icon={<BarChart3 style={{ width: 19, height: 19 }} />}
+              icon={<BarChart3 style={{ width: 22, height: 22 }} />}
               title="Track Spending"
               detail="Stay in the know"
             />
             <Feature
-              icon={<ShieldCheck style={{ width: 19, height: 19 }} />}
+              icon={<ShieldCheck style={{ width: 22, height: 22 }} />}
               title="Built for Campus"
               detail="Made for students"
             />
@@ -265,19 +263,19 @@ export default function LandingPage() {
                 onClick={() => setBalanceVisible(!balanceVisible)}
               >
                 {balanceVisible ? (
-                  <Eye style={{ width: 17, height: 17 }} />
+                  <Eye style={{ width: 19, height: 19 }} />
                 ) : (
-                  <EyeOff style={{ width: 17, height: 17 }} />
+                  <EyeOff style={{ width: 19, height: 19 }} />
                 )}
               </button>
             </div>
 
             <div className="lp-wallet-actions">
               {[
-                [<Send style={{ width: 17, height: 17 }} key="s" />, "Send"],
-                [<ArrowDownToLine style={{ width: 17, height: 17 }} key="r" />, "Receive"],
-                [<Wallet style={{ width: 17, height: 17 }} key="p" />, "Pay"],
-                [<span style={{ fontSize: 20, lineHeight: 1 }} key="m">••</span>, "More"],
+                [<Send style={{ width: 19, height: 19 }} key="s" />, "Send"],
+                [<ArrowDownToLine style={{ width: 19, height: 19 }} key="r" />, "Receive"],
+                [<Wallet style={{ width: 19, height: 19 }} key="p" />, "Pay"],
+                [<span style={{ fontSize: 22, lineHeight: 1 }} key="m">••</span>, "More"],
               ].map(([icon, label], i) => (
                 <div key={i} className="lp-wallet-action-col">
                   <span className="lp-wallet-action-btn">{icon}</span>
@@ -290,7 +288,7 @@ export default function LandingPage() {
           {/* Floating Glass Notification 1 */}
           <div className="lp-notice lp-notice-1">
             <span className="lp-notice-icon-green">
-              <ArrowDownToLine style={{ width: 16, height: 16 }} />
+              <ArrowDownToLine style={{ width: 18, height: 18 }} />
             </span>
             <span className="lp-notice-text">
               <strong>Money received</strong>
@@ -302,7 +300,7 @@ export default function LandingPage() {
           {/* Floating Glass Notification 2 */}
           <div className="lp-notice lp-notice-2">
             <span className="lp-notice-icon-blue">
-              <BarChart3 style={{ width: 16, height: 16 }} />
+              <BarChart3 style={{ width: 18, height: 18 }} />
             </span>
             <span className="lp-notice-text">
               <strong>Spending insights</strong>
@@ -315,13 +313,13 @@ export default function LandingPage() {
         {/* Mobile Wallet Fallback */}
         <div className="lp-mobile-wallet-container">
           <div className="lp-wallet-card lp-mobile-wallet-card">
-            <div className="lp-wallet-top" style={{ fontSize: 16 }}>
-              <span className="lp-wallet-mark" style={{ width: 18, height: 18 }} />
+            <div className="lp-wallet-top" style={{ fontSize: 17 }}>
+              <span className="lp-wallet-mark" style={{ width: 19, height: 19 }} />
               CampusCoin
             </div>
             <p className="lp-wallet-sub" style={{ marginTop: 22 }}>Campus Wallet</p>
-            <p className="lp-wallet-balance-row" style={{ fontSize: 26, margin: "4px 0 0" }}>₹ 2,48,500</p>
-            <div className="lp-wallet-actions" style={{ marginTop: 18 }}>
+            <p className="lp-wallet-balance-row" style={{ fontSize: 28, margin: "4px 0 0" }}>₹ 2,48,500</p>
+            <div className="lp-wallet-actions" style={{ marginTop: 20 }}>
               <span>Send</span>
               <span>Receive</span>
               <span>Pay</span>
@@ -362,12 +360,12 @@ export default function LandingPage() {
         <div className="lp-solutions-grid">
           <a href="#wallet" className="lp-solution-card">
             <span className="lp-solution-icon">
-              <Wallet style={{ width: 28, height: 28 }} />
+              <Wallet style={{ width: 30, height: 30 }} />
             </span>
             <span className="lp-solution-bottom">
               <span className="lp-solution-title-row">
                 Campus wallet
-                <ArrowUpRight style={{ width: 22, height: 22, transition: "transform 0.2s" }} />
+                <ArrowUpRight style={{ width: 24, height: 24, transition: "transform 0.2s" }} />
               </span>
               <span className="lp-solution-desc">A simpler place for the money you use every day.</span>
             </span>
@@ -375,12 +373,12 @@ export default function LandingPage() {
 
           <a href="#spending" className="lp-solution-card">
             <span className="lp-solution-icon">
-              <BarChart3 style={{ width: 28, height: 28 }} />
+              <BarChart3 style={{ width: 30, height: 30 }} />
             </span>
             <span className="lp-solution-bottom">
               <span className="lp-solution-title-row">
                 Spending insights
-                <ArrowUpRight style={{ width: 22, height: 22, transition: "transform 0.2s" }} />
+                <ArrowUpRight style={{ width: 24, height: 24, transition: "transform 0.2s" }} />
               </span>
               <span className="lp-solution-desc">See where your money goes and stay in the know.</span>
             </span>
@@ -388,12 +386,12 @@ export default function LandingPage() {
 
           <a href="#security" className="lp-solution-card">
             <span className="lp-solution-icon">
-              <ShieldCheck style={{ width: 28, height: 28 }} />
+              <ShieldCheck style={{ width: 30, height: 30 }} />
             </span>
             <span className="lp-solution-bottom">
               <span className="lp-solution-title-row">
                 Peace of mind
-                <ArrowUpRight style={{ width: 22, height: 22, transition: "transform 0.2s" }} />
+                <ArrowUpRight style={{ width: 24, height: 24, transition: "transform 0.2s" }} />
               </span>
               <span className="lp-solution-desc">
                 A money experience designed to feel clear and in your control.
@@ -413,45 +411,45 @@ export default function LandingPage() {
               <br />
               <span className="lp-text-blue">Keep up with it.</span>
             </h2>
-            <p className="lp-solutions-desc" style={{ maxWidth: 440, marginTop: 22 }}>
+            <p className="lp-solutions-desc" style={{ maxWidth: 460, marginTop: 24 }}>
               Whether you’re sending, receiving, or checking in on your balance, keep the everyday essentials close at
               hand.
             </p>
             <a
               href="#how-it-works"
               style={{
-                marginTop: 36,
+                marginTop: 38,
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 8,
-                fontSize: 15,
+                gap: 10,
+                fontSize: 16,
                 fontWeight: 700,
                 color: "var(--lp-blue)",
                 textDecoration: "none",
               }}
             >
-              See how it works <ArrowRight style={{ width: 18, height: 18 }} />
+              See how it works <ArrowRight style={{ width: 20, height: 20 }} />
             </a>
           </div>
 
           <div className="lp-wallet-demo">
             <div className="lp-wallet-demo-top">
               <span>Campus wallet</span>
-              <Wallet style={{ width: 22, height: 22 }} />
+              <Wallet style={{ width: 24, height: 24 }} />
             </div>
             <p className="lp-wallet-demo-label">Available balance</p>
             <p className="lp-wallet-demo-val">₹ 2,48,500</p>
             <div className="lp-wallet-demo-grid">
               <span className="lp-wallet-demo-action">
-                <Send style={{ width: 20, height: 20 }} />
+                <Send style={{ width: 22, height: 22 }} />
                 Send
               </span>
               <span className="lp-wallet-demo-action">
-                <ArrowDownLeft style={{ width: 20, height: 20 }} />
+                <ArrowDownLeft style={{ width: 22, height: 22 }} />
                 Receive
               </span>
               <span className="lp-wallet-demo-action">
-                <Wallet style={{ width: 20, height: 20 }} />
+                <Wallet style={{ width: 22, height: 22 }} />
                 Pay
               </span>
             </div>
@@ -463,7 +461,7 @@ export default function LandingPage() {
       <section id="spending" className="lp-section-pad lp-two-col-grid">
         <div className="lp-insights-demo" style={{ order: 2 }}>
           <div className="lp-insights-top">
-            <strong style={{ fontSize: 16, color: "var(--lp-foreground)" }}>Spending overview</strong>
+            <strong style={{ fontSize: 17, color: "var(--lp-foreground)" }}>Spending overview</strong>
             <span className="lp-insights-badge">This month</span>
           </div>
           <p className="lp-insights-label">Your spending at a glance</p>
@@ -481,7 +479,7 @@ export default function LandingPage() {
           <div className="lp-insights-footer">
             <span>Stay in the know</span>
             <span className="lp-insights-footer-link">
-              <BarChart3 style={{ width: 15, height: 15 }} /> Your overview
+              <BarChart3 style={{ width: 17, height: 17 }} /> Your overview
             </span>
           </div>
         </div>
@@ -493,7 +491,7 @@ export default function LandingPage() {
             <br />
             <span className="lp-text-blue">Own your day.</span>
           </h2>
-          <p className="lp-solutions-desc" style={{ maxWidth: 440, marginTop: 22 }}>
+          <p className="lp-solutions-desc" style={{ maxWidth: 460, marginTop: 24 }}>
             Keep an eye on your spending without getting lost in the details. The little things add up, and it helps to
             see them clearly.
           </p>
@@ -502,7 +500,7 @@ export default function LandingPage() {
 
       {/* ── 5. Security & Care Section ── */}
       <section id="security" className="lp-section-band">
-        <div className="lp-section-pad lp-two-col-grid" style={{ gap: 48 }}>
+        <div className="lp-section-pad lp-two-col-grid" style={{ gap: 52 }}>
           <div>
             <p className="lp-section-kicker">BUILT WITH CARE</p>
             <h2 className="lp-section-heading" style={{ marginTop: 16 }}>
@@ -510,7 +508,7 @@ export default function LandingPage() {
               <br />
               on your money.
             </h2>
-            <p className="lp-solutions-desc" style={{ maxWidth: 450, marginTop: 22 }}>
+            <p className="lp-solutions-desc" style={{ maxWidth: 470, marginTop: 24 }}>
               Good money tools should help you feel informed. CampusCoin is designed around a straightforward view of
               your everyday finances.
             </p>
@@ -524,7 +522,7 @@ export default function LandingPage() {
             ].map((item) => (
               <div key={item} className="lp-check-item">
                 <span className="lp-check-icon">
-                  <Check style={{ width: 18, height: 18 }} />
+                  <Check style={{ width: 20, height: 20 }} />
                 </span>
                 {item}
               </div>
@@ -573,15 +571,15 @@ export default function LandingPage() {
           </div>
           <div className="lp-closing-actions">
             <button type="button" onClick={handleGetStarted} className="lp-btn-secondary">
-              Get Started <ArrowUpRight style={{ width: 18, height: 18 }} />
+              Get Started <ArrowUpRight style={{ width: 20, height: 20 }} />
             </button>
             <button
               type="button"
               onClick={handleTryDemo}
               className="lp-btn-ghost"
-              style={{ color: "#fff", height: 50, padding: "0 22px", fontSize: 15, fontWeight: 700 }}
+              style={{ color: "#fff", height: 54, padding: "0 24px", fontSize: 16, fontWeight: 700 }}
             >
-              <Sparkles style={{ width: 18, height: 18, color: "var(--lp-blue-soft)" }} /> Try Demo
+              <Sparkles style={{ width: 20, height: 20, color: "var(--lp-blue-soft)" }} /> Try Demo
             </button>
           </div>
         </div>
@@ -592,7 +590,7 @@ export default function LandingPage() {
         <Logo />
         <span>© {new Date().getFullYear()} CampusCoin. All rights reserved.</span>
         <a href="#top" className="lp-back-to-top">
-          Back to top <ArrowUpRight style={{ width: 16, height: 16 }} />
+          Back to top <ArrowUpRight style={{ width: 18, height: 18 }} />
         </a>
       </footer>
     </main>
