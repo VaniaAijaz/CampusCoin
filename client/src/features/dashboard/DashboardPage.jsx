@@ -229,9 +229,19 @@ export default function DashboardPage() {
     },
     initialData: defaultDashboard,
     placeholderData: keepPreviousData,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     enabled: Boolean(isAuthenticated),
   });
+
+  useEffect(() => {
+    const handleTxUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      queryClient.refetchQueries({ queryKey: ["dashboardData"] });
+    };
+    window.addEventListener("campuscoin:txUpdated", handleTxUpdate);
+    return () => window.removeEventListener("campuscoin:txUpdated", handleTxUpdate);
+  }, [queryClient]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth < 768) return;
