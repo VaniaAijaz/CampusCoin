@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const User = require("./User.model");
+const { syncVault } = require("../transactions/transaction.controller");
 const generateToken = require("../../core/generateToken");
 const { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } = require("../emails/email.service");
 const { AppError } = require("../../core/errors");

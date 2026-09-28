@@ -14,6 +14,52 @@ const { sendBudgetAlertEmail } = require("../emails/email.service");
  * Recalculates total spent for the category in the specified month in base currency (USD)
  * and verifies/triggers alerts against the BUDGET table.
  */
+
+const syncVault = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) return;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    const txs = await Transaction.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+          date: { $gte: startOfMonth, $lte: endOfMonth },
+          isDeleted: false,
+        },
+      },
+      {
+        $group: {
+          _id: "$type",
+          total: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    let inc = 0, exp = 0;
+    txs.forEach(t => {
+      if (t._id === 'income') inc = t.total;
+      if (t._id === 'expense') exp = t.total;
+    });
+
+    const netSavings = Math.max(0, inc - exp);
+    const targetVault = Math.min(netSavings, user.monthlySavingsGoal || 0);
+    const currentTransferred = user.vaultTransferredThisMonth || 0;
+    const diff = targetVault - currentTransferred;
+
+    if (diff !== 0) {
+      user.vaultTransferredThisMonth = targetVault;
+      user.vaultBalance = Math.max(0, (user.vaultBalance || 0) + diff);
+      await user.save();
+    }
+  } catch (err) {
+    console.error('[SYNC VAULT ERROR]', err);
+  }
+};
+
 const updateBudgetSpent = async (userId, categoryId, txDate) => {
   try {
     const dateObj = new Date(txDate);
@@ -235,7 +281,8 @@ const createTransaction = async (req, res) => {
     // Convert input amount to system base currency (USD) before saving to MongoDB
     const baseAmount = CurrencyService.toBase(parsedAmount, userCurrency);
 
-    const flagMessages = await detectFlags(req.user._id, baseAmount, resolvedCategoryId, txDate, description);
+    const flagMessages = await syncVault(req.user._id);
+    await detectFlags(req.user._id, baseAmount, resolvedCategoryId, txDate, description);
 
     const finalPaymentMethod = paymentMethod === "Cash" ? "Cash" : "Digital Bank";
     const finalTransactionId = transaction_id || transactionId || `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -335,6 +382,7 @@ const updateTransaction = async (req, res) => {
     responseTx.amount = CurrencyService.fromBase(populated.amount, userCurrency);
     responseTx.currency = userCurrency;
 
+    await syncVault(req.user._id);
     res.json({ success: true, transaction: responseTx });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -550,7 +598,7 @@ const getDashboardMetrics = async (req, res) => {
 
     const baseDigitalInc = digitalIncAgg[0]?.total || 0;
     const baseDigitalExp = (digitalExpAgg[0]?.total || 0) + currentSubsTotal;
-    const baseDigitalNet = baseDigitalInc - baseDigitalExp;
+    const baseDigitalNet = baseDigitalInc - baseDigitalExp - (req.user.vaultBalance || 0);
 
     const baseCashInc = cashIncAgg[0]?.total || 0;
     const baseCashExp = cashExpAgg[0]?.total || 0;
@@ -661,6 +709,7 @@ const getDashboardMetrics = async (req, res) => {
 };
 
 module.exports = {
+  syncVault,
   getTransactions,
   createTransaction,
   updateTransaction,

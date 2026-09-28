@@ -44,6 +44,11 @@ const userSchema = new mongoose.Schema(
       min: 0,
       alias: "monthly_savings_goal",
     },
+    vaultTransferredThisMonth: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     vaultBalance: {
       type: Number,
       default: 0,
