@@ -507,19 +507,19 @@ export default function DashboardPage() {
         {/* Saved This Month */}
         <div className="dash-kpi-card di">
           <div className="dash-kpi-header">
-            <span className="dash-kpi-label">Monthly Savings</span>
-            <div className="dash-kpi-icon-box" style={{ background: savedThisMonth > 0 ? "#eff6ff" : "#f1f5f9", color: savedThisMonth > 0 ? "#2563eb" : "#64748b" }}>
+            <span className="dash-kpi-label">Total Vault Savings</span>
+            <div className="dash-kpi-icon-box" style={{ background: vaultBalance > 0 ? "#eff6ff" : "#f1f5f9", color: vaultBalance > 0 ? "#2563eb" : "#64748b" }}>
               <PiggyBank style={{ width: 18, height: 18 }} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: savedThisMonth > 0 ? "#2563eb" : "#0f172a" }}>
-            {formatCurrency(savedThisMonth, cur)}
+          <div className="dash-kpi-val" style={{ color: vaultBalance > 0 ? "#2563eb" : "#0f172a" }}>
+            {formatCurrency(vaultBalance, cur)}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: savedThisMonth > 0 ? "#eff6ff" : "#f1f5f9", color: savedThisMonth > 0 ? "#2563eb" : "#64748b" }}>
-              Achieved
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: vaultBalance > 0 ? "#eff6ff" : "#f1f5f9", color: vaultBalance > 0 ? "#2563eb" : "#64748b" }}>
+              Saved
             </span>
-            <span className="dash-kpi-hint">Recent records</span>
+            <span className="dash-kpi-hint">Total securely locked</span>
           </div>
         </div>
       </div>
@@ -940,9 +940,9 @@ export default function DashboardPage() {
               </div>
 
               <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em" }}>
-                {formatCurrency(savedThisMonth, cur)}
+                {formatCurrency(Math.max(0, targetSavings - savedThisMonth), cur)}
               </div>
-              <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>saved this month</p>
+              <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>remaining to save</p>
             </div>
 
             <div style={{ marginTop: 12 }}>
