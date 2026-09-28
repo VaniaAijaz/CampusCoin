@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User, Lock, PiggyBank, GraduationCap, DollarSign,
-  Save, LogOut, Check, ChevronDown, Crown, Shield,
+  Save, LogOut, Check, ChevronDown,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
@@ -92,27 +92,6 @@ export default function ProfilePage() {
   const [passwords, setPasswords] = useState({ currentPassword:"", newPassword:"", confirmPassword:"" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [changingPass,  setChangingPass]  = useState(false);
-  const [subscribing,   setSubscribing]   = useState(false);
-
-  const isPremium = Boolean(user?.isPremium || user?.plan === "premium");
-
-  const handleUpgradePremium = async () => {
-    setSubscribing(true);
-    try {
-      const { data } = await api.post("/users/upgrade-premium");
-      if (data.success) { updateUser(data.user); toast.success("Upgraded to CampusCoin Premium!"); }
-    } catch (err) { toast.error(err.response?.data?.message || "Failed to upgrade."); }
-    finally { setSubscribing(false); }
-  };
-
-  const handleDowngradePremium = async () => {
-    setSubscribing(true);
-    try {
-      const { data } = await api.post("/users/cancel-premium");
-      if (data.success) { updateUser(data.user); toast.success("Downgraded to Free tier."); }
-    } catch (err) { toast.error(err.response?.data?.message || "Failed to update."); }
-    finally { setSubscribing(false); }
-  };
 
   useEffect(() => {
     if (user) setForm({ name:user.name||"", academicYear:user.academicYear||"", monthlyAllowanceBaseline:user.monthlyAllowanceBaseline||0, monthlySavingsGoal:user.monthlySavingsGoal||0, currency:user.currency||"USD" });
@@ -211,7 +190,7 @@ export default function ProfilePage() {
             <div style={{ width:"100%", marginTop:16, paddingTop:16, borderTop:`1px solid ${C.heroLine}`, display:"flex", flexDirection:"column", gap:10 }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <span style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:500 }}>Appearance</span>
-                <button onClick={toggleMode} style={{
+                <button type="button" onClick={toggleMode} style={{
                   padding:"5px 12px", borderRadius:999, cursor:"pointer",
                   background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)",
                   color:C.heroFg, fontSize:11, fontWeight:600, ...M,
@@ -222,17 +201,20 @@ export default function ProfilePage() {
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <span style={{ fontSize:12, color:"rgba(255,255,255,0.5)", fontWeight:500 }}>Palette</span>
                 <div style={{ display:"flex", gap:6 }}>
-                  {themes.map(th => (
-                    <button key={th.id} onClick={() => selectTheme(th.id)} title={th.name} style={{
-                      width:22, height:22, borderRadius:"50%", cursor:"pointer",
-                      border: themeId===th.id ? "2px solid #fff" : "2px solid rgba(255,255,255,0.2)",
-                      background:`rgb(${Math.round(th.color[0]*255)},${Math.round(th.color[1]*255)},${Math.round(th.color[2]*255)})`,
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      transform: themeId===th.id ? "scale(1.15)" : "scale(1)", transition:"all 0.15s",
-                    }}>
-                      {themeId===th.id && <Check style={{ width:10, color:"#fff", strokeWidth:3 }} />}
-                    </button>
-                  ))}
+                  {themes.map(th => {
+                    const bgSwatch = th.swatch || (th.color ? `rgb(${Math.round(th.color[0]*255)},${Math.round(th.color[1]*255)},${Math.round(th.color[2]*255)})` : "#3B82F6");
+                    return (
+                      <button key={th.id} type="button" onClick={() => selectTheme(th.id)} title={th.name} style={{
+                        width:22, height:22, borderRadius:"50%", cursor:"pointer",
+                        border: themeId===th.id ? "2px solid #fff" : "2px solid rgba(255,255,255,0.2)",
+                        background: bgSwatch,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        transform: themeId===th.id ? "scale(1.15)" : "scale(1)", transition:"all 0.15s",
+                      }}>
+                        {themeId===th.id && <Check style={{ width:10, color:"#fff", strokeWidth:3 }} />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -321,60 +303,6 @@ export default function ProfilePage() {
                 </button>
               </div>
             </form>
-          </Section>
-
-          {/* Membership */}
-          <Section label="Subscription" title="Membership Tier">
-            <div style={{
-              display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
-              padding:"18px 20px", borderRadius:8,
-              background: isPremium ? C.growthSoft : C.altBg,
-              border:`1.5px solid ${isPremium ? C.growth+"40" : C.border}`,
-              flexWrap:"wrap",
-            }}>
-              <div>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                  <Crown style={{ width:18, color: isPremium ? C.growth : C.muted }} />
-                  <span style={{ fontSize:15, fontWeight:800, color:C.foreground }}>
-                    {isPremium ? "CampusCoin Premium" : "CampusCoin Free"}
-                  </span>
-                  <span style={{
-                    fontSize:10, fontWeight:800, padding:"2px 9px", borderRadius:999,
-                    textTransform:"uppercase", letterSpacing:"0.07em",
-                    background: isPremium ? `${C.growth}20` : C.border,
-                    color: isPremium ? C.growth : C.muted,
-                  }}>
-                    {isPremium ? "Ad-Free" : "Ad-Supported"}
-                  </span>
-                </div>
-                <p style={{ fontSize:13, color:C.muted, margin:0 }}>
-                  {isPremium
-                    ? "Your account is fully ad-free. All Google AdSense banners are hidden."
-                    : "Free accounts show student-relevant ads. Upgrade for $2/mo to remove all ads."}
-                </p>
-              </div>
-              {isPremium ? (
-                <button onClick={handleDowngradePremium} disabled={subscribing} style={{
-                  padding:"9px 18px", borderRadius:999, cursor:"pointer",
-                  background:"#fff", border:`1.5px solid ${C.border}`,
-                  fontSize:13, fontWeight:600, color:C.muted, ...M,
-                  opacity:subscribing ? 0.6 : 1,
-                }}>
-                  {subscribing ? "Updating…" : "Downgrade to Free"}
-                </button>
-              ) : (
-                <button onClick={handleUpgradePremium} disabled={subscribing} style={{
-                  display:"inline-flex", alignItems:"center", gap:7,
-                  height:40, padding:"0 20px", borderRadius:999, cursor:"pointer",
-                  background:"linear-gradient(135deg, #f59e0b, #d97706)",
-                  color:"#1c1917", border:"none", fontSize:13, fontWeight:800, ...M,
-                  opacity:subscribing ? 0.6 : 1, boxShadow:"0 4px 14px #f59e0b44",
-                }}>
-                  <Crown style={{ width:13 }} />
-                  {subscribing ? "Activating…" : "Upgrade — $2 / PKR 500"}
-                </button>
-              )}
-            </div>
           </Section>
 
           {/* Password */}

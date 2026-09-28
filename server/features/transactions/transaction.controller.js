@@ -103,7 +103,7 @@ const detectFlags = async (userId, amountInBase, categoryId, date, description) 
 // GET /api/transactions
 const getTransactions = async (req, res) => {
   try {
-    const { type, categoryId, startDate, endDate, search, cursor, limit = 20 } = req.query;
+    const { type, categoryId, startDate, endDate, search, cursor, page = 1, limit = 20 } = req.query;
     const filter = { userId: req.user._id, isDeleted: false };
 
     if (type) filter.type = type;
@@ -129,10 +129,18 @@ const getTransactions = async (req, res) => {
       } catch (err) {}
     }
 
-    const transactions = await Transaction.find(filter)
-      .populate("categoryId", "name icon color type isDefault is_default")
-      .sort({ _id: -1 })
-      .limit(parseInt(limit));
+    const limitNum = parseInt(limit) || 20;
+    const pageNum = parseInt(page) || 1;
+    const skip = cursor ? 0 : (pageNum - 1) * limitNum;
+
+    const [transactions, total] = await Promise.all([
+      Transaction.find(filter)
+        .populate("categoryId", "name icon color type isDefault is_default")
+        .sort({ date: -1, _id: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Transaction.countDocuments(filter),
+    ]);
 
     const nextCursor = transactions.length > 0 ? transactions[transactions.length - 1]._id : null;
     const userCurrency = CurrencyService.getUserCurrency(req.user);
@@ -148,13 +156,16 @@ const getTransactions = async (req, res) => {
     const responseData = {
       success: true,
       transactions: formatted,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum) || 1,
       currency: userCurrency,
       nextCursor,
     };
 
     if (redisClient?.isOpen) {
       try {
-        await redisClient.setEx(cacheKey, 600, JSON.stringify(responseData)); // 10 min cache
+        await redisClient.setEx(cacheKey, 60, JSON.stringify(responseData)); // 1 min cache
       } catch (err) {}
     }
 

@@ -37,6 +37,26 @@ const PRESET_COLORS = [
   "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6",
 ];
 
+function isColorLight(c) {
+  if (!c) return false;
+  if (typeof c === "string" && c.startsWith("oklch")) {
+    const match = c.match(/oklch\(\s*([\d.]+)/i);
+    if (match) {
+      return parseFloat(match[1]) > 0.75;
+    }
+  }
+  if (typeof c === "string" && c.startsWith("#")) {
+    let hex = c.replace("#", "");
+    if (hex.length === 3) hex = hex.split("").map(x => x + x).join("");
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq > 175;
+  }
+  return false;
+}
+
 const inputStyle = {
   width: "100%", padding: "10px 14px", borderRadius: 999,
   background: C.altBg, border: `1.5px solid ${C.border}`,
@@ -200,55 +220,60 @@ export default function CategoriesPage() {
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
           {filteredCategories.map((cat, i) => {
             const isDefault = cat.isDefault;
-            /* Cycle bento colors for default cats, white for custom */
             const bentoSchemes = [
-              { bg:C.brand,      fg:C.heroFg,     badge:"rgba(255,255,255,0.2)" },
-              { bg:C.hero,       fg:C.heroFg,     badge:"rgba(255,255,255,0.15)" },
-              { bg:C.growthSoft, fg:C.foreground, badge:`${C.growth}20` },
-              { bg:C.highlight,  fg:C.highlightFg,badge:`${C.highlightFg}20` },
+              C.brand,
+              C.hero,
+              "oklch(0.64 0.17 157)",
+              "oklch(0.61 0.23 290)",
             ];
-            const scheme = isDefault ? bentoSchemes[i % bentoSchemes.length] : { bg:"#fff", fg:C.foreground, badge:C.altBg };
+            const catBg = cat.color || (isDefault ? bentoSchemes[i % bentoSchemes.length] : C.brand);
+            const isLight = isColorLight(catBg);
+            const fgColor = isLight ? C.foreground : "#ffffff";
+            const badgeBg = isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.2)";
+            const badgeFg = isLight ? C.foreground : "#ffffff";
+            const iconBg  = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.18)";
+            const iconBorder = isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.25)";
 
             return (
               <div key={cat._id} style={{
-                background: scheme.bg, borderRadius:8,
-                border: isDefault ? "none" : `1.5px solid ${C.border}`,
+                background: catBg, borderRadius:8,
+                border: "none",
                 padding:"18px 18px",
                 display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
-                transition:"all 0.15s",
+                transition:"transform 0.15s, box-shadow 0.15s",
                 minHeight:80,
                 position:"relative",
+                color: fgColor,
+                boxShadow:"0 2px 8px rgba(0,0,0,0.06)",
               }}
                 className="group"
-                onMouseEnter={e => !isDefault && (e.currentTarget.style.background=C.brandSoft)}
-                onMouseLeave={e => !isDefault && (e.currentTarget.style.background=scheme.bg)}
               >
                 <div style={{ display:"flex", alignItems:"center", gap:12, minWidth:0, flex:1 }}>
                   {/* Icon */}
                   <div style={{
                     width:40, height:40, borderRadius:10, flexShrink:0,
-                    background: isDefault ? "rgba(255,255,255,0.15)" : `${cat.color || C.brand}15`,
-                    border: isDefault ? "1px solid rgba(255,255,255,0.2)" : `1px solid ${cat.color || C.brand}30`,
+                    background: iconBg,
+                    border: `1px solid ${iconBorder}`,
                     display:"flex", alignItems:"center", justifyContent:"center",
-                    color: isDefault ? scheme.fg : (cat.color || C.brand),
+                    color: fgColor,
                   }}>
                     {getCategoryIcon(cat.name, "w-5 h-5")}
                   </div>
 
                   <div style={{ minWidth:0 }}>
-                    <h4 style={{ fontSize:14, fontWeight:700, color:scheme.fg, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    <h4 style={{ fontSize:14, fontWeight:700, color:fgColor, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                       {cat.name}
                     </h4>
                     <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
                       <span style={{
                         fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:999,
-                        background: scheme.badge,
-                        color: cat.type==="income" ? (isDefault ? C.highlight : C.growth) : (isDefault ? "rgba(255,255,255,0.8)" : C.brand),
+                        background: badgeBg,
+                        color: badgeFg,
                         textTransform:"uppercase", letterSpacing:"0.06em",
                       }}>
                         {cat.type}
                       </span>
-                      <span style={{ fontSize:10, color: isDefault ? "rgba(255,255,255,0.45)" : C.muted, fontWeight:500 }}>
+                      <span style={{ fontSize:10, color: isLight ? C.muted : "rgba(255,255,255,0.55)", fontWeight:500 }}>
                         {isDefault ? "Default" : "Custom"}
                       </span>
                     </div>
@@ -259,20 +284,26 @@ export default function CategoriesPage() {
                 {!isDefault && (
                   <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0, opacity:0, transition:"opacity 0.15s" }} className="group-hover:!opacity-100">
                     <button onClick={() => handleOpenModal(cat)} style={{
-                      width:30, height:30, borderRadius:"50%", border:`1px solid ${C.border}`, background:"transparent",
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.muted, transition:"all 0.12s",
+                      width:30, height:30, borderRadius:"50%",
+                      border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
+                      background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
+                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                      color: fgColor, transition:"all 0.12s",
                     }}
-                      onMouseEnter={e => { e.currentTarget.style.background=C.brandSoft; e.currentTarget.style.color=C.brand; }}
-                      onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.muted; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.14)" : "rgba(255,255,255,0.3)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
                     >
                       <Edit2 style={{ width:12 }} />
                     </button>
                     <button onClick={() => handleDelete(cat._id)} style={{
-                      width:30, height:30, borderRadius:"50%", border:`1px solid ${C.border}`, background:"transparent",
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.muted, transition:"all 0.12s",
+                      width:30, height:30, borderRadius:"50%",
+                      border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
+                      background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
+                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                      color: fgColor, transition:"all 0.12s",
                     }}
-                      onMouseEnter={e => { e.currentTarget.style.background=C.growthSoft; e.currentTarget.style.color=C.growth; }}
-                      onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.muted; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.45)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
                     >
                       <Trash2 style={{ width:12 }} />
                     </button>
@@ -346,23 +377,59 @@ export default function CategoriesPage() {
                         transform: color===pc ? "scale(1.15)" : "scale(1)", transition:"all 0.12s",
                         flexShrink:0,
                       }}>
-                        {color===pc && <Check style={{ width:12, color:"#fff", strokeWidth:3 }} />}
+                        {color===pc && <Check style={{ width:12, color: isColorLight(pc) ? C.foreground : "#fff", strokeWidth:3 }} />}
                       </button>
                     ))}
                     {/* Custom color input */}
                     <div style={{ position:"relative" }}>
-                      <input type="color" value={color} onChange={e => setColor(e.target.value)}
+                      <input type="color" value={color.startsWith("#") ? color : "#3B82F6"} onChange={e => setColor(e.target.value)}
                         style={{ width:30, height:30, borderRadius:8, border:`1.5px solid ${C.border}`, cursor:"pointer", padding:2, background:"#fff" }}
                         title="Custom color"
                       />
                     </div>
                   </div>
-                  {/* Preview */}
-                  <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, padding:"10px 14px", background:C.altBg, borderRadius:999, border:`1px solid ${C.border}` }}>
-                    <span style={{ width:12, height:12, borderRadius:"50%", background:color, display:"block", flexShrink:0 }} />
-                    <span style={{ fontSize:13, fontWeight:600, color:C.foreground }}>{name || "Preview"}</span>
-                    <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:999, background:`${color}18`, color, marginLeft:"auto" }}>{type}</span>
-                  </div>
+
+                  {/* Live Preview Card */}
+                  {(() => {
+                    const isLight = isColorLight(color);
+                    const pFg = isLight ? C.foreground : "#ffffff";
+                    const pBadgeBg = isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.2)";
+                    const pIconBg = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.18)";
+                    const pIconBorder = isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.25)";
+                    return (
+                      <div style={{
+                        marginTop: 12, padding: "14px 16px", borderRadius: 10,
+                        background: color, color: pFg,
+                        display: "flex", alignItems: "center", gap: 12,
+                        transition: "background 0.2s, color 0.2s",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                      }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 8,
+                          background: pIconBg, border: `1px solid ${pIconBorder}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: pFg, flexShrink: 0,
+                        }}>
+                          {getCategoryIcon(name || "Category", "w-4 h-4")}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: pFg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {name || "Category Preview"}
+                          </div>
+                          <div style={{ fontSize: 10, color: isLight ? C.muted : "rgba(255,255,255,0.6)", fontWeight: 500, marginTop: 2 }}>
+                            {editingCat ? (editingCat.isDefault ? "Default" : "Custom") : "Custom"}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
+                          background: pBadgeBg, color: pFg,
+                          textTransform: "uppercase", letterSpacing: "0.06em",
+                        }}>
+                          {type}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Buttons */}

@@ -91,7 +91,7 @@ export default function DashboardPage() {
     const raf = requestAnimationFrame(() => {
       if (!ref.current) return;
       const ctx = gsap.context(() => {
-        gsap.fromTo(".di", { y:16, opacity:0 }, { y:0, opacity:1, duration:0.5, stagger:0.06, ease:"power2.out", clearProps:"all" });
+        gsap.fromTo(".di", { y:16, opacity:0 }, { y:0, opacity:1, duration:0.5, stagger:0.06, ease:"power2.out", clearProps:"transform,opacity" });
       }, ref);
       return () => ctx.revert();
     });

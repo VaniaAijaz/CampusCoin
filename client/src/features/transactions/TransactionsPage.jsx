@@ -64,7 +64,11 @@ export default function TransactionsPage() {
       if (startDate)      params.startDate  = startDate;
       if (endDate)        params.endDate    = endDate;
       const res = await getTransactions(params);
-      if (res.success) { setTransactions(res.transactions); setTotal(res.total); setPages(res.pages); }
+      if (res.success) {
+        setTransactions(res.transactions || []);
+        setTotal(res.total !== undefined ? res.total : (res.transactions?.length || 0));
+        setPages(res.pages || 1);
+      }
     } catch { toast.error("Failed to load transactions."); }
     finally { setLoading(false); }
   }, [page, typeFilter, categoryFilter, search, startDate, endDate]);
@@ -168,7 +172,7 @@ export default function TransactionsPage() {
         ].map(s => (
           <div key={s.label} style={{ background:"#fff", padding:"18px 20px" }}>
             <div style={{ width:36, height:36, borderRadius:"50%", background:s.soft, color:s.accent, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}><ArrowLeftRight style={{ width:16 }} /></div>
-            <div style={{ fontSize:"clamp(1.4rem,3vw,2rem)", fontWeight:900, color:C.foreground, letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>{s.raw ? s.value : formatCurrency(s.value,cur)}</div>
+            <div style={{ fontSize:"clamp(1.4rem,3vw,2rem)", fontWeight:900, color:C.foreground, letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>{s.raw ? (s.value ?? 0) : formatCurrency(s.value || 0, cur)}</div>
             <p style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{s.label}</p>
           </div>
         ))}
