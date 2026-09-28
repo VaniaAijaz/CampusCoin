@@ -1,16 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  X,
-  Plus,
-  AlertCircle,
-  Calendar,
-  Tag,
-  DollarSign,
-  Repeat,
-  CreditCard,
-  Banknote,
-  FolderPlus,
-} from "lucide-react";
+import { X, Plus, AlertCircle, Calendar, Tag, DollarSign, Repeat, CreditCard, Banknote, FolderPlus } from "lucide-react";
 import { createTransaction, updateTransaction } from "./transactionApi";
 import { getCategories, createCategory } from "../categories/categoryApi";
 import toast from "react-hot-toast";
@@ -18,200 +7,123 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Portal from "../../components/ui/Portal";
 
-export default function TransactionModal({
-  isOpen,
-  onClose,
-  editTransaction = null,
-}) {
+const C = {
+  hero:"oklch(0.115 0.018 255)", heroFg:"oklch(0.985 0.003 250)",
+  heroLine:"oklch(0.31 0.025 255)",
+  brand:"oklch(0.59 0.22 262)", brandSoft:"oklch(0.93 0.06 262)",
+  highlight:"oklch(0.88 0.18 157)", highlightFg:"oklch(0.17 0.04 160)",
+  growth:"oklch(0.64 0.17 157)", growthSoft:"oklch(0.94 0.05 158)",
+  foreground:"oklch(0.16 0.025 260)", muted:"oklch(0.5 0.025 255)",
+  border:"oklch(0.9 0.012 255)", altBg:"oklch(0.965 0.01 254)",
+};
+const M = { fontFamily:"'Manrope',ui-sans-serif,system-ui,sans-serif" };
+const fieldSt = { width:"100%", padding:"11px 14px", borderRadius:999, background:C.altBg, border:`1.5px solid ${C.border}`, fontSize:14, color:C.foreground, outline:"none", fontFamily:M.fontFamily, transition:"border-color 0.15s", boxSizing:"border-box" };
+const labelSt = { fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.muted, display:"block", marginBottom:8 };
+
+export default function TransactionModal({ isOpen, onClose, editTransaction=null }) {
   const queryClient = useQueryClient();
-  const [type, setType] = useState("expense");
-  const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Digital Bank"); // "Cash" | "Digital Bank"
-  const [categoryId, setCategoryId] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [type,               setType]               = useState("expense");
+  const [amount,             setAmount]             = useState("");
+  const [paymentMethod,      setPaymentMethod]      = useState("Digital Bank");
+  const [categoryId,         setCategoryId]         = useState("");
+  const [description,        setDescription]        = useState("");
+  const [date,               setDate]               = useState(new Date().toISOString().split("T")[0]);
+  const [isRecurring,        setIsRecurring]        = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
-  const [categories, setCategories] = useState([]);
-  const [fetchingCats, setFetchingCats] = useState(false);
+  const [categories,         setCategories]         = useState([]);
+  const [fetchingCats,       setFetchingCats]       = useState(false);
+  const [showAddCat,         setShowAddCat]         = useState(false);
+  const [newCatName,         setNewCatName]         = useState("");
+  const [addingCat,          setAddingCat]          = useState(false);
 
-  // Dynamic category state
-  const [showAddCat, setShowAddCat] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const [addingCat, setAddingCat] = useState(false);
-
-  // Load categories matching current type
   useEffect(() => {
     if (!isOpen) return;
-    const loadCategories = async () => {
+    const load = async () => {
       setFetchingCats(true);
       try {
         const res = await getCategories(type);
-        if (res.success) {
-          setCategories(res.categories);
-          if (!editTransaction && res.categories.length > 0) {
-            setCategoryId(res.categories[0]._id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load categories:", err);
-      } finally {
-        setFetchingCats(false);
-      }
+        if (res.success) { setCategories(res.categories); if (!editTransaction && res.categories.length>0) setCategoryId(res.categories[0]._id); }
+      } catch(err) { console.error(err); }
+      finally { setFetchingCats(false); }
     };
-    loadCategories();
+    load();
   }, [isOpen, type, editTransaction]);
 
-  // Populate form if in edit mode
   useEffect(() => {
     if (editTransaction) {
       setType(editTransaction.type);
-      setAmount(editTransaction.amount ? editTransaction.amount.toString() : "");
-      setPaymentMethod(editTransaction.paymentMethod || "Digital Bank");
-      setCategoryId(editTransaction.categoryId?._id || editTransaction.categoryId || "");
-      setDescription(editTransaction.description || "");
-      setDate(
-        editTransaction.date
-          ? new Date(editTransaction.date).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0]
-      );
-      setIsRecurring(editTransaction.isRecurring || false);
-      setRecurringFrequency(editTransaction.recurringFrequency || "monthly");
+      setAmount(editTransaction.amount?.toString()||"");
+      setPaymentMethod(editTransaction.paymentMethod||"Digital Bank");
+      setCategoryId(editTransaction.categoryId?._id||editTransaction.categoryId||"");
+      setDescription(editTransaction.description||"");
+      setDate(editTransaction.date ? new Date(editTransaction.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]);
+      setIsRecurring(editTransaction.isRecurring||false);
+      setRecurringFrequency(editTransaction.recurringFrequency||"monthly");
       setShowAddCat(false);
     } else {
-      setType("expense");
-      setAmount("");
-      setPaymentMethod("Digital Bank");
-      setDescription("");
-      setDate(new Date().toISOString().split("T")[0]);
-      setIsRecurring(false);
-      setRecurringFrequency("monthly");
-      setShowAddCat(false);
-      setNewCatName("");
+      setType("expense"); setAmount(""); setPaymentMethod("Digital Bank"); setDescription("");
+      setDate(new Date().toISOString().split("T")[0]); setIsRecurring(false); setRecurringFrequency("monthly"); setShowAddCat(false); setNewCatName("");
     }
   }, [editTransaction, isOpen]);
 
-  // Dynamic Category Handler
   const handleCreateNewCategory = async (e) => {
     e.preventDefault();
-    if (!newCatName.trim()) {
-      toast.error("Please enter a category name.");
-      return;
-    }
+    if (!newCatName.trim()) { toast.error("Please enter a category name."); return; }
     setAddingCat(true);
     try {
-      const res = await createCategory({
-        name: newCatName.trim(),
-        type,
-        icon: "tag",
-        color: type === "income" ? "#10B981" : "#38BDF8",
-      });
-      if (res.success && res.category) {
-        setCategories((prev) => [res.category, ...prev]);
-        setCategoryId(res.category._id);
-        setShowAddCat(false);
-        setNewCatName("");
-        toast.success(`Category "${res.category.name}" created!`);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create custom category.");
-    } finally {
-      setAddingCat(false);
-    }
+      const res = await createCategory({ name:newCatName.trim(), type, icon:"tag", color:type==="income"?"#10B981":"#38BDF8" });
+      if (res.success && res.category) { setCategories(p=>[res.category,...p]); setCategoryId(res.category._id); setShowAddCat(false); setNewCatName(""); toast.success(`"${res.category.name}" created!`); }
+    } catch(err) { toast.error(err.response?.data?.message||"Failed to create category."); }
+    finally { setAddingCat(false); }
   };
 
   const transactionMutation = useMutation({
-    mutationFn: async (payload) => {
-      if (editTransaction) {
-        return await updateTransaction(editTransaction._id, payload);
-      }
-      return await createTransaction(payload);
-    },
+    mutationFn: async (payload) => editTransaction ? await updateTransaction(editTransaction._id, payload) : await createTransaction(payload),
     onMutate: async (newTx) => {
-      await queryClient.cancelQueries({ queryKey: ["dashboardData"] });
+      await queryClient.cancelQueries({ queryKey:["dashboardData"] });
       const previousData = queryClient.getQueryData(["dashboardData"]);
-
-      // Optimistically update dashboard UI
       queryClient.setQueryData(["dashboardData"], (old) => {
         if (!old) return old;
         const updated = { ...old };
         const amt = parseFloat(newTx.amount);
-
         if (updated.metrics?.currentMonth) {
-          if (newTx.type === "income") {
-            updated.metrics.currentMonth.income += amt;
-            updated.metrics.currentMonth.netSavings += amt;
-          } else {
-            updated.metrics.currentMonth.expense += amt;
-            updated.metrics.currentMonth.netSavings -= amt;
-          }
+          if (newTx.type==="income") { updated.metrics.currentMonth.income+=amt; updated.metrics.currentMonth.netSavings+=amt; }
+          else { updated.metrics.currentMonth.expense+=amt; updated.metrics.currentMonth.netSavings-=amt; }
         }
-
-        if (newTx.type === "expense" && updated.budgets) {
-          updated.budgets = updated.budgets.map((b) => {
-            if ((b.categoryId?._id || b.categoryId) === newTx.categoryId) {
-              return { ...b, spentAmount: (b.spentAmount || 0) + amt };
-            }
-            return b;
-          });
+        if (newTx.type==="expense" && updated.budgets) {
+          updated.budgets = updated.budgets.map(b => (b.categoryId?._id||b.categoryId)===newTx.categoryId ? { ...b, spentAmount:(b.spentAmount||0)+amt } : b);
         }
-
         return updated;
       });
-
       return { previousData };
     },
     onError: (err, newTx, context) => {
       queryClient.setQueryData(["dashboardData"], context?.previousData);
-      toast.error(err.response?.data?.message || "Failed to save transaction.");
+      toast.error(err.response?.data?.message||"Failed to save transaction.");
     },
     onSuccess: (res) => {
-      if (!editTransaction && res.flags && res.flags.length > 0) {
-        toast(
-          (t) => (
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-xs">Logged with Notice:</p>
-                <p className="text-xs text-zinc-300">{res.flags[0]}</p>
-              </div>
-            </div>
-          ),
-          { duration: 4000 }
-        );
+      if (!editTransaction && res.flags?.length>0) {
+        toast(t=>(
+          <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+            <AlertCircle style={{ width:18, color:"#f59e0b", flexShrink:0 }} />
+            <div><p style={{ fontWeight:700, fontSize:12, margin:0 }}>Logged with Notice:</p><p style={{ fontSize:12, margin:0, opacity:0.7 }}>{res.flags[0]}</p></div>
+          </div>
+        ), { duration:4000 });
       } else {
-        toast.success(`Transaction ${editTransaction ? "updated" : "logged"} successfully!`);
+        toast.success(`Transaction ${editTransaction?"updated":"logged"}!`);
       }
-      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey:["dashboardData"] });
+      queryClient.invalidateQueries({ queryKey:["transactions"] });
       onClose();
     },
   });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) {
-      toast.error("Please enter a valid amount.");
-      return;
-    }
-    if (!categoryId) {
-      toast.error("Please select a category.");
-      return;
-    }
-
-    const payload = {
-      type,
-      amount: parsedAmount,
-      paymentMethod,
-      categoryId,
-      description: description.trim(),
-      date: new Date(date).toISOString(),
-      isRecurring,
-      recurringFrequency: isRecurring ? recurringFrequency : null,
-    };
-
-    transactionMutation.mutate(payload);
+    if (!parsedAmount||parsedAmount<=0) { toast.error("Please enter a valid amount."); return; }
+    if (!categoryId) { toast.error("Please select a category."); return; }
+    transactionMutation.mutate({ type, amount:parsedAmount, paymentMethod, categoryId, description:description.trim(), date:new Date(date).toISOString(), isRecurring, recurringFrequency:isRecurring?recurringFrequency:null });
   };
 
   const loading = transactionMutation.isPending;
@@ -220,247 +132,158 @@ export default function TransactionModal({
     <Portal>
       <AnimatePresence>
         {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md"
-          onClick={onClose}
-        >
           <motion.div
-            initial={{ y: "100%", opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: "100%", opacity: 0, scale: 0.95 }}
-            className="w-full max-w-lg bg-[#080B10]/95 backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 relative overflow-hidden text-white max-h-[90vh] overflow-y-auto transform-gpu backface-hidden"
-            style={{ willChange: "transform, opacity" }}
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            onClick={onClose}
+            style={{ position:"fixed", inset:0, zIndex:50, display:"flex", alignItems:"flex-end", justifyContent:"center", background:"rgba(0,0,0,0.5)", backdropFilter:"blur(6px)", padding:0 }}
+            className="sm:items-center sm:p-4"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span className="p-2 rounded-[16px] bg-white/10 border border-white/15 text-sky-400">
-                    <DollarSign className="w-4 h-4" />
-                  </span>
-                  {editTransaction ? "Edit Transaction" : "Log Transaction"}
-                </h3>
-                <p className="text-xs text-white/60 mt-0.5 font-medium">
-                  Add student income or expenses with cash/digital tracking.
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full text-white/70 hover:text-white bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer min-h-[32px]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            <motion.div
+              initial={{ y:"100%", opacity:0 }} animate={{ y:0, opacity:1 }} exit={{ y:"100%", opacity:0 }}
+              transition={{ type:"spring", stiffness:380, damping:32 }}
+              onClick={e=>e.stopPropagation()}
+              style={{
+                width:"100%", maxWidth:480,
+                background:"#fff", borderRadius:"20px 20px 0 0",
+                boxShadow:"0 -8px 40px rgba(0,0,0,0.15)",
+                maxHeight:"92vh", overflowY:"auto",
+                ...M,
+              }}
+              className="sm:rounded-[20px]"
+            >
+              {/* Top handle */}
+              <div style={{ width:36, height:4, background:C.border, borderRadius:99, margin:"12px auto 0" }} />
 
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              {/* Type Toggle: Expense vs Income */}
-              <div className="grid grid-cols-2 p-1 rounded-full bg-white/5 border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setType("expense")}
-                  className={`py-2 text-xs font-bold rounded-full transition-all cursor-pointer min-h-[40px] flex items-center justify-center ${
-                    type === "expense"
-                      ? "bg-rose-500/30 text-rose-200 border border-rose-400/30 shadow-sm"
-                      : "text-white/60 hover:text-white"
-                  }`}
-                >
-                  Expense
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType("income")}
-                  className={`py-2 text-xs font-bold rounded-full transition-all cursor-pointer min-h-[40px] flex items-center justify-center ${
-                    type === "income"
-                      ? "bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 shadow-sm"
-                      : "text-white/60 hover:text-white"
-                  }`}
-                >
-                  Income
-                </button>
-              </div>
-
-              {/* Payment Method Selector: Cash vs. Digital Bank */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5">
-                  Payment Method
-                </label>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/20 border border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("Digital Bank")}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                      paymentMethod === "Digital Bank"
-                        ? "bg-sky-500/30 text-sky-200 border border-sky-400/40 shadow-sm"
-                        : "text-white/60 hover:text-white"
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Digital Bank</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("Cash")}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                      paymentMethod === "Cash"
-                        ? "bg-amber-500/30 text-amber-200 border border-amber-400/40 shadow-sm"
-                        : "text-white/60 hover:text-white"
-                    }`}
-                  >
-                    <Banknote className="w-4 h-4" />
-                    <span>Cash</span>
+              {/* Header — dark hero strip */}
+              <div style={{ background:C.hero, padding:"20px 24px 18px", position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", inset:0, opacity:0.1, backgroundImage:`linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`, backgroundSize:"40px 40px" }} />
+                <div style={{ position:"relative", zIndex:1, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div>
+                    <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.12em", color:"rgba(255,255,255,0.5)", margin:"0 0 4px" }}>Finance</p>
+                    <h3 style={{ fontSize:20, fontWeight:900, color:C.heroFg, margin:0, letterSpacing:"-0.02em" }}>
+                      {editTransaction ? "Edit Transaction" : "Log Transaction"}
+                    </h3>
+                  </div>
+                  <button onClick={onClose} style={{ width:34, height:34, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.heroFg }}>
+                    <X style={{ width:15 }} />
                   </button>
                 </div>
-              </div>
 
-              {/* Amount input & Quick Chips */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5">
-                  Amount ($ USD)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 font-black text-sm">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0.01"
-                    required
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full pl-9 pr-4 py-3 rounded-[16px] bg-black/20 border border-white/15 text-white placeholder:text-white/40 text-sm focus:outline-none focus:border-white/40 transition-colors min-h-[44px] font-bold"
-                  />
-                </div>
-                {/* Quick Amount Pills */}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {[5, 10, 20, 50, 100].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setAmount(val.toString())}
-                      className="px-3 py-1 text-xs font-semibold rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/80 transition-colors cursor-pointer min-h-[30px] flex items-center"
-                    >
-                      +${val}
-                    </button>
+                {/* Type switcher inside header */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:14, padding:4, background:"rgba(255,255,255,0.07)", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)" }}>
+                  {[["expense","Expense"],["income","Income"]].map(([val,label])=>(
+                    <button key={val} type="button" onClick={()=>setType(val)} style={{
+                      padding:"9px 0", borderRadius:9, cursor:"pointer",
+                      background: type===val ? (val==="income" ? C.highlight : C.brand) : "transparent",
+                      color: type===val ? (val==="income" ? C.highlightFg : "#fff") : "rgba(255,255,255,0.55)",
+                      border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
+                    }}>{label}</button>
                   ))}
                 </div>
               </div>
 
-              {/* Description / Merchant */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5">
-                  Description / Where Spent
-                </label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g., Dining hall dinner, transit card, course books"
-                  className="w-full px-4 py-3 rounded-[16px] bg-black/20 border border-white/15 text-white placeholder:text-white/40 text-sm focus:outline-none focus:border-white/40 transition-colors min-h-[44px]"
-                />
-              </div>
+              {/* Form body */}
+              <form onSubmit={handleSubmit} style={{ padding:"20px 24px 24px", display:"flex", flexDirection:"column", gap:16 }}>
 
-              {/* Category Selector + Dynamic Category Adder */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-white/70 flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 text-white/60" />
-                    Category
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddCat(!showAddCat)}
-                    className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <FolderPlus className="w-3.5 h-3.5" />
-                    <span>{showAddCat ? "Cancel" : "+ Add Custom"}</span>
-                  </button>
+                {/* Payment method */}
+                <div>
+                  <label style={labelSt}>Payment Method</label>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:4, background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
+                    {[["Digital Bank",<CreditCard style={{ width:14 }} />],["Cash",<Banknote style={{ width:14 }} />]].map(([val,icon])=>(
+                      <button key={val} type="button" onClick={()=>setPaymentMethod(val)} style={{
+                        display:"flex", alignItems:"center", justifyContent:"center", gap:7,
+                        padding:"9px 0", borderRadius:9, cursor:"pointer",
+                        background: paymentMethod===val ? C.hero : "transparent",
+                        color: paymentMethod===val ? C.heroFg : C.muted,
+                        border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
+                      }}>{icon}{val}</button>
+                    ))}
+                  </div>
                 </div>
 
-                {showAddCat ? (
-                  <div className="p-3 rounded-2xl bg-white/5 border border-white/15 space-y-2.5">
-                    <p className="text-[11px] text-white/70 font-medium">Create a new category dynamically:</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newCatName}
-                        onChange={(e) => setNewCatName(e.target.value)}
-                        placeholder="e.g., Gym, Stationery, Project Supplies"
-                        className="flex-1 px-3 py-2 rounded-xl bg-black/30 border border-white/20 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateNewCategory}
-                        disabled={addingCat}
-                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs cursor-pointer active:scale-95 disabled:opacity-50"
-                      >
-                        {addingCat ? "..." : "Add"}
+                {/* Amount */}
+                <div>
+                  <label style={labelSt}>Amount</label>
+                  <div style={{ position:"relative" }}>
+                    <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:C.muted, fontWeight:700, fontSize:15 }}>$</span>
+                    <input type="number" step="any" min="0.01" required value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0.00"
+                      style={{ ...fieldSt, paddingLeft:30, fontSize:16, fontWeight:800 }}
+                      onFocus={e=>e.target.style.borderColor=C.brand} onBlur={e=>e.target.style.borderColor=C.border} />
+                  </div>
+                  {/* Quick chips */}
+                  <div style={{ display:"flex", gap:7, marginTop:9, flexWrap:"wrap" }}>
+                    {[5,10,20,50,100].map(v=>(
+                      <button key={v} type="button" onClick={()=>setAmount(v.toString())} style={{
+                        padding:"4px 12px", borderRadius:999, cursor:"pointer",
+                        background: amount===v.toString() ? C.brandSoft : C.altBg,
+                        border:`1px solid ${amount===v.toString() ? C.brand+"40" : C.border}`,
+                        color: amount===v.toString() ? C.brand : C.muted,
+                        fontSize:12, fontWeight:600, ...M,
+                      }}>+${v}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label style={labelSt}>Description</label>
+                  <input type="text" value={description} onChange={e=>setDescription(e.target.value)} placeholder="e.g. Dining hall, transit card, course books"
+                    style={fieldSt} onFocus={e=>e.target.style.borderColor=C.brand} onBlur={e=>e.target.style.borderColor=C.border} />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                    <label style={{ ...labelSt, margin:0 }}>Category</label>
+                    <button type="button" onClick={()=>setShowAddCat(!showAddCat)} style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, fontWeight:600, color:C.brand, background:"none", border:"none", cursor:"pointer", ...M }}>
+                      <FolderPlus style={{ width:13 }} />{showAddCat?"Cancel":"+ Add Custom"}
+                    </button>
+                  </div>
+                  {showAddCat ? (
+                    <div style={{ padding:"14px", borderRadius:12, background:C.altBg, border:`1px solid ${C.border}`, display:"flex", gap:8 }}>
+                      <input type="text" value={newCatName} onChange={e=>setNewCatName(e.target.value)} placeholder="e.g. Gym, Stationery"
+                        style={{ ...fieldSt, flex:1 }} onFocus={e=>e.target.style.borderColor=C.brand} onBlur={e=>e.target.style.borderColor=C.border} />
+                      <button type="button" onClick={handleCreateNewCategory} disabled={addingCat} style={{ height:44, padding:"0 16px", borderRadius:999, background:C.highlight, color:C.highlightFg, border:"none", fontSize:13, fontWeight:800, cursor:"pointer", ...M, flexShrink:0 }}>
+                        {addingCat?"…":"Add"}
                       </button>
                     </div>
-                  </div>
-                ) : fetchingCats ? (
-                  <div className="py-2.5 text-xs text-white/50 animate-pulse">Loading categories...</div>
-                ) : (
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-4 py-3 rounded-[16px] bg-black/20 border border-white/15 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer min-h-[44px]"
-                  >
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id} className="bg-slate-900 text-white">
-                        {c.name} {c.isDefault ? "(Standard)" : "(Custom)"}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Date Picker */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-white/60" />
-                  Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-[16px] bg-black/20 border border-white/15 text-white text-sm focus:outline-none focus:border-white/40 cursor-pointer min-h-[44px]"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50"
-                >
-                  {loading ? (
-                    <span className="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                  ) : fetchingCats ? (
+                    <div style={{ padding:"10px 0", fontSize:12, color:C.muted }}>Loading categories…</div>
                   ) : (
-                    <Plus className="w-4 h-4 stroke-[3]" />
+                    <select value={categoryId} onChange={e=>setCategoryId(e.target.value)} style={{ ...fieldSt, cursor:"pointer" }}>
+                      {categories.map(c=><option key={c._id} value={c._id}>{c.name}{c.isDefault?" (Standard)":""}</option>)}
+                    </select>
                   )}
-                  <span>
-                    {loading
-                      ? "Recording..."
-                      : editTransaction
-                      ? "Update Transaction"
-                      : "Save Transaction"}
-                  </span>
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label style={labelSt}>Date</label>
+                  <input type="date" required value={date} onChange={e=>setDate(e.target.value)}
+                    style={fieldSt} onFocus={e=>e.target.style.borderColor=C.brand} onBlur={e=>e.target.style.borderColor=C.border} />
+                </div>
+
+                {/* Submit */}
+                <button type="submit" disabled={loading} style={{
+                  width:"100%", padding:"13px 0", borderRadius:999, cursor:"pointer",
+                  background:C.highlight, color:C.highlightFg,
+                  border:"none", fontSize:15, fontWeight:800, ...M,
+                  opacity:loading?0.7:1, boxShadow:`0 4px 20px ${C.highlight}55`,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                  marginTop:4,
+                }}>
+                  {loading
+                    ? <span style={{ width:16, height:16, border:`2px solid ${C.highlightFg}40`, borderTopColor:C.highlightFg, borderRadius:"50%", display:"inline-block", animation:"spin 0.7s linear infinite" }} />
+                    : <Plus style={{ width:16 }} />
+                  }
+                  {loading ? "Saving…" : editTransaction ? "Update Transaction" : "Save Transaction"}
                 </button>
-              </div>
-            </form>
+              </form>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
       </AnimatePresence>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </Portal>
   );
 }
