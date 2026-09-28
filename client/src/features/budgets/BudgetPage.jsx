@@ -31,7 +31,7 @@ const formatMonthLabel = (s) => {
 
 export default function BudgetPage() {
   const { user } = useAuth();
-  const cur = user?.currency || "USD";
+  const cur = user?.currency_preference || user?.currency || "USD";
   const curSymbol = getCurrencySymbol(cur);
 
   const [searchParams] = useSearchParams();
@@ -109,6 +109,7 @@ export default function BudgetPage() {
       safeCount,
       warnCount,
       overCount,
+      rawPct,
       overallPct: Math.min(100, rawPct),
       isOverBudget: isOver,
     };
@@ -274,7 +275,7 @@ export default function BudgetPage() {
                 color: summary.isOverBudget ? "#dc2626" : "#16a34a",
               }}
             >
-              {summary.isOverBudget ? "100% (Exceeded)" : `${summary.overallPct}% spent`}
+              {summary.isOverBudget ? `${summary.rawPct}% (Exceeded)` : `${summary.overallPct}% spent`}
             </span>
             <span className="dash-kpi-hint">{summary.isOverBudget ? "Over allowance" : "Of monthly cap"}</span>
           </div>
@@ -358,7 +359,7 @@ export default function BudgetPage() {
                   border: "1px solid #fbbf24",
                 }}
               >
-                {a.budget?.categoryId?.name}: {a.percent >= 100 ? "100% (Exceeded)" : `${Math.round(a.percent)}%`}
+                {a.budget?.categoryId?.name}: {Math.round(a.percent)}% {a.percent >= 100 ? "(Exceeded)" : ""}
               </span>
             ))}
           </div>

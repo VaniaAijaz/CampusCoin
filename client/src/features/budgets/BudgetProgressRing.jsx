@@ -14,12 +14,12 @@ export default function BudgetProgressRing({
   onDelete,
 }) {
   const { user } = useAuth();
-  const cur = user?.currency || "USD";
+  const cur = user?.currency_preference || user?.currency || "USD";
 
-  const { isExceeded, displayPercentage, remaining, strokeColor, statusBadge } = useMemo(() => {
-    const rawPct = limitAmount > 0 ? (spentAmount / limitAmount) * 100 : 0;
-    const isOver = rawPct >= 100;
-    const displayPct = isOver ? 100 : Math.round(rawPct);
+  const { isExceeded, displayPercentage, remaining, strokeColor, statusBadge, rawPct } = useMemo(() => {
+    const raw = limitAmount > 0 ? (spentAmount / limitAmount) * 100 : 0;
+    const isOver = raw >= 100;
+    const displayPct = Math.round(raw);
     const rem = limitAmount - spentAmount;
 
     let stat = "safe";
@@ -30,7 +30,7 @@ export default function BudgetProgressRing({
       stat = "danger";
       stroke = "#dc2626"; // Red
       badge = { text: "Cap Exceeded", icon: AlertTriangle, bg: "#fee2e2", color: "#dc2626", border: "#fecdd3" };
-    } else if (rawPct >= 75) {
+    } else if (raw >= 75) {
       stat = "warning";
       stroke = "#f59e0b"; // Amber
       badge = { text: "Near Limit", icon: TrendingUp, bg: "#fef3c7", color: "#d97706", border: "#fde68a" };
@@ -43,16 +43,17 @@ export default function BudgetProgressRing({
       status: stat,
       strokeColor: stroke,
       statusBadge: badge,
+      rawPct: raw,
     };
   }, [spentAmount, limitAmount]);
 
-  // SVG circle calculations
+  // SVG circle calculations - visually capped at 100% for full circle render
   const size = 120;
   const strokeWidth = 9;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progressRatio = Math.min(100, Math.max(0, displayPercentage)) / 100;
-  const strokeDashoffset = circumference - progressRatio * circumference;
+  const visualRatio = Math.min(100, Math.max(0, rawPct)) / 100;
+  const strokeDashoffset = circumference - visualRatio * circumference;
 
   const StatusIcon = statusBadge.icon;
 
