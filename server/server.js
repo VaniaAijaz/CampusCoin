@@ -96,8 +96,8 @@ app.get("/api/announcements", protect, async (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get("/", (req, res) => {
+// Health check endpoints
+const healthPayload = (req, res) => {
   res.json({
     name: "Campus Coin API",
     status: "healthy",
@@ -105,7 +105,9 @@ app.get("/", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
   });
-});
+};
+app.get("/", healthPayload);
+app.get("/api/health", healthPayload);
 
 // Fallback 404 & Global Error Middleware
 app.use(notFoundHandler);

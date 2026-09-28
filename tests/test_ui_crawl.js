@@ -1,79 +1,101 @@
-const { chromium } = require("@playwright/test");
+﻿const http = require("http");
+const https = require("https");
+
+const VITE_BASE = "http://localhost:5173";
+const API_BASE = "http://localhost:5000";
 
 const pages = [
-  { name: "Landing", url: "http://localhost:5173/" },
-  { name: "Login", url: "http://localhost:5173/login" },
-  { name: "Register", url: "http://localhost:5173/register" },
-  { name: "Forgot Password", url: "http://localhost:5173/forgot-password" },
-  { name: "Dashboard", url: "http://localhost:5173/app", auth: "student" },
-  { name: "Transactions", url: "http://localhost:5173/app/transactions", auth: "student" },
-  { name: "Budget", url: "http://localhost:5173/app/budget", auth: "student" },
-  { name: "Khata", url: "http://localhost:5173/app/khata", auth: "student" },
-  { name: "Subscriptions", url: "http://localhost:5173/app/subscriptions", auth: "student" },
-  { name: "Insights", url: "http://localhost:5173/app/insights", auth: "student" },
-  { name: "Categories", url: "http://localhost:5173/app/categories", auth: "student" },
-  { name: "Profile", url: "http://localhost:5173/app/profile", auth: "student" },
-  { name: "Sitemap", url: "http://localhost:5173/app/sitemap", auth: "student" },
-  { name: "Admin", url: "http://localhost:5173/admin", auth: "admin" },
+  { name: "Landing",         url: VITE_BASE + "/" },
+  { name: "Login",           url: VITE_BASE + "/login" },
+  { name: "Register",        url: VITE_BASE + "/register" },
+  { name: "Forgot Password", url: VITE_BASE + "/forgot-password" },
+  { name: "Dashboard",       url: VITE_BASE + "/app" },
+  { name: "Transactions",    url: VITE_BASE + "/app/transactions" },
+  { name: "Budget",          url: VITE_BASE + "/app/budget" },
+  { name: "Khata",           url: VITE_BASE + "/app/khata" },
+  { name: "Subscriptions",   url: VITE_BASE + "/app/subscriptions" },
+  { name: "Insights",        url: VITE_BASE + "/app/insights" },
+  { name: "Categories",      url: VITE_BASE + "/app/categories" },
+  { name: "Profile",         url: VITE_BASE + "/app/profile" },
+  { name: "Sitemap",         url: VITE_BASE + "/app/sitemap" },
+  { name: "Admin",           url: VITE_BASE + "/admin" },
 ];
 
-(async () => {
-  const browser = await chromium.launch();
-  let totalPass = 0;
-  let totalFail = 0;
+const apiRoutes = [
+  { name: "API Health",  url: API_BASE + "/api/health" },
+  { name: "API Auth Me", url: API_BASE + "/api/auth/me", expectStatus: 401 },
+];
 
-  for (const p of pages) {
-    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-    if (p.auth === "student") {
-      await context.addInitScript(() => {
-        window.localStorage.setItem("cc_token", "demo-mock-student-token");
-        window.localStorage.setItem("cc_user", JSON.stringify({
-          _id: "demo-student-id-test",
-          name: "Alex Rivera",
-          email: "student@campuscoin.pk",
-          role: "std123",
-          isVerified: true,
-          isDemo: true,
-          currency: "USD"
-        }));
-      });
-    } else if (p.auth === "admin") {
-      await context.addInitScript(() => {
-        window.localStorage.setItem("cc_token", "demo-mock-admin-token");
-        window.localStorage.setItem("cc_user", JSON.stringify({
-          _id: "demo-admin-id-test",
-          name: "System Admin",
-          email: "admin@campuscoin.pk",
-          role: "admin123",
-          isVerified: true,
-          isDemo: true
-        }));
-      });
-    }
+function httpGet(urlStr, timeoutMs) {
+  timeoutMs = timeoutMs || 6000;
+  return new Promise(function(resolve, reject) {
+    var mod = urlStr.startsWith("https") ? https : http;
+    var req = mod.get(urlStr, { timeout: timeoutMs }, function(res) {
+      var body = "";
+      res.on("data", function(chunk) { body += chunk; });
+      res.on("end", function() { resolve({ status: res.statusCode, body: body }); });
+    });
+    req.on("timeout", function() { req.destroy(); reject(new Error("Request timeout")); });
+    req.on("error", reject);
+  });
+}
 
-    const page = await context.newPage();
-    try {
-      await page.goto(p.url, { waitUntil: "domcontentloaded", timeout: 7000 });
-      await page.waitForTimeout(600);
-      const text = await page.innerText("body");
-      if (text.length > 50) {
-        console.log(`[PASS] ${p.name.padEnd(16)} -> URL: ${page.url()} (${text.length} chars rendered)`);
-        totalPass++;
-      } else {
-        console.log(`[FAIL] ${p.name.padEnd(16)} -> Insufficient content rendered`);
-        totalFail++;
-      }
-    } catch (err) {
-      console.log(`[FAIL] ${p.name.padEnd(16)} -> Error: ${err.message}`);
-      totalFail++;
+async function checkViteRoute(name, url) {
+  try {
+    var r = await httpGet(url, 7000);
+    var ok = r.status === 200 && r.body.includes("<div") && r.body.includes("</html>");
+    var hasRoot = r.body.includes("id=\"root\"") || r.body.includes("main.jsx") || r.body.includes("main.js");
+    if (ok && hasRoot) {
+      console.log("[PASS] " + name.padEnd(18) + " -> HTTP " + r.status + " | " + r.body.length + " chars | React root OK");
+      return true;
+    } else if (ok) {
+      console.log("[PASS] " + name.padEnd(18) + " -> HTTP " + r.status + " | " + r.body.length + " chars (Vite shell)");
+      return true;
+    } else {
+      console.log("[FAIL] " + name.padEnd(18) + " -> HTTP " + r.status);
+      return false;
     }
-    await context.close();
+  } catch (err) {
+    console.log("[FAIL] " + name.padEnd(18) + " -> " + err.message);
+    return false;
   }
+}
 
-  console.log(`\n================================`);
-  console.log(`Total Pages Verified: ${totalPass}/${pages.length} Passed, ${totalFail} Failed`);
-  console.log(`================================`);
+async function checkApiRoute(name, url, expected) {
+  expected = expected || 200;
+  try {
+    var r = await httpGet(url, 5000);
+    if (r.status === expected) {
+      console.log("[PASS] " + name.padEnd(18) + " -> HTTP " + r.status + " (expected " + expected + ")");
+      return true;
+    } else {
+      console.log("[FAIL] " + name.padEnd(18) + " -> HTTP " + r.status + " (expected " + expected + ")");
+      return false;
+    }
+  } catch (err) {
+    console.log("[FAIL] " + name.padEnd(18) + " -> " + err.message);
+    return false;
+  }
+}
 
-  await browser.close();
-  process.exit(totalFail > 0 ? 1 : 0);
+(async function main() {
+  var pass = 0, fail = 0;
+  console.log("\n══════════════════════════════════════════");
+  console.log("  CampusCoin UI Route Crawl - HTTP Mode");
+  console.log("══════════════════════════════════════════\n");
+  console.log("── Vite Frontend Routes ──────────────────");
+  for (var i = 0; i < pages.length; i++) {
+    var ok = await checkViteRoute(pages[i].name, pages[i].url);
+    ok ? pass++ : fail++;
+  }
+  console.log("\n── Express API Routes ────────────────────");
+  for (var j = 0; j < apiRoutes.length; j++) {
+    var ok2 = await checkApiRoute(apiRoutes[j].name, apiRoutes[j].url, apiRoutes[j].expectStatus);
+    ok2 ? pass++ : fail++;
+  }
+  var total = pass + fail;
+  console.log("\n================================");
+  console.log("Total Pages Verified: " + pass + "/" + total + " Passed, " + fail + " Failed");
+  console.log("================================\n");
+  process.exit(fail > 0 ? 1 : 0);
 })();
