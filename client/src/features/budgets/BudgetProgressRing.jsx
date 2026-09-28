@@ -16,16 +16,17 @@ export default function BudgetProgressRing({
   const { user } = useAuth();
   const cur = user?.currency || "USD";
 
-  const { percentage, remaining, status, strokeColor, statusBadge } = useMemo(() => {
+  const { isExceeded, displayPercentage, remaining, strokeColor, statusBadge } = useMemo(() => {
     const rawPct = limitAmount > 0 ? (spentAmount / limitAmount) * 100 : 0;
-    const roundedPct = Math.round(rawPct);
+    const isOver = rawPct >= 100;
+    const displayPct = isOver ? 100 : Math.round(rawPct);
     const rem = limitAmount - spentAmount;
 
     let stat = "safe";
     let stroke = "#16a34a"; // Emerald
     let badge = { text: "On Track", icon: CheckCircle2, bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0" };
 
-    if (rawPct >= 100) {
+    if (isOver) {
       stat = "danger";
       stroke = "#dc2626"; // Red
       badge = { text: "Cap Exceeded", icon: AlertTriangle, bg: "#fee2e2", color: "#dc2626", border: "#fecdd3" };
@@ -36,7 +37,8 @@ export default function BudgetProgressRing({
     }
 
     return {
-      percentage: roundedPct,
+      isExceeded: isOver,
+      displayPercentage: displayPct,
       remaining: rem,
       status: stat,
       strokeColor: stroke,
@@ -49,7 +51,7 @@ export default function BudgetProgressRing({
   const strokeWidth = 9;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progressRatio = Math.min(100, Math.max(0, percentage)) / 100;
+  const progressRatio = Math.min(100, Math.max(0, displayPercentage)) / 100;
   const strokeDashoffset = circumference - progressRatio * circumference;
 
   const StatusIcon = statusBadge.icon;
@@ -135,11 +137,11 @@ export default function BudgetProgressRing({
 
         {/* Center Percentage Display */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: "-0.025em", color: "#0f172a", lineHeight: 1 }}>
-            {percentage}%
+          <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: "-0.025em", color: isExceeded ? "#dc2626" : "#0f172a", lineHeight: 1 }}>
+            {displayPercentage}%
           </span>
-          <span style={{ fontSize: 9.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>
-            Spent
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: isExceeded ? "#dc2626" : "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 3 }}>
+            {isExceeded ? "Exceeded" : "Spent"}
           </span>
         </div>
       </div>

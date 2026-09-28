@@ -99,6 +99,9 @@ export default function BudgetPage() {
       else safeCount++;
     });
 
+    const rawPct = totalCap > 0 ? Math.round((totalSpent / totalCap) * 100) : 0;
+    const isOver = rawPct > 100;
+
     return {
       totalCap,
       totalSpent,
@@ -106,7 +109,8 @@ export default function BudgetPage() {
       safeCount,
       warnCount,
       overCount,
-      overallPct: totalCap > 0 ? Math.round((totalSpent / totalCap) * 100) : 0,
+      overallPct: Math.min(100, rawPct),
+      isOverBudget: isOver,
     };
   }, [budgets]);
 
@@ -256,14 +260,23 @@ export default function BudgetPage() {
               <PieChart style={{ width: 17, height: 17 }} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "#dc2626" }}>
+          <div className="dash-kpi-val" style={{ color: summary.isOverBudget ? "#dc2626" : "#0f172a" }}>
             {formatCurrency(summary.totalSpent, cur)}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#fee2e2", color: "#dc2626" }}>
-              {summary.overallPct}% spent
+            <span
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                padding: "2px 8px",
+                borderRadius: 9999,
+                background: summary.isOverBudget ? "#fee2e2" : "#dcfce7",
+                color: summary.isOverBudget ? "#dc2626" : "#16a34a",
+              }}
+            >
+              {summary.isOverBudget ? "100% (Exceeded)" : `${summary.overallPct}% spent`}
             </span>
-            <span className="dash-kpi-hint">Of total limits</span>
+            <span className="dash-kpi-hint">{summary.isOverBudget ? "Over allowance" : "Of monthly cap"}</span>
           </div>
         </div>
 
@@ -345,7 +358,7 @@ export default function BudgetPage() {
                   border: "1px solid #fbbf24",
                 }}
               >
-                {a.budget?.categoryId?.name}: {a.percent}%
+                {a.budget?.categoryId?.name}: {a.percent >= 100 ? "100% (Exceeded)" : `${Math.round(a.percent)}%`}
               </span>
             ))}
           </div>
