@@ -12,8 +12,11 @@ import {
   TrendingUp,
   Sparkles,
   ChevronRight,
-  GraduationCap,
-  Tag,
+  Wallet,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { getDashboardMetrics, getRecentTransactions } from "../transactions/transactionApi";
@@ -40,37 +43,18 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-/* ── Canonical CampusCoin Design Tokens ── */
-const C = {
-  hero: "oklch(0.115 0.018 255)",
-  heroFg: "oklch(0.985 0.003 250)",
-  heroMuted: "oklch(0.73 0.018 252)",
-  heroLine: "oklch(0.31 0.025 255)",
-  brand: "oklch(0.59 0.22 262)",
-  brandSoft: "oklch(0.93 0.06 262)",
-  highlight: "oklch(0.88 0.18 157)",
-  highlightFg: "oklch(0.17 0.04 160)",
-  growth: "oklch(0.64 0.17 157)",
-  growthSoft: "oklch(0.94 0.05 158)",
-  background: "oklch(0.99 0.003 250)",
-  foreground: "oklch(0.16 0.025 260)",
-  muted: "oklch(0.5 0.025 255)",
-  border: "oklch(0.9 0.012 255)",
-  altBg: "oklch(0.965 0.01 254)",
-};
-const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+import "./Dashboard.css";
 
 const CATEGORY_CHART_COLORS = [
-  "oklch(0.59 0.22 262)", // brand blue
-  "oklch(0.64 0.17 157)", // growth green
-  "oklch(0.88 0.18 157)", // highlight lime
-  "oklch(0.61 0.23 290)", // purple
-  "oklch(0.73 0.18 252)", // sky
-  "oklch(0.83 0.17 70)",  // amber
-  "oklch(0.59 0.18 230)", // teal
-  "oklch(0.65 0.24 16)",  // rose
-  "oklch(0.5 0.025 255)", // slate
+  "#2563eb", // brand blue
+  "#16a34a", // emerald green
+  "#8b5cf6", // purple
+  "#06b6d4", // cyan
+  "#f59e0b", // amber
+  "#ec4899", // pink
+  "#14b8a6", // teal
+  "#f97316", // orange
+  "#64748b", // slate
 ];
 
 const DEFAULT_STUDENT_CATEGORIES = [
@@ -84,36 +68,37 @@ const DEFAULT_STUDENT_CATEGORIES = [
   { _id: "def_tuition", name: "Tuition & Fees", icon: "graduation-cap", color: "#6366F1" },
 ];
 
+const formatCompactAxis = (val, cur = "USD") => {
+  const num = Math.abs(Number(val) || 0);
+  const prefix = val < 0 ? "-" : "";
+  const symbol = cur === "PKR" ? "Rs " : cur === "EUR" ? "€" : "$";
+  if (num >= 1e9) return `${prefix}${symbol}${(num / 1e9).toFixed(1)}B`;
+  if (num >= 1e6) return `${prefix}${symbol}${(num / 1e6).toFixed(1)}M`;
+  if (num >= 1e3) return `${prefix}${symbol}${(num / 1e3).toFixed(0)}k`;
+  return `${prefix}${symbol}${num}`;
+};
+
 const ChartTooltip = ({ active, payload, label, cur }) => {
   if (!active || !payload?.length) return null;
   return (
     <div
       style={{
-        ...M,
-        background: "#fff",
-        border: `1.5px solid ${C.border}`,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
         borderRadius: 10,
         padding: "10px 14px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
         fontSize: 12,
+        fontFamily: "var(--dash-font)",
       }}
     >
-      <p
-        style={{
-          fontWeight: 700,
-          color: C.muted,
-          marginBottom: 8,
-          fontSize: 10,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-        }}
-      >
+      <p style={{ fontWeight: 800, color: "#64748b", marginBottom: 6, fontSize: 11, textTransform: "uppercase" }}>
         {label}
       </p>
       {payload.map((p, i) => (
-        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 3 }}>
-          <span style={{ color: p.color, fontWeight: 600 }}>{p.name}</span>
-          <span style={{ color: C.foreground, fontWeight: 800 }}>{formatCurrency(p.value, cur)}</span>
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 14, marginBottom: 2 }}>
+          <span style={{ color: p.color, fontWeight: 600 }}>{p.name}:</span>
+          <span style={{ color: "#0f172a", fontWeight: 800 }}>{formatCurrency(p.value, cur)}</span>
         </div>
       ))}
     </div>
@@ -126,13 +111,13 @@ const CategoryPieTooltip = ({ active, payload, cur }) => {
   return (
     <div
       style={{
-        ...M,
-        background: "#fff",
-        border: `1.5px solid ${C.border}`,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
         borderRadius: 10,
         padding: "10px 14px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
         fontSize: 12,
+        fontFamily: "var(--dash-font)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -141,21 +126,15 @@ const CategoryPieTooltip = ({ active, payload, cur }) => {
             width: 8,
             height: 8,
             borderRadius: "50%",
-            background: data.payload.fill || data.color || C.brand,
+            background: data.payload.fill || data.color || "#2563eb",
           }}
         />
-        <span style={{ fontWeight: 800, color: C.foreground }}>{data.name}</span>
+        <span style={{ fontWeight: 800, color: "#0f172a" }}>{data.name}</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 14 }}>
-        <span style={{ color: C.muted, fontSize: 11 }}>Amount Spent:</span>
-        <span style={{ fontWeight: 900, color: C.foreground }}>{formatCurrency(data.value, cur)}</span>
+        <span style={{ color: "#64748b", fontSize: 11 }}>Spent:</span>
+        <span style={{ fontWeight: 800, color: "#0f172a" }}>{formatCurrency(data.value, cur)}</span>
       </div>
-      {data.payload.count !== undefined && (
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 14, marginTop: 2 }}>
-          <span style={{ color: C.muted, fontSize: 11 }}>Transactions:</span>
-          <span style={{ fontWeight: 700, color: C.brand }}>{data.payload.count}</span>
-        </div>
-      )}
     </div>
   );
 };
@@ -249,9 +228,9 @@ export default function DashboardPage() {
       if (!ref.current) return;
       const ctx = gsap.context(() => {
         gsap.fromTo(
-          ".di",
-          { y: 16, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "power2.out", clearProps: "transform,opacity" }
+          ".dash-anim",
+          { y: 12, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.35, stagger: 0.04, ease: "power2.out", clearProps: "transform,opacity" }
         );
       }, ref);
       return () => ctx.revert();
@@ -277,7 +256,6 @@ export default function DashboardPage() {
     return raw.map((d) => ({ month: d.month || "", income: Number(d.income) || 0, expense: Number(d.expense) || 0 }));
   }, [metrics?.trends]);
 
-  // Merge Category Tab definitions with actual monthly spending
   const categoriesList = useMemo(() => {
     const breakdown = metrics?.categoryBreakdown || [];
     const breakdownMap = {};
@@ -299,32 +277,27 @@ export default function DashboardPage() {
         if (normName) seenNames.add(normName);
 
         const idKey = cat._id?.toString();
-        const matched = (idKey && breakdownMap[idKey]) || (normName && breakdownMap[normName]);
+        const spentData = breakdownMap[idKey] || breakdownMap[normName];
+        const total = spentData ? Number(spentData.total) || 0 : 0;
+        const count = spentData ? Number(spentData.count) || 0 : 0;
 
         list.push({
-          _id: cat._id,
-          name: cat.name,
-          icon: cat.icon || "tag",
-          color: cat.color || "#0118A3",
-          total: matched ? Number(matched.total) || 0 : 0,
-          count: matched ? Number(matched.count) || 0 : 0,
+          ...cat,
+          total,
+          count,
         });
       });
 
-    return list.sort((a, b) => b.total - a.total);
-  }, [metrics?.categoryBreakdown, categories]);
+    return list.sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+  }, [categories, metrics?.categoryBreakdown]);
 
   const totalCategorizedExpense = useMemo(() => {
-    return categoriesList.reduce((sum, c) => sum + (Number(c.total) || 0), 0);
+    return categoriesList.reduce((acc, c) => acc + (Number(c.total) || 0), 0);
   }, [categoriesList]);
 
   const activeCategoriesWithSpending = useMemo(() => {
     return categoriesList.filter((c) => Number(c.total) > 0);
   }, [categoriesList]);
-
-  const topCategory = useMemo(() => {
-    return activeCategoriesWithSpending.length > 0 ? activeCategoriesWithSpending[0] : null;
-  }, [activeCategoriesWithSpending]);
 
   const pieData = useMemo(() => {
     const active = activeCategoriesWithSpending;
@@ -340,487 +313,207 @@ export default function DashboardPage() {
   const displayTx = useMemo(() => (recentTx || []).slice(0, 6), [recentTx]);
 
   return (
-    <div ref={ref} style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* 1. HERO */}
-      <div
-        className="di"
-        style={{
-          background: C.hero,
-          borderRadius: 8,
-          padding: "clamp(2rem,4vw,2.8rem)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            opacity: 0.16,
-            backgroundImage: `linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
-            backgroundSize: "72px 72px",
-            WebkitMaskImage: "linear-gradient(to bottom,black,transparent 90%)",
-            maskImage: "linear-gradient(to bottom,black,transparent 90%)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: 400,
-            height: 400,
-            right: -120,
-            top: -120,
-            border: `1px solid ${C.heroLine}`,
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: 250,
-            height: 250,
-            right: -60,
-            top: -60,
-            border: `1px solid ${C.brand}50`,
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
+    <div ref={ref} className="dash-root">
+      {/* ── 1. CLEAN PAGE HEADER ── */}
+      <div className="dash-page-header dash-anim">
+        <div>
+          <h1 className="dash-page-title">
+            Welcome back, {user?.name?.split(" ")[0] || "Student"} 👋
+          </h1>
+          <p className="dash-page-desc">
+            Here is your financial summary for {month}.
+          </p>
+        </div>
 
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 12px",
-              borderRadius: 999,
-              border: `1px solid ${C.heroLine}`,
-              fontSize: 12,
-              fontWeight: 600,
-              color: C.heroMuted,
-              marginBottom: 24,
-            }}
-          >
-            <Sparkles style={{ width: 14, color: C.highlight }} /> {month} · Net Balance
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 32,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: "clamp(3rem,7vw,5rem)",
-                  fontWeight: 900,
-                  color: C.heroFg,
-                  letterSpacing: "-0.04em",
-                  lineHeight: 0.9,
-                  marginBottom: 20,
-                }}
-              >
-                <NumberTicker value={balance} currencyCode={cur} />
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background: `${C.highlight}20`,
-                    border: `1px solid ${C.heroLine}`,
-                    borderRadius: 999,
-                    padding: "6px 14px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: C.highlight,
-                  }}
-                >
-                  {balance >= 0 ? (
-                    <>
-                      <ArrowUpRight style={{ width: 13 }} /> Positive cash flow
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDownRight style={{ width: 13 }} /> Negative cash flow
-                    </>
-                  )}
-                </span>
-                <button
-                  onClick={openAdd}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    height: 44,
-                    padding: "0 24px",
-                    borderRadius: 999,
-                    background: C.highlight,
-                    color: C.highlightFg,
-                    border: "none",
-                    fontSize: 14,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    ...M,
-                    boxShadow: `0 4px 20px ${C.highlight}55`,
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "oklch(0.82 0.18 157)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = C.highlight)}
-                >
-                  <Plus style={{ width: 16 }} /> Add Transaction
-                </button>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              {[
-                { label: "Income", value: income, accent: C.highlight, icon: <ArrowUpRight style={{ width: 14 }} /> },
-                { label: "Expense", value: expense, accent: C.growth, icon: <ArrowDownRight style={{ width: 14 }} /> },
-              ].map((t) => (
-                <div
-                  key={t.label}
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: `1px solid ${C.heroLine}`,
-                    borderRadius: 8,
-                    padding: "18px 22px",
-                    minWidth: 140,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                    <span style={{ color: t.accent }}>{t.icon}</span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: C.heroMuted,
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.07em",
-                      }}
-                    >
-                      {t.label}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 26, fontWeight: 900, color: C.heroFg, letterSpacing: "-0.03em" }}>
-                    <NumberTicker value={t.value} currencyCode={cur} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="dash-page-actions">
+          <button onClick={openAdd} className="dash-btn-primary">
+            <Plus size={16} />
+            <span>Add Expense</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. KPI STRIP — 4 columns horizontal */}
-      <div
-        className="di"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 0,
-          border: `1px solid ${C.border}`,
-          borderRadius: 8,
-          overflow: "hidden",
-          background: C.border,
-        }}
-      >
-        {[
-          {
-            label: "Total Income",
-            value: income,
-            accent: C.growth,
-            soft: C.growthSoft,
-            icon: <ArrowUpRight style={{ width: 20 }} />,
-            tag: "This month",
-          },
-          {
-            label: "Total Expenses",
-            value: expense,
-            accent: C.brand,
-            soft: C.brandSoft,
-            icon: <ArrowDownRight style={{ width: 20 }} />,
-            tag: "This month",
-          },
-          {
-            label: "Budget Remaining",
-            value: avail,
-            accent: C.growth,
-            soft: C.growthSoft,
-            icon: <Target style={{ width: 20 }} />,
-            tag: `${budgets?.length || 0} active`,
-          },
-          {
-            label: "Transactions",
-            value: recentTx?.length || 0,
-            accent: C.brand,
-            soft: C.brandSoft,
-            icon: <FileText style={{ width: 20 }} />,
-            tag: "Logged",
-            raw: true,
-          },
-        ].map((card) => (
-          <div key={card.label} style={{ background: "#fff", padding: "24px 20px" }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: card.soft,
-                color: card.accent,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-              }}
-            >
-              {card.icon}
+      {/* ── 2. CLEAN 4-METRIC SUMMARY CARDS ── */}
+      <div className="dash-kpi-grid dash-anim">
+        {/* Total Net Balance Card */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Total Balance</span>
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-blue-soft)", color: "var(--dash-blue)" }}>
+              <Wallet size={17} />
             </div>
-            <div
-              style={{
-                fontSize: "clamp(1.8rem,3vw,2.4rem)",
-                fontWeight: 900,
-                color: C.foreground,
-                letterSpacing: "-0.04em",
-                lineHeight: 1,
-                marginBottom: 6,
-              }}
-            >
-              {card.raw ? card.value : <NumberTicker value={card.value} currencyCode={cur} />}
-            </div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                margin: "0 0 8px",
-              }}
-            >
-              {card.label}
-            </p>
-            <span
-              style={{
-                display: "inline-block",
-                fontSize: 11,
-                fontWeight: 600,
-                color: card.accent,
-                background: card.soft,
-                borderRadius: 999,
-                padding: "3px 10px",
-              }}
-            >
-              {card.tag}
+          </div>
+          <div className="dash-kpi-val">
+            <NumberTicker value={balance} currencyCode={cur} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span className={`dash-cashflow-pill ${balance >= 0 ? "positive" : "negative"}`} style={{ padding: "2px 8px", fontSize: "11px" }}>
+              {balance >= 0 ? "+ Positive Flow" : "- Overspent"}
             </span>
           </div>
-        ))}
+        </div>
+
+        {/* Monthly Income Card */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Monthly Income</span>
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-emerald-soft)", color: "var(--dash-emerald)" }}>
+              <ArrowUpRight size={17} />
+            </div>
+          </div>
+          <div className="dash-kpi-val" style={{ color: "var(--dash-emerald)" }}>
+            <NumberTicker value={income} currencyCode={cur} />
+          </div>
+          <div className="dash-kpi-hint">Allowances & earnings</div>
+        </div>
+
+        {/* Monthly Expenses Card */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Monthly Spending</span>
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-danger-soft)", color: "var(--dash-danger)" }}>
+              <ArrowDownRight size={17} />
+            </div>
+          </div>
+          <div className="dash-kpi-val">
+            <NumberTicker value={expense} currencyCode={cur} />
+          </div>
+          <div className="dash-kpi-hint">Total spent this month</div>
+        </div>
+
+        {/* Budget Remaining Card */}
+        <div className="dash-kpi-card">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Budget Remaining</span>
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-purple-soft)", color: "var(--dash-purple)" }}>
+              <Target size={17} />
+            </div>
+          </div>
+          <div className="dash-kpi-val" style={{ color: avail >= 0 ? "var(--dash-foreground)" : "var(--dash-danger)" }}>
+            <NumberTicker value={avail} currencyCode={cur} />
+          </div>
+          <div className="dash-kpi-hint">{budgets?.length || 0} active category limits</div>
+        </div>
       </div>
 
-      {/* 3. AI FINANCIAL INSIGHTS COPILOT WIDGET */}
-      <div className="di">
-        <AiInsightsDashboardWidget />
-      </div>
-
-      {/* 4. CATEGORY SPENDING OVERVIEW SECTION (All Categories with Spent Amounts) */}
-      <div className="di" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: C.brand,
-                margin: "0 0 4px",
-              }}
-            >
-              Expense Breakdown
-            </p>
-            <h2
-              style={{
-                fontSize: "clamp(1.3rem,2.5vw,1.7rem)",
-                fontWeight: 900,
-                color: C.foreground,
-                margin: 0,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Student Spending by Category
-            </h2>
-            <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", fontWeight: 500 }}>
-              All your configured expense categories and how much has been spent this month.
-            </p>
+      {/* ── 3. CASH FLOW OVERVIEW & CATEGORY BREAKDOWN ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "16px" }} className="dash-anim">
+        {/* Cash Flow Area Chart */}
+        <div className="dash-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div className="dash-card-header">
+            <div>
+              <h3 className="dash-card-title">Spending & Income Trend</h3>
+              <p className="dash-card-subtitle">Monthly cash flow trajectory</p>
+            </div>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11.5px", color: "var(--dash-muted)", fontWeight: 600 }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#16a34a" }} />
+                Income
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11.5px", color: "var(--dash-muted)", fontWeight: 600 }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#2563eb" }} />
+                Expenses
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {topCategory && (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: "6px 14px",
-                  borderRadius: 999,
-                  background: C.brandSoft,
-                  color: C.brand,
-                  border: `1px solid ${C.border}`,
-                }}
-              >
-                🔥 Top Spend: <strong>{topCategory.name}</strong> ({formatCurrency(topCategory.total, cur)})
-              </span>
-            )}
-            <Link
-              to="/app/categories"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 13,
-                fontWeight: 700,
-                color: C.brand,
-                textDecoration: "none",
-                padding: "6px 14px",
-                borderRadius: 999,
-                background: C.altBg,
-                border: `1px solid ${C.border}`,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.brand;
-                e.currentTarget.style.background = C.brandSoft;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.background = C.altBg;
-              }}
-            >
-              <span>Categories Tab</span>
-              <ChevronRight style={{ width: 14 }} />
-            </Link>
+          <div style={{ height: 230, width: "100%" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#16a34a" stopOpacity={0.22} />
+                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} fontFamily="var(--dash-font)" />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  width={52}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => formatCompactAxis(v, cur)}
+                  fontFamily="var(--dash-font)"
+                />
+                <Tooltip content={<ChartTooltip cur={cur} />} cursor={{ stroke: "rgba(37, 99, 235, 0.15)", strokeWidth: 1 }} />
+                <Area type="monotone" dataKey="income" name="Income" stroke="#16a34a" strokeWidth={2.5} fill="url(#incomeGrad)" dot={false} />
+                <Area type="monotone" dataKey="expense" name="Expense" stroke="#2563eb" strokeWidth={2.5} fill="url(#expenseGrad)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Donut Chart + Category Portfolio Bento Grid */}
-        <div
-          style={{
-            display: "grid",
-            gap: 16,
-            gridTemplateColumns: activeCategoriesWithSpending.length > 0 ? "340px 1fr" : "1fr",
-          }}
-        >
-          {/* Donut Distribution Chart (when there are active expenses) */}
-          {activeCategoriesWithSpending.length > 0 && (
-            <div
-              style={{
-                background: "#fff",
-                border: `1.5px solid ${C.border}`,
-                borderRadius: 8,
-                padding: "20px 22px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <div>
+        {/* Spending by Category Donut Chart */}
+        <div className="dash-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div className="dash-card-header">
+            <div>
+              <h3 className="dash-card-title">Spending by Category</h3>
+              <p className="dash-card-subtitle">Where your money went this month</p>
+            </div>
+            <Link to="/app/categories" style={{ fontSize: "12px", color: "var(--dash-blue)", fontWeight: 700, textDecoration: "none" }}>
+              View All
+            </Link>
+          </div>
+
+          {activeCategoriesWithSpending.length > 0 ? (
+            <div>
+              <div style={{ height: 160, position: "relative" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={46}
+                      outerRadius={68}
+                      paddingAngle={3}
+                      stroke="none"
+                    >
+                      {pieData.map((e, i) => (
+                        <Cell key={i} fill={e.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CategoryPieTooltip cur={cur} />} />
+                  </PieChart>
+                </ResponsiveContainer>
+
                 <div
                   style={{
+                    position: "absolute",
+                    inset: 0,
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 10,
+                    justifyContent: "center",
+                    pointerEvents: "none",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      color: C.muted,
-                    }}
-                  >
-                    Active Share
+                  <span style={{ fontSize: "9.5px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+                    Total Spent
                   </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: C.brand,
-                      background: C.brandSoft,
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                    }}
-                  >
-                    {activeCategoriesWithSpending.length} Active
+                  <span style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a" }}>
+                    {formatCurrency(totalCategorizedExpense, cur)}
                   </span>
-                </div>
-
-                <div style={{ height: 190, position: "relative" }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={78}
-                        paddingAngle={3}
-                      >
-                        {pieData.map((e, i) => (
-                          <Cell key={i} fill={e.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CategoryPieTooltip cur={cur} />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center Text inside Donut */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase" }}>
-                      Total Spent
-                    </span>
-                    <span style={{ fontSize: 15, fontWeight: 900, color: C.foreground }}>
-                      {formatCurrency(totalCategorizedExpense, cur)}
-                    </span>
-                  </div>
                 </div>
               </div>
 
-              {/* Legend row */}
+              {/* Compact Legend */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
                   gap: "6px 10px",
-                  paddingTop: 12,
-                  borderTop: `1px solid ${C.border}`,
-                  marginTop: 6,
+                  paddingTop: "12px",
+                  borderTop: "1px solid #f1f5f9",
+                  marginTop: "6px",
                 }}
               >
                 {activeCategoriesWithSpending.slice(0, 4).map((cat, i) => {
@@ -829,781 +522,150 @@ export default function DashboardPage() {
                       ? Math.round(((Number(cat.total) || 0) / totalCategorizedExpense) * 100)
                       : 0;
                   return (
-                    <div key={cat._id || i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                    <div key={cat._id || i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px" }}>
                       <span
                         style={{
-                          width: 8,
-                          height: 8,
+                          width: "7px",
+                          height: "7px",
                           borderRadius: "50%",
                           background: cat.color || CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length],
                           flexShrink: 0,
-                          display: "block",
                         }}
                       />
-                      <span
-                        style={{
-                          color: C.muted,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          flex: 1,
-                        }}
-                      >
+                      <span style={{ color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, fontWeight: 500 }}>
                         {cat.name}
                       </span>
-                      <span style={{ fontWeight: 800, color: C.foreground, flexShrink: 0 }}>{pct}%</span>
+                      <span style={{ fontWeight: 700, color: "#0f172a", flexShrink: 0 }}>{pct}%</span>
                     </div>
                   );
                 })}
               </div>
             </div>
+          ) : (
+            <div style={{ padding: "30px 0", textAlign: "center", color: "var(--dash-muted)", fontSize: "12.5px" }}>
+              No expenses logged yet this month.
+            </div>
           )}
-
-          {/* Full Category Portfolio Cards (Shows every category with its spent amount) */}
-          <div
-            style={{
-              background: "#fff",
-              border: `1.5px solid ${C.border}`,
-              borderRadius: 8,
-              padding: "20px 22px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingBottom: 10,
-                borderBottom: `1px solid ${C.border}`,
-              }}
-            >
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: C.foreground, margin: 0 }}>
-                Categories & Monthly Spending
-              </h3>
-              <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
-                {categoriesList.length} categories · Total: <strong>{formatCurrency(totalCategorizedExpense, cur)}</strong>
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-                gap: 10,
-                maxHeight: 320,
-                overflowY: "auto",
-                paddingRight: 4,
-              }}
-            >
-              {categoriesList.map((cat, i) => {
-                const spent = Number(cat.total) || 0;
-                const pct = totalCategorizedExpense > 0 ? Math.round((spent / totalCategorizedExpense) * 100) : 0;
-                const catColor = cat.color || CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length];
-                const hasSpent = spent > 0;
-
-                return (
-                  <Link
-                    key={cat._id || i}
-                    to={`/app/transactions?categoryId=${cat._id}&category=${encodeURIComponent(cat.name || "")}`}
-                    title={`Click to view ${cat.name} transactions`}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      padding: "12px 14px",
-                      borderRadius: 8,
-                      background: hasSpent ? C.altBg : "#fafafa",
-                      border: `1px solid ${hasSpent ? C.border : "oklch(0.93 0.008 255)"}`,
-                      textDecoration: "none",
-                      transition: "all 0.15s",
-                      opacity: hasSpent ? 1 : 0.82,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = C.brand;
-                      e.currentTarget.style.background = "#fff";
-                      e.currentTarget.style.opacity = "1";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = hasSpent ? C.border : "oklch(0.93 0.008 255)";
-                      e.currentTarget.style.background = hasSpent ? C.altBg : "#fafafa";
-                      e.currentTarget.style.opacity = hasSpent ? "1" : "0.82";
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            background: `${catColor}20`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <CategoryIcon categoryName={cat.name} className="w-4 h-4" />
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <p
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 800,
-                              color: C.foreground,
-                              margin: 0,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {cat.name}
-                          </p>
-                          <span style={{ fontSize: 10, color: C.muted }}>
-                            {hasSpent ? `${cat.count} txs · ${pct}% of total` : "0 transactions"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <span
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 900,
-                          color: hasSpent ? C.foreground : C.muted,
-                          letterSpacing: "-0.02em",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {formatCurrency(spent, cur)}
-                      </span>
-                    </div>
-
-                    {/* Visual progress bar */}
-                    <div
-                      style={{
-                        height: 4,
-                        background: `${C.border}`,
-                        borderRadius: 99,
-                        overflow: "hidden",
-                        marginTop: 4,
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${Math.min(100, pct)}%`,
-                          background: hasSpent ? catColor : "transparent",
-                          borderRadius: 99,
-                          transition: "width 0.4s",
-                        }}
-                      />
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* 5. BENTO: Chart + Transactions */}
-      <div className="di" style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 340px" }}>
-        {/* Chart */}
-        <div
-          style={{
-            background: "#fff",
-            border: `1px solid ${C.border}`,
-            borderRadius: 8,
-            padding: "clamp(1.4rem,3vw,2rem)",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              color: C.brand,
-              margin: "0 0 8px",
-            }}
-          >
-            6-month overview
-          </p>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 20,
-              borderBottom: `1px solid ${C.border}`,
-              paddingBottom: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "clamp(1.3rem,2.5vw,1.7rem)",
-                fontWeight: 900,
-                color: C.foreground,
-                margin: 0,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Income vs. Expenses
-            </h3>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: C.muted,
-                background: C.altBg,
-                border: `1px solid ${C.border}`,
-                borderRadius: 999,
-                padding: "5px 12px",
-              }}
-            >
-              Past 6 Months
-            </span>
-          </div>
-          <div style={{ flex: 1, minHeight: 240 }}>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={chartData} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={C.growth} stopOpacity={0.2} />
-                    <stop offset="100%" stopColor={C.growth} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="ge" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={C.brand} stopOpacity={0.15} />
-                    <stop offset="100%" stopColor={C.brand} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-                <XAxis dataKey="month" stroke={C.muted} fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis
-                  stroke={C.muted}
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => formatCurrency(v, cur)}
-                />
-                <Tooltip content={<ChartTooltip cur={cur} />} cursor={{ stroke: `${C.brand}30`, strokeWidth: 1 }} />
-                <Area
-                  type="monotone"
-                  dataKey="income"
-                  name="Income"
-                  stroke={C.growth}
-                  strokeWidth={2.5}
-                  fill="url(#gi)"
-                  dot={{ r: 3.5, fill: C.growth, strokeWidth: 0 }}
-                  activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expense"
-                  name="Expense"
-                  stroke={C.brand}
-                  strokeWidth={2.5}
-                  fill="url(#ge)"
-                  dot={{ r: 3.5, fill: C.brand, strokeWidth: 0 }}
-                  activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 20,
-              paddingTop: 12,
-              borderTop: `1px solid ${C.border}`,
-              marginTop: 8,
-            }}
-          >
-            {[
-              { l: "Income", c: C.growth },
-              { l: "Expense", c: C.brand },
-            ].map((x) => (
-              <div
-                key={x.l}
-                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, fontWeight: 600 }}
-              >
-                <span style={{ width: 9, height: 9, borderRadius: "50%", background: x.c, display: "block" }} />
-                {x.l}
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* ── 4. SMART MONEY TIPS ── */}
+      <div className="dash-anim">
+        <AiInsightsDashboardWidget />
+      </div>
 
-        {/* Transactions — brand blue */}
-        <div
-          style={{
-            background: C.brand,
-            borderRadius: 8,
-            padding: "clamp(1.4rem,3vw,2rem)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              opacity: 0.1,
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.3) 1px,transparent 1px)`,
-              backgroundSize: "40px 40px",
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: "rgba(255,255,255,0.6)",
-                margin: "0 0 8px",
-              }}
-            >
-              Activity
-            </p>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-              <h3
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: C.heroFg,
-                  margin: 0,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Recent Transactions
-              </h3>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "3px 10px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.15)",
-                  color: C.heroFg,
-                }}
-              >
-                {recentTx?.length || 0}
-              </span>
-            </div>
-          </div>
-          <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-            {displayTx.length > 0 ? (
-              displayTx.map((tx) => (
-                <div
-                  key={tx._id}
-                  onClick={() => setSelectedTx(tx)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "9px 11px",
-                    borderRadius: 8,
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    cursor: "pointer",
-                    transition: "background 0.12s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        flexShrink: 0,
-                        background: tx.type === "income" ? `${C.growth}30` : "rgba(255,255,255,0.12)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <CategoryIcon
-                        categoryName={tx.categoryId?.name}
-                        className="w-4 h-4"
-                        useEmerald={tx.type === "income"}
-                      />
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: C.heroFg,
-                          margin: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {tx.description || "Transaction"}
-                      </p>
-                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", margin: 0 }}>
-                        {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} ·{" "}
-                        {tx.categoryId?.name || "General"}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 900,
-                      flexShrink: 0,
-                      paddingLeft: 8,
-                      color: tx.type === "income" ? C.highlight : "rgba(255,255,255,0.9)",
-                    }}
-                  >
-                    {tx.type === "income" ? "+" : "−"}
-                    {formatCurrency(tx.amount, cur)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "24px 0",
-                  gap: 12,
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,0.12)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <FileText style={{ width: 20, color: "rgba(255,255,255,0.6)" }} />
-                </div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: C.heroFg, margin: "0 0 4px", textAlign: "center" }}>
-                  No transactions yet
-                </p>
-                <button
-                  onClick={openAdd}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    height: 38,
-                    padding: "0 18px",
-                    borderRadius: 999,
-                    background: C.highlight,
-                    color: C.highlightFg,
-                    border: "none",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    ...M,
-                  }}
-                >
-                  <Plus style={{ width: 13 }} /> Add first
-                </button>
-              </div>
-            )}
+      {/* ── 5. RECENT TRANSACTIONS TABLE ── */}
+      <div className="dash-card dash-anim">
+        <div className="dash-card-header">
+          <div>
+            <h3 className="dash-card-title">Recent Transactions</h3>
+            <p className="dash-card-subtitle">Your latest expenses and income</p>
           </div>
           <Link
             to="/app/transactions"
             style={{
-              position: "relative",
-              zIndex: 1,
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              padding: "10px 0",
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.25)",
-              color: C.heroFg,
-              fontSize: 13,
+              gap: 4,
+              fontSize: "12.5px",
               fontWeight: 700,
+              color: "var(--dash-blue)",
               textDecoration: "none",
-              ...M,
-              transition: "background 0.15s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            View All Transactions <ChevronRight style={{ width: 14 }} />
+            <span>View All</span>
+            <ChevronRight size={14} />
           </Link>
         </div>
+
+        {displayTx.length > 0 ? (
+          <div className="dash-table-container">
+            <table className="dash-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th style={{ textAlign: "right" }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayTx.map((tx) => {
+                  const isExp = tx.type === "expense";
+                  return (
+                    <tr key={tx._id} onClick={() => setSelectedTx(tx)} style={{ cursor: "pointer" }}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 8,
+                              background: isExp ? "var(--dash-alt-bg)" : "var(--dash-emerald-soft)",
+                              color: isExp ? "var(--dash-muted)" : "var(--dash-emerald)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <CategoryIcon icon={tx.category_id?.icon || tx.category?.icon || (isExp ? "shopping-bag" : "arrow-up-right")} size={15} />
+                          </div>
+                          <div>
+                            <p style={{ fontWeight: 700, color: "var(--dash-foreground)", margin: 0 }}>
+                              {tx.description || tx.title || "Transaction"}
+                            </p>
+                            {tx.payment_method && (
+                              <p style={{ fontSize: "11px", color: "var(--dash-muted)", margin: 0, textTransform: "capitalize" }}>
+                                {tx.payment_method}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            padding: "3px 9px",
+                            borderRadius: 9999,
+                            background: "var(--dash-alt-bg)",
+                            border: "1px solid var(--dash-border)",
+                            color: "var(--dash-foreground)",
+                          }}
+                        >
+                          {tx.category_id?.name || tx.category?.name || "General"}
+                        </span>
+                      </td>
+                      <td style={{ color: "var(--dash-muted)", fontSize: "12px" }}>
+                        {new Date(tx.date || tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <span style={{ fontWeight: 800, fontSize: "13.5px", color: isExp ? "var(--dash-foreground)" : "var(--dash-emerald)" }}>
+                          {isExp ? "-" : "+"}{formatCurrency(tx.amount, cur)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="dash-empty-box" style={{ padding: "32px 16px" }}>
+            <p className="dash-empty-title">No transactions yet</p>
+            <p className="dash-empty-desc">Add your first expense or income to start tracking.</p>
+            <button onClick={openAdd} className="dash-btn-primary">
+              <Plus size={15} />
+              <span>Add Transaction</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 6. BUDGET BENTO */}
-      {budgets?.length > 0 && (
-        <div className="di">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <p
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  color: C.brand,
-                  margin: "0 0 6px",
-                }}
-              >
-                Budget Health
-              </p>
-              <h2
-                style={{
-                  fontSize: "clamp(1.4rem,3vw,1.9rem)",
-                  fontWeight: 900,
-                  color: C.foreground,
-                  margin: 0,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Spending Limit Tracking
-              </h2>
-            </div>
-            <Link
-              to="/app/budget"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 13,
-                fontWeight: 700,
-                color: C.brand,
-                textDecoration: "none",
-              }}
-            >
-              Manage <ChevronRight style={{ width: 14 }} />
-            </Link>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 16 }}>
-            {(budgets || []).slice(0, 4).map((b, i) => {
-              const pct = Math.min(100, Math.round(((b.spentAmount || 0) / b.limitAmount) * 100));
-              const schemes = [
-                { bg: C.brand, fg: C.heroFg, bar: C.highlight },
-                { bg: C.hero, fg: C.heroFg, bar: C.growth },
-                { bg: C.growthSoft, fg: C.foreground, bar: C.growth },
-                { bg: C.highlight, fg: C.highlightFg, bar: C.hero },
-              ];
-              const s = schemes[i % 4];
-              return (
-                <div
-                  key={b._id}
-                  style={{
-                    background: s.bg,
-                    borderRadius: 8,
-                    padding: "clamp(1.2rem,3vw,1.6rem)",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    minHeight: 160,
-                  }}
-                >
-                  <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: s.fg,
-                        opacity: 0.7,
-                        margin: "0 0 6px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.07em",
-                      }}
-                    >
-                      {b.category?.name || "Budget"}
-                    </p>
-                    <div
-                      style={{
-                        fontSize: "clamp(1.5rem,3vw,2rem)",
-                        fontWeight: 900,
-                        color: s.fg,
-                        letterSpacing: "-0.03em",
-                      }}
-                    >
-                      {formatCurrency(b.limitAmount - (b.spentAmount || 0), cur)}
-                    </div>
-                    <p style={{ fontSize: 11, color: s.fg, opacity: 0.55, margin: "2px 0 0" }}>remaining</p>
-                  </div>
-                  <div style={{ marginTop: 14 }}>
-                    <div style={{ height: 4, background: `${s.fg}20`, borderRadius: 99, overflow: "hidden", marginBottom: 6 }}>
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${pct}%`,
-                          background: s.bar,
-                          borderRadius: 99,
-                          transition: "width 0.5s",
-                        }}
-                      />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 10, color: s.fg, opacity: 0.6, fontWeight: 500 }}>
-                        {formatCurrency(b.spentAmount || 0, cur)} spent
-                      </span>
-                      <span style={{ fontSize: 10, color: s.fg, opacity: 0.7, fontWeight: 700 }}>
-                        {pct}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 7. QUICK ACCESS */}
-      <div className="di" style={{ background: C.altBg, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px 0", borderBottom: `1px solid ${C.border}` }}>
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              color: C.brand,
-              margin: 0,
-            }}
-          >
-            Quick access
-          </p>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
-            gap: 0,
-            background: C.border,
-          }}
-        >
-          {[
-            {
-              to: "/app/transactions",
-              icon: ArrowUpRight,
-              label: "Transactions",
-              desc: "View & manage",
-              accent: C.brand,
-              soft: C.brandSoft,
-            },
-            {
-              to: "/app/budget",
-              icon: PieIcon,
-              label: "Budget",
-              desc: "Track categories",
-              accent: C.growth,
-              soft: C.growthSoft,
-            },
-            {
-              to: "/app/reports",
-              icon: TrendingUp,
-              label: "Reports",
-              desc: "Analytics",
-              accent: C.brand,
-              soft: C.brandSoft,
-            },
-            {
-              to: "/app/profile",
-              icon: GraduationCap,
-              label: "Profile",
-              desc: "Your account",
-              accent: C.growth,
-              soft: C.growthSoft,
-            },
-          ].map((q) => {
-            const Icon = q.icon;
-            return (
-              <Link
-                key={q.to}
-                to={q.to}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "18px 20px",
-                  background: "#fff",
-                  textDecoration: "none",
-                  transition: "background 0.12s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = q.soft)}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-              >
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: q.soft,
-                    color: q.accent,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon style={{ width: 17 }} />
-                </div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: C.foreground, margin: 0 }}>{q.label}</p>
-                  <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{q.desc}</p>
-                </div>
-                <ChevronRight style={{ width: 14, color: C.muted, marginLeft: "auto" }} />
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      <AdSenseAd slot="dashboard" />
-
-      {selectedTx && <TransactionDetailModal tx={selectedTx} onClose={() => setSelectedTx(null)} />}
-
-      <TransactionModal
-        isOpen={quickAddOpen}
-        onClose={() => setQuickAddOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
-          window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
-        }}
-      />
+      <TransactionDetailModal transaction={selectedTx} onClose={() => setSelectedTx(null)} />
+      <AdSenseAd slot="dashboard_bottom" />
     </div>
   );
 }

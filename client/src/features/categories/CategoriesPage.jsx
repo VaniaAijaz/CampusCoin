@@ -1,311 +1,300 @@
 import { useState, useEffect, useCallback } from "react";
-import { Tag, Plus, Trash2, Edit2, Check, X } from "lucide-react";
+import { Tag, Plus, Trash2, Edit2, Check, X, FolderPlus } from "lucide-react";
 import { getCategories, createCategory, updateCategory, deleteCategory } from "./categoryApi";
 import { getCategoryIcon } from "../../core/categoryIcons";
 import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
-
-/* ── exact landing page tokens ── */
-const C = {
-  hero:        "oklch(0.115 0.018 255)",
-  heroFg:      "oklch(0.985 0.003 250)",
-  heroLine:    "oklch(0.31 0.025 255)",
-  brand:       "oklch(0.59 0.22 262)",
-  brandSoft:   "oklch(0.93 0.06 262)",
-  highlight:   "oklch(0.88 0.18 157)",
-  highlightFg: "oklch(0.17 0.04 160)",
-  growth:      "oklch(0.64 0.17 157)",
-  growthSoft:  "oklch(0.94 0.05 158)",
-  background:  "oklch(0.99 0.003 250)",
-  foreground:  "oklch(0.16 0.025 260)",
-  muted:       "oklch(0.5 0.025 255)",
-  border:      "oklch(0.9 0.012 255)",
-  altBg:       "oklch(0.965 0.01 254)",
-};
-const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+import "../dashboard/Dashboard.css";
 
 const PRESET_COLORS = [
-  "oklch(0.59 0.22 262)",  // brand
-  "oklch(0.64 0.17 157)",  // growth
-  "oklch(0.88 0.18 157)",  // highlight
-  "oklch(0.61 0.23 290)",  // purple
-  "oklch(0.73 0.18 252)",  // blue-muted
-  "oklch(0.83 0.17 70)",   // amber
-  "oklch(0.59 0.18 230)",  // teal
-  "oklch(0.5 0.025 255)",  // slate
-  "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6",
+  "#2563eb",
+  "#16a34a",
+  "#8b5cf6",
+  "#06b6d4",
+  "#f59e0b",
+  "#ec4899",
+  "#14b8a6",
+  "#f97316",
+  "#64748b",
 ];
 
-function isColorLight(c) {
-  if (!c) return false;
-  if (typeof c === "string" && c.startsWith("oklch")) {
-    const match = c.match(/oklch\(\s*([\d.]+)/i);
-    if (match) {
-      return parseFloat(match[1]) > 0.75;
-    }
-  }
-  if (typeof c === "string" && c.startsWith("#")) {
-    let hex = c.replace("#", "");
-    if (hex.length === 3) hex = hex.split("").map(x => x + x).join("");
-    const r = parseInt(hex.substring(0, 2), 16) || 0;
-    const g = parseInt(hex.substring(2, 4), 16) || 0;
-    const b = parseInt(hex.substring(4, 6), 16) || 0;
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq > 175;
-  }
-  return false;
-}
-
-const inputStyle = {
-  width: "100%", padding: "10px 14px", borderRadius: 999,
-  background: C.altBg, border: `1.5px solid ${C.border}`,
-  fontSize: 13, color: C.foreground, outline: "none",
-  fontFamily: M.fontFamily, transition: "border-color 0.15s", boxSizing: "border-box",
-};
-
 export default function CategoriesPage() {
-  const [categories,  setCategories]  = useState([]);
-  const [activeTab,   setActiveTab]   = useState("all");
-  const [loading,     setLoading]     = useState(true);
-  const [modalOpen,   setModalOpen]   = useState(false);
-  const [editingCat,  setEditingCat]  = useState(null);
-  const [name,        setName]        = useState("");
-  const [type,        setType]        = useState("expense");
-  const [color,       setColor]       = useState(PRESET_COLORS[0]);
-  const [saving,      setSaving]      = useState(false);
-  const [itemToDelete,setItemToDelete]= useState(null);
+  const [categories, setCategories] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState(null);
+  const [name, setName] = useState("");
+  const [type, setType] = useState("expense");
+  const [color, setColor] = useState(PRESET_COLORS[0]);
+  const [saving, setSaving] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
-  /* ── all logic exactly preserved ── */
   const fetchCats = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getCategories();
       if (res.success) setCategories(res.categories);
-    } catch { toast.error("Failed to load categories."); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error("Couldn't load categories.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetchCats(); }, [fetchCats]);
+  useEffect(() => {
+    fetchCats();
+  }, [fetchCats]);
 
-  const filteredCategories = categories.filter(c => activeTab === "all" || c.type === activeTab);
+  const filteredCategories = categories.filter((c) => activeTab === "all" || c.type === activeTab);
 
   const handleOpenModal = (cat = null) => {
-    if (cat) { setEditingCat(cat); setName(cat.name); setType(cat.type); setColor(cat.color || PRESET_COLORS[0]); }
-    else      { setEditingCat(null); setName(""); setType("expense"); setColor(PRESET_COLORS[0]); }
+    if (cat) {
+      setEditingCat(cat);
+      setName(cat.name);
+      setType(cat.type);
+      setColor(cat.color || PRESET_COLORS[0]);
+    } else {
+      setEditingCat(null);
+      setName("");
+      setType("expense");
+      setColor(PRESET_COLORS[0]);
+    }
     setModalOpen(true);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!name.trim()) { toast.error("Category name is required."); return; }
+    if (!name.trim()) {
+      toast.error("Category name is required.");
+      return;
+    }
     setSaving(true);
     try {
       if (editingCat) {
         const res = await updateCategory(editingCat._id, { name: name.trim(), color });
-        if (res.success) { toast.success("Category updated!"); setModalOpen(false); fetchCats(); }
+        if (res.success) {
+          toast.success("Category updated.");
+          setModalOpen(false);
+          fetchCats();
+        }
       } else {
         const res = await createCategory({ name: name.trim(), type, color });
-        if (res.success) { toast.success("Category added!"); setModalOpen(false); fetchCats(); }
+        if (res.success) {
+          toast.success("Category created.");
+          setModalOpen(false);
+          fetchCats();
+        }
       }
-    } catch (err) { toast.error(err.response?.data?.message || "Failed to save category."); }
-    finally { setSaving(false); }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save category.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete    = (id) => setItemToDelete(id);
-  const confirmDelete   = async () => {
+  const handleDelete = (id) => setItemToDelete(id);
+  const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
       const res = await deleteCategory(itemToDelete);
-      if (res.success) { toast.success("Category removed."); fetchCats(); }
-    } catch (err) { toast.error(err.response?.data?.message || "Failed to delete."); }
-    finally { setItemToDelete(null); }
+      if (res.success) {
+        toast.success("Category removed.");
+        fetchCats();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete category.");
+    } finally {
+      setItemToDelete(null);
+    }
   };
 
-  const expCount = categories.filter(c => c.type === "expense").length;
-  const incCount = categories.filter(c => c.type === "income").length;
+  const expCount = categories.filter((c) => c.type === "expense").length;
+  const incCount = categories.filter((c) => c.type === "income").length;
 
   const tabs = [
-    { key: "all",     label: `All (${categories.length})` },
+    { key: "all", label: `All (${categories.length})` },
     { key: "expense", label: `Expenses (${expCount})` },
-    { key: "income",  label: `Income (${incCount})` },
+    { key: "income", label: `Income (${incCount})` },
   ];
 
   return (
-    <div style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
-
-      {/* ── HEADER ── */}
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
+    <div className="dash-root">
+      {/* ── Page Header ── */}
+      <div className="dash-page-header">
         <div>
-          <p style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.14em", color:C.brand, margin:"0 0 6px" }}>
-            Organisation
-          </p>
-          <h1 style={{ fontSize:"clamp(1.6rem,4vw,2.4rem)", fontWeight:900, color:C.foreground, margin:0, letterSpacing:"-0.03em", lineHeight:1 }}>
-            Categories
-          </h1>
-          <p style={{ fontSize:14, color:C.muted, margin:"6px 0 0", fontWeight:500 }}>
-            Default campus tags and your custom spending labels.
-          </p>
+          <h1 className="dash-page-title">Categories</h1>
+          <p className="dash-page-desc">Organize your expenses and income into clean student categories.</p>
         </div>
-        <button onClick={() => handleOpenModal()} style={{
-          display:"inline-flex", alignItems:"center", gap:7, height:42, padding:"0 22px", borderRadius:999,
-          background:C.highlight, color:C.highlightFg, border:"none", fontSize:14, fontWeight:800, cursor:"pointer", ...M,
-          boxShadow:`0 4px 16px ${C.highlight}55`, transition:"background 0.15s",
-        }}
-          onMouseEnter={e => e.currentTarget.style.background="oklch(0.82 0.18 157)"}
-          onMouseLeave={e => e.currentTarget.style.background=C.highlight}
-        >
-          <Plus style={{ width:15 }} /> New Category
-        </button>
+
+        <div className="dash-page-actions">
+          <button onClick={() => handleOpenModal()} className="dash-btn-primary">
+            <Plus style={{ width: 16, height: 16 }} />
+            <span>Add Category</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── SUMMARY STRIP ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:0, border:`1px solid ${C.border}`, borderRadius:8, overflow:"hidden", background:C.border }}>
-        {[
-          { label:"Total Categories", value:categories.length, accent:C.brand,  soft:C.brandSoft  },
-          { label:"Expense Tags",     value:expCount,          accent:C.growth,  soft:C.growthSoft },
-          { label:"Income Tags",      value:incCount,          accent:C.brand,   soft:C.brandSoft  },
-        ].map(s => (
-          <div key={s.label} style={{ background:"#fff", padding:"18px 22px" }}>
-            <div style={{ width:38, height:38, borderRadius:"50%", background:s.soft, color:s.accent, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}>
-              <Tag style={{ width:16 }} />
+      {/* ── Summary KPI Strip ── */}
+      <div className="dash-kpi-grid">
+        <div className="dash-kpi-card">
+          <div>
+            <div className="dash-kpi-icon-wrap" style={{ background: "#dbeafe", color: "#2563eb" }}>
+              <Tag style={{ width: 20, height: 20 }} />
             </div>
-            <div style={{ fontSize:"clamp(1.6rem,3vw,2.2rem)", fontWeight:900, color:s.accent, letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>
-              {s.value}
-            </div>
-            <p style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{s.label}</p>
+            <div className="dash-kpi-value">{categories.length}</div>
+            <p className="dash-kpi-label">Total Categories</p>
           </div>
-        ))}
+          <span className="dash-kpi-badge" style={{ background: "#eff6ff", color: "#2563eb" }}>
+            Configured
+          </span>
+        </div>
+
+        <div className="dash-kpi-card">
+          <div>
+            <div className="dash-kpi-icon-wrap" style={{ background: "#fee2e2", color: "#dc2626" }}>
+              <Tag style={{ width: 20, height: 20 }} />
+            </div>
+            <div className="dash-kpi-value">{expCount}</div>
+            <p className="dash-kpi-label">Expense Categories</p>
+          </div>
+          <span className="dash-kpi-badge" style={{ background: "#fee2e2", color: "#dc2626" }}>
+            Spending
+          </span>
+        </div>
+
+        <div className="dash-kpi-card">
+          <div>
+            <div className="dash-kpi-icon-wrap" style={{ background: "#dcfce7", color: "#16a34a" }}>
+              <Tag style={{ width: 20, height: 20 }} />
+            </div>
+            <div className="dash-kpi-value">{incCount}</div>
+            <p className="dash-kpi-label">Income Categories</p>
+          </div>
+          <span className="dash-kpi-badge" style={{ background: "#dcfce7", color: "#16a34a" }}>
+            Earnings
+          </span>
+        </div>
       </div>
 
-      {/* ── FILTER TABS ── */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
-            padding:"8px 18px", borderRadius:999, cursor:"pointer", ...M,
-            fontSize:13, fontWeight: activeTab===t.key ? 700 : 500,
-            background: activeTab===t.key ? C.hero : "#fff",
-            color: activeTab===t.key ? C.heroFg : C.muted,
-            border:`1.5px solid ${activeTab===t.key ? C.hero : C.border}`,
-            transition:"all 0.15s",
-          }}>
+      {/* ── Filter Tabs ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className="dash-btn-secondary"
+            style={{
+              height: 38,
+              background: activeTab === t.key ? "#2563eb" : "#ffffff",
+              color: activeTab === t.key ? "#ffffff" : "#0f172a",
+              borderColor: activeTab === t.key ? "#2563eb" : "#e2e8f0",
+              fontWeight: 700,
+            }}
+          >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── GRID ── */}
+      {/* ── Category Cards Grid ── */}
       {loading ? (
-        <div style={{ padding:"60px 0", display:"flex", alignItems:"center", justifyContent:"center", gap:10, color:C.muted, fontSize:14 }}>
-          <span style={{ width:18, height:18, border:`2px solid ${C.border}`, borderTopColor:C.brand, borderRadius:"50%", display:"inline-block", animation:"spin 0.7s linear infinite" }} />
-          Loading categories...
+        <div style={{ padding: "64px 20px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, color: "#64748b", fontSize: 14 }}>
+          <span
+            style={{
+              width: 20,
+              height: 20,
+              border: "2px solid #e2e8f0",
+              borderTopColor: "#2563eb",
+              borderRadius: "50%",
+              display: "inline-block",
+              animation: "spin 0.7s linear infinite",
+            }}
+          />
+          <span>Loading categories...</span>
         </div>
       ) : filteredCategories.length === 0 ? (
-        <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"60px 20px", display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
-          <div style={{ width:52, height:52, borderRadius:"50%", background:C.brandSoft, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <Tag style={{ width:22, color:C.brand }} />
+        <div className="dash-empty-box">
+          <div className="dash-empty-icon">
+            <Tag style={{ width: 24, height: 24 }} />
           </div>
-          <div style={{ textAlign:"center" }}>
-            <p style={{ fontSize:17, fontWeight:800, color:C.foreground, margin:"0 0 6px" }}>No categories found</p>
-            <p style={{ fontSize:13, color:C.muted, margin:0 }}>Create your first custom category.</p>
-          </div>
-          <button onClick={() => handleOpenModal()} style={{
-            display:"inline-flex", alignItems:"center", gap:7, height:40, padding:"0 20px", borderRadius:999,
-            background:C.highlight, color:C.highlightFg, border:"none", fontSize:13, fontWeight:800, cursor:"pointer", ...M,
-          }}>
-            <Plus style={{ width:13 }} /> Add Category
+          <h3 className="dash-empty-title">No categories found</h3>
+          <p className="dash-empty-desc">Create your first custom category to organize your college finances.</p>
+          <button onClick={() => handleOpenModal()} className="dash-btn-primary">
+            <Plus style={{ width: 16, height: 16 }} />
+            <span>Add Category</span>
           </button>
         </div>
       ) : (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
-          {filteredCategories.map((cat, i) => {
-            const isDefault = cat.isDefault;
-            const bentoSchemes = [
-              C.brand,
-              C.hero,
-              "oklch(0.64 0.17 157)",
-              "oklch(0.61 0.23 290)",
-            ];
-            const catBg = cat.color || (isDefault ? bentoSchemes[i % bentoSchemes.length] : C.brand);
-            const isLight = isColorLight(catBg);
-            const fgColor = isLight ? C.foreground : "#ffffff";
-            const badgeBg = isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.2)";
-            const badgeFg = isLight ? C.foreground : "#ffffff";
-            const iconBg  = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.18)";
-            const iconBorder = isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.25)";
-
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 14 }}>
+          {filteredCategories.map((cat) => {
+            const catColor = cat.color || "#2563eb";
             return (
-              <div key={cat._id} style={{
-                background: catBg, borderRadius:8,
-                border: "none",
-                padding:"18px 18px",
-                display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
-                transition:"transform 0.15s, box-shadow 0.15s",
-                minHeight:80,
-                position:"relative",
-                color: fgColor,
-                boxShadow:"0 2px 8px rgba(0,0,0,0.06)",
-              }}
-                className="group"
+              <div
+                key={cat._id}
+                className="dash-card"
+                style={{
+                  padding: "18px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  transition: "all 0.18s ease",
+                }}
               >
-                <div style={{ display:"flex", alignItems:"center", gap:12, minWidth:0, flex:1 }}>
-                  {/* Icon */}
-                  <div style={{
-                    width:40, height:40, borderRadius:10, flexShrink:0,
-                    background: iconBg,
-                    border: `1px solid ${iconBorder}`,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    color: fgColor,
-                  }}>
-                    {getCategoryIcon(cat.name, "w-5 h-5")}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      background: `${catColor}18`,
+                      color: catColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {getCategoryIcon(cat.name, "w-4 h-4")}
                   </div>
-
-                  <div style={{ minWidth:0 }}>
-                    <h4 style={{ fontSize:14, fontWeight:700, color:fgColor, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {cat.name}
-                    </h4>
-                    <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
-                      <span style={{
-                        fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:999,
-                        background: badgeBg,
-                        color: badgeFg,
-                        textTransform:"uppercase", letterSpacing:"0.06em",
-                      }}>
-                        {cat.type}
-                      </span>
-                      <span style={{ fontSize:10, color: isLight ? C.muted : "rgba(255,255,255,0.55)", fontWeight:500 }}>
-                        {isDefault ? "Default" : "Custom"}
-                      </span>
-                    </div>
+                    </p>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        color: cat.type === "income" ? "#16a34a" : "#64748b",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {cat.type} {cat.isDefault ? "· Standard" : ""}
+                    </span>
                   </div>
                 </div>
 
-                {/* Actions — only for custom */}
-                {!isDefault && (
-                  <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0, opacity:0, transition:"opacity 0.15s" }} className="group-hover:!opacity-100">
-                    <button onClick={() => handleOpenModal(cat)} style={{
-                      width:30, height:30, borderRadius:"50%",
-                      border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
-                      background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                      color: fgColor, transition:"all 0.12s",
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.14)" : "rgba(255,255,255,0.3)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
+                {!cat.isDefault && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <button
+                      onClick={() => handleOpenModal(cat)}
+                      className="dash-btn-secondary"
+                      style={{ width: 30, height: 30, padding: 0, borderRadius: 8 }}
+                      title="Edit Category"
                     >
-                      <Edit2 style={{ width:12 }} />
+                      <Edit2 style={{ width: 12, height: 12 }} />
                     </button>
-                    <button onClick={() => handleDelete(cat._id)} style={{
-                      width:30, height:30, borderRadius:"50%",
-                      border: `1px solid ${isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.3)"}`,
-                      background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)",
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                      color: fgColor, transition:"all 0.12s",
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isLight ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.45)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)"; }}
+                    <button
+                      onClick={() => handleDelete(cat._id)}
+                      className="dash-btn-danger"
+                      style={{ width: 30, height: 30, padding: 0, borderRadius: 8 }}
+                      title="Delete Category"
                     >
-                      <Trash2 style={{ width:12 }} />
+                      <Trash2 style={{ width: 12, height: 12 }} />
                     </button>
                   </div>
                 )}
@@ -315,153 +304,154 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* ── MODAL ── */}
-      {modalOpen && (
-        <Portal>
-          <div style={{ position:"fixed", inset:0, zIndex:50, display:"flex", alignItems:"center", justifyContent:"center", padding:16, background:"rgba(0,0,0,0.45)", backdropFilter:"blur(4px)" }}
-            onClick={() => setModalOpen(false)}>
-            <div style={{ width:"100%", maxWidth:420, background:"#fff", borderRadius:16, border:`1.5px solid ${C.border}`, boxShadow:"0 24px 64px rgba(0,0,0,0.12)", padding:"28px 28px 24px", ...M }}
-              onClick={e => e.stopPropagation()}>
-
-              {/* Header */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, paddingBottom:16, borderBottom:`1px solid ${C.border}` }}>
+      {/* ── Add / Edit Category Modal ── */}
+      <Portal>
+        {modalOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div onClick={() => setModalOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)" }} />
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 420,
+                background: "#ffffff",
+                borderRadius: 22,
+                border: "1px solid #e2e8f0",
+                boxShadow: "0 24px 64px rgba(15,23,42,0.15)",
+                padding: "26px 28px",
+                fontFamily: "var(--dash-font)",
+                zIndex: 10,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, paddingBottom: 14, borderBottom: "1px solid #f1f5f9" }}>
                 <div>
-                  <p style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.14em", color:C.brand, margin:"0 0 4px" }}>Organisation</p>
-                  <h3 style={{ fontSize:20, fontWeight:900, color:C.foreground, margin:0, letterSpacing:"-0.02em" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#2563eb", marginBottom: 2 }}>
+                    Category Setup
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", margin: 0 }}>
                     {editingCat ? "Edit Category" : "New Category"}
                   </h3>
                 </div>
-                <button onClick={() => setModalOpen(false)} style={{ width:32, height:32, borderRadius:"50%", border:`1.5px solid ${C.border}`, background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:C.muted }}>
-                  <X style={{ width:14 }} />
+                <button
+                  onClick={() => setModalOpen(false)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "1px solid #e2e8f0",
+                    background: "transparent",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b",
+                  }}
+                >
+                  <X style={{ width: 15, height: 15 }} />
                 </button>
               </div>
 
-              <form onSubmit={handleSave} style={{ display:"flex", flexDirection:"column", gap:16 }}>
-                {/* Name */}
+              <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>
-                  <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:8 }}>Category Name</label>
-                  <input type="text" required placeholder="e.g. Lab Supplies, Gym, Tech Gear" value={name} onChange={e => setName(e.target.value)}
-                    style={inputStyle}
-                    onFocus={e => e.target.style.borderColor=C.brand}
-                    onBlur={e => e.target.style.borderColor=C.border}
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                    Category Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Laundry, Cafe, Subscriptions"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="dash-input"
                   />
                 </div>
 
-                {/* Type — only when creating */}
                 {!editingCat && (
                   <div>
-                    <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:8 }}>Type</label>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:4, background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
-                      {["expense","income"].map(t => (
-                        <button key={t} type="button" onClick={() => setType(t)} style={{
-                          padding:"9px 0", borderRadius:8, cursor:"pointer", textTransform:"capitalize",
-                          background: type===t ? C.hero : "transparent",
-                          color: type===t ? C.heroFg : C.muted,
-                          border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
-                        }}>
-                          {t}
+                    <label style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                      Type
+                    </label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 4, background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                      {[
+                        ["expense", "Expense"],
+                        ["income", "Income"],
+                      ].map(([val, label]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setType(val)}
+                          style={{
+                            padding: "8px 0",
+                            borderRadius: 9,
+                            cursor: "pointer",
+                            background: type === val ? "#091227" : "transparent",
+                            color: type === val ? "#ffffff" : "#64748b",
+                            border: "none",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          {label}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Color picker */}
                 <div>
-                  <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:10 }}>Color Accent</label>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, padding:"14px", background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
-                    {PRESET_COLORS.map(pc => (
-                      <button key={pc} type="button" onClick={() => setColor(pc)} style={{
-                        width:30, height:30, borderRadius:8, background:pc, border: color===pc ? `3px solid ${C.foreground}` : "2px solid transparent",
-                        cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                        transform: color===pc ? "scale(1.15)" : "scale(1)", transition:"all 0.12s",
-                        flexShrink:0,
-                      }}>
-                        {color===pc && <Check style={{ width:12, color: isColorLight(pc) ? C.foreground : "#fff", strokeWidth:3 }} />}
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
+                    Color Tag
+                  </label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {PRESET_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          background: c,
+                          border: color === c ? "2.5px solid #0f172a" : "2px solid transparent",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#ffffff",
+                          transition: "transform 0.15s",
+                          transform: color === c ? "scale(1.15)" : "scale(1)",
+                        }}
+                      >
+                        {color === c && <Check style={{ width: 14, height: 14 }} />}
                       </button>
                     ))}
-                    {/* Custom color input */}
-                    <div style={{ position:"relative" }}>
-                      <input type="color" value={color.startsWith("#") ? color : "#3B82F6"} onChange={e => setColor(e.target.value)}
-                        style={{ width:30, height:30, borderRadius:8, border:`1.5px solid ${C.border}`, cursor:"pointer", padding:2, background:"#fff" }}
-                        title="Custom color"
-                      />
-                    </div>
                   </div>
-
-                  {/* Live Preview Card */}
-                  {(() => {
-                    const isLight = isColorLight(color);
-                    const pFg = isLight ? C.foreground : "#ffffff";
-                    const pBadgeBg = isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.2)";
-                    const pIconBg = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.18)";
-                    const pIconBorder = isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.25)";
-                    return (
-                      <div style={{
-                        marginTop: 12, padding: "14px 16px", borderRadius: 10,
-                        background: color, color: pFg,
-                        display: "flex", alignItems: "center", gap: 12,
-                        transition: "background 0.2s, color 0.2s",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                      }}>
-                        <div style={{
-                          width: 36, height: 36, borderRadius: 8,
-                          background: pIconBg, border: `1px solid ${pIconBorder}`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          color: pFg, flexShrink: 0,
-                        }}>
-                          {getCategoryIcon(name || "Category", "w-4 h-4")}
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: pFg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {name || "Category Preview"}
-                          </div>
-                          <div style={{ fontSize: 10, color: isLight ? C.muted : "rgba(255,255,255,0.6)", fontWeight: 500, marginTop: 2 }}>
-                            {editingCat ? (editingCat.isDefault ? "Default" : "Custom") : "Custom"}
-                          </div>
-                        </div>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-                          background: pBadgeBg, color: pFg,
-                          textTransform: "uppercase", letterSpacing: "0.06em",
-                        }}>
-                          {type}
-                        </span>
-                      </div>
-                    );
-                  })()}
                 </div>
 
-                {/* Buttons */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:4 }}>
-                  <button type="button" onClick={() => setModalOpen(false)} style={{ padding:"11px 0", borderRadius:999, cursor:"pointer", background:"#fff", border:`1.5px solid ${C.border}`, fontSize:14, fontWeight:600, color:C.muted, ...M }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+                  <button type="button" onClick={() => setModalOpen(false)} className="dash-btn-secondary" style={{ height: 44 }}>
                     Cancel
                   </button>
-                  <button type="submit" disabled={saving} style={{
-                    padding:"11px 0", borderRadius:999, cursor:"pointer",
-                    background:C.highlight, color:C.highlightFg,
-                    border:"none", fontSize:14, fontWeight:800, ...M,
-                    opacity: saving ? 0.7 : 1, boxShadow:`0 4px 14px ${C.highlight}55`,
-                  }}>
-                    {saving ? "Saving…" : editingCat ? "Update" : "Create"}
+                  <button type="submit" disabled={saving} className="dash-btn-primary" style={{ height: 44 }}>
+                    {saving ? "Saving..." : editingCat ? "Update Category" : "Save Category"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </Portal>
-      )}
+        )}
+      </Portal>
 
       <GlassConfirmModal
         isOpen={!!itemToDelete}
         onClose={() => setItemToDelete(null)}
         onConfirm={confirmDelete}
         title="Delete Category"
-        message="Are you sure you want to delete this category?"
+        message="Are you sure you want to delete this custom category?"
         confirmText="Delete"
       />
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -1,0 +1,569 @@
+/* ==========================================================================
+   CampusCoin — Universal Dashboard Design System
+   Clean, Light, Pristine & Modern SaaS Aesthetic (Plus Jakarta Sans)
+   ========================================================================== */
+
+:root {
+  --dash-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --dash-blue: #2563eb;
+  --dash-blue-deep: #1d4ed8;
+  --dash-blue-soft: #eff6ff;
+  --dash-blue-border: #dbeafe;
+  --dash-emerald: #16a34a;
+  --dash-emerald-soft: #dcfce7;
+  --dash-amber: #f59e0b;
+  --dash-amber-soft: #fef3c7;
+  --dash-danger: #dc2626;
+  --dash-danger-soft: #fee2e2;
+  --dash-purple: #7c3aed;
+  --dash-purple-soft: #f3e8ff;
+  --dash-foreground: #0f172a;
+  --dash-muted: #64748b;
+  --dash-border: #e2e8f0;
+  --dash-card-bg: #ffffff;
+  --dash-alt-bg: #f8fafc;
+}
+
+.dash-root {
+  font-family: var(--dash-font);
+  color: var(--dash-foreground);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+/* ── Universal Page Header ── */
+.dash-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+@media (min-width: 640px) {
+  .dash-page-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+
+.dash-page-title {
+  font-size: clamp(1.4rem, 2.8vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--dash-foreground);
+  margin: 0;
+}
+
+.dash-page-desc {
+  font-size: 13px;
+  color: var(--dash-muted);
+  margin: 4px 0 0;
+  font-weight: 500;
+}
+
+.dash-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Universal Button System ── */
+.dash-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(37, 99, 235, 0.28);
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-decoration: none;
+  font-family: var(--dash-font);
+}
+
+.dash-btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.38);
+}
+
+.dash-btn-primary:active {
+  transform: translateY(0);
+}
+
+.dash-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: var(--dash-foreground);
+  border: 1px solid var(--dash-border);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: all 0.15s ease;
+  text-decoration: none;
+  font-family: var(--dash-font);
+}
+
+.dash-btn-secondary:hover {
+  background: var(--dash-alt-bg);
+  border-color: #cbd5e1;
+  color: var(--dash-blue);
+}
+
+.dash-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: var(--dash-danger-soft);
+  color: var(--dash-danger);
+  border: 1px solid #fecdd3;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--dash-font);
+}
+
+.dash-btn-danger:hover {
+  background: #fee2e2;
+  border-color: #fda4af;
+}
+
+/* ── Universal Card System ── */
+.dash-card {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 18px;
+  padding: clamp(16px, 2.5vw, 22px);
+  box-shadow: 0 4px 20px -2px rgba(37, 99, 235, 0.06), 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  flex-wrap: wrap;
+}
+
+.dash-card-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--dash-foreground);
+  margin: 0;
+}
+
+.dash-card-subtitle {
+  font-size: 12px;
+  color: var(--dash-muted);
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+
+.dash-section-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dash-blue);
+  margin: 0 0 3px;
+}
+
+.dash-section-title {
+  font-size: clamp(1.2rem, 2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--dash-foreground);
+  margin: 0;
+}
+
+.dash-section-desc {
+  font-size: 13px;
+  color: var(--dash-muted);
+  margin: 3px 0 0;
+  font-weight: 500;
+}
+
+/* ── Universal Inputs & Filters ── */
+.dash-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dash-input-icon {
+  position: absolute;
+  left: 14px;
+  width: 15px;
+  height: 15px;
+  color: var(--dash-muted);
+  pointer-events: none;
+}
+
+.dash-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--dash-alt-bg);
+  border: 1px solid var(--dash-border);
+  font-size: 13px;
+  color: var(--dash-foreground);
+  font-family: var(--dash-font);
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.dash-input.has-icon {
+  padding-left: 38px;
+}
+
+.dash-input:focus {
+  background: #ffffff;
+  border-color: var(--dash-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.dash-select {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--dash-alt-bg);
+  border: 1px solid var(--dash-border);
+  font-size: 13px;
+  color: var(--dash-foreground);
+  font-family: var(--dash-font);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.dash-select:focus {
+  background: #ffffff;
+  border-color: var(--dash-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ── Universal Table System ── */
+.dash-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--dash-border);
+  background: #ffffff;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.dash-table th {
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dash-muted);
+  background: var(--dash-alt-bg);
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.dash-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--dash-foreground);
+  vertical-align: middle;
+}
+
+.dash-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dash-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* ── Universal Empty State ── */
+.dash-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(32px, 5vw, 48px) 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+}
+
+.dash-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--dash-blue-soft);
+  color: var(--dash-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.dash-empty-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dash-foreground);
+  margin: 0 0 4px;
+  letter-spacing: -0.015em;
+}
+
+.dash-empty-desc {
+  font-size: 13px;
+  color: var(--dash-muted);
+  max-width: 360px;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+/* ── Clean Light Hero Net Balance Card ── */
+.dash-hero-card {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  padding: clamp(20px, 3.5vw, 28px);
+  color: var(--dash-foreground);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.02);
+  border: 1px solid var(--dash-border);
+}
+
+.dash-hero-glow {
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.dash-hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  background: var(--dash-blue-soft);
+  border: 1px solid var(--dash-blue-border);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--dash-blue);
+  margin-bottom: 14px;
+}
+
+.dash-hero-balance-val {
+  font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--dash-foreground);
+  margin-bottom: 14px;
+}
+
+.dash-cashflow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dash-cashflow-pill.positive {
+  background: var(--dash-emerald-soft);
+  border: 1px solid #bbf7d0;
+  color: var(--dash-emerald);
+}
+
+.dash-cashflow-pill.negative {
+  background: var(--dash-danger-soft);
+  border: 1px solid #fecdd3;
+  color: var(--dash-danger);
+}
+
+.dash-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  background: var(--dash-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+  transition: all 0.15s ease;
+  font-family: var(--dash-font);
+}
+
+.dash-hero-cta:hover {
+  background: var(--dash-blue-deep);
+  transform: translateY(-1px);
+}
+
+.dash-hero-stat-pod {
+  background: var(--dash-alt-bg);
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 140px;
+  flex: 1;
+}
+
+/* ── 4-Column KPI Grid ── */
+.dash-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .dash-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dash-kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dash-kpi-card {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  padding: 18px 18px;
+  box-shadow: 0 4px 20px -2px rgba(37, 99, 235, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.dash-kpi-card:hover {
+  transform: translateY(-1.5px);
+  border-color: rgba(147, 197, 253, 0.8);
+  box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.1);
+}
+
+.dash-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.dash-kpi-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dash-muted);
+}
+
+.dash-kpi-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-kpi-val {
+  font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--dash-foreground);
+  margin-bottom: 4px;
+}
+
+.dash-kpi-hint {
+  font-size: 11.5px;
+  color: var(--dash-muted);
+  font-weight: 500;
+}
+
+/* ── Action Buttons inside lists/tables ── */
+.dash-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--dash-border);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--dash-muted);
+  transition: all 0.12s ease;
+}
+
+.dash-action-btn:hover {
+  background: var(--dash-alt-bg);
+  color: var(--dash-blue);
+  border-color: #cbd5e1;
+}
+
+.dash-action-btn.delete:hover {
+  background: var(--dash-danger-soft);
+  color: var(--dash-danger);
+  border-color: #fca5a5;
+}
