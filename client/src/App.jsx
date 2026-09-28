@@ -26,6 +26,7 @@ const ProfilePage = lazy(() => import("./features/profile/ProfilePage"));
 const SubscriptionsPage = lazy(() => import("./features/subscriptions/SubscriptionsPage"));
 const InsightsPage = lazy(() => import("./features/insights/InsightsPage"));
 const AdminPage = lazy(() => import("./features/admin/AdminPage"));
+const SavingsPage = lazy(() => import("./features/savings/SavingsPage"));
 
 const FallbackLoader = () => (
   <div className="w-full h-96 flex items-center justify-center">
@@ -77,6 +78,9 @@ export default function App() {
       <Route path="/transactions" element={<Navigate to="/app/transactions" replace />} />
       <Route path="/budget" element={<Navigate to="/app/budget" replace />} />
       <Route path="/budgets" element={<Navigate to="/app/budget" replace />} />
+      <Route path="/savings" element={<Navigate to="/app/savings" replace />} />
+      <Route path="/goals" element={<Navigate to="/app/savings" replace />} />
+      <Route path="/vault" element={<Navigate to="/app/savings" replace />} />
       <Route path="/khata" element={<Navigate to="/app/khata" replace />} />
       <Route path="/iou" element={<Navigate to="/app/khata" replace />} />
       <Route path="/debts" element={<Navigate to="/app/khata" replace />} />
@@ -109,6 +113,9 @@ export default function App() {
         {/* Feature Sub-routes */}
         <Route path="verify" element={<VerifyEmailPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="savings" element={<Suspense fallback={<FallbackLoader />}><SavingsPage /></Suspense>} />
+        <Route path="goals" element={<Navigate to="/app/savings" replace />} />
+        <Route path="vault" element={<Navigate to="/app/savings" replace />} />
         <Route path="khata" element={<KhataPage />} />
         <Route path="budget" element={<BudgetPage />} />
         <Route path="budgets" element={<Navigate to="/app/budget" replace />} />

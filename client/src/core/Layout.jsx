@@ -24,6 +24,7 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
+  PiggyBank,
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -270,6 +271,7 @@ export default function Layout() {
 
   const navLinks = [
     { to: "/app", label: "Overview", icon: LayoutDashboard, end: true },
+    { to: "/app/savings", label: "Savings & Vault", icon: PiggyBank },
     { to: "/app/insights", label: "AI Insights", icon: Sparkles },
     { to: "/app/transactions", label: "Transactions", icon: ArrowLeftRight },
     { to: "/app/khata", label: "Khata", icon: BookOpen },
@@ -339,8 +341,8 @@ export default function Layout() {
 
       {/* Navigation Groups */}
       <nav style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
-        <NavGroup label="Main" links={navLinks.slice(0, 4)} location={location} />
-        <NavGroup label="Tools" links={navLinks.slice(4)} location={location} />
+        <NavGroup label="Main" links={navLinks.slice(0, 5)} location={location} />
+        <NavGroup label="Tools" links={navLinks.slice(5)} location={location} />
       </nav>
 
       {/* Sign Out Button */}
