@@ -2,18 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User, Lock, PiggyBank, GraduationCap, DollarSign,
-  Save, LogOut, Check, ChevronDown, Moon, Sun, Palette,
+  Save, LogOut, Check, ChevronDown,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
 import api from "../../core/api";
 import toast from "react-hot-toast";
 import "../dashboard/Dashboard.css";
 
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth();
-  const { toggleMode, isDark, themes, themeId, selectTheme } = useTheme();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -198,64 +196,7 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Theme & Appearance */}
-          <div style={{
-            width: "100%",
-            marginTop: "16px",
-            paddingTop: "16px",
-            borderTop: "1px solid var(--dash-border)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "12.5px", color: "var(--dash-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: "6px" }}>
-                {isDark ? <Moon size={14} /> : <Sun size={14} />} Appearance
-              </span>
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="dash-btn-secondary"
-                style={{ height: "32px", padding: "0 12px", fontSize: "12px" }}
-              >
-                {isDark ? "Dark Mode" : "Light Mode"}
-              </button>
-            </div>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "12.5px", color: "var(--dash-muted)", fontWeight: 500, display: "flex", alignItems: "center", gap: "6px" }}>
-                <Palette size={14} /> Accent
-              </span>
-              <div style={{ display: "flex", gap: "6px" }}>
-                {themes.map(th => {
-                  const bgSwatch = th.swatch || (th.color ? `rgb(${Math.round(th.color[0]*255)},${Math.round(th.color[1]*255)},${Math.round(th.color[2]*255)})` : "#3B82F6");
-                  return (
-                    <button
-                      key={th.id}
-                      type="button"
-                      onClick={() => selectTheme(th.id)}
-                      title={th.name}
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        cursor: "pointer",
-                        border: themeId === th.id ? "2px solid #0f172a" : "2px solid #e2e8f0",
-                        background: bgSwatch,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transform: themeId === th.id ? "scale(1.15)" : "scale(1)",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      {themeId === th.id && <Check size={10} color="#fff" strokeWidth={3} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
 
           {/* Sign Out Button */}
           <button
