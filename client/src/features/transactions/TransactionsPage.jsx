@@ -4,7 +4,6 @@ import {
   ArrowLeftRight,
   Plus,
   Search,
-  Download,
   Upload,
   Trash2,
   Edit2,
@@ -18,6 +17,8 @@ import {
   TrendingDown,
   RotateCcw,
   Wallet,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { getTransactions, deleteTransaction, importTransactionsCSV } from "./transactionApi";
@@ -31,6 +32,7 @@ import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../../utils/currencyUtils";
+import { generateTransactionsPDF } from "./TransactionStatementPDF";
 import AdSenseAd from "../../components/ads/AdSenseAd";
 import "../dashboard/Dashboard.css";
 
@@ -124,10 +126,18 @@ export default function TransactionsPage() {
     setModalOpen(true);
   };
 
+  /* ── Export CSV / Excel Spreadsheet ── */
   const handleExportCSV = async () => {
-    const tid = toast.loading("Preparing CSV export...");
+    const tid = toast.loading("Preparing Excel / CSV export...");
     try {
-      const res = await getTransactions({ limit: 5000 });
+      const params = { limit: 5000 };
+      if (typeFilter) params.type = typeFilter;
+      if (categoryFilter) params.categoryId = categoryFilter;
+      if (search) params.search = search;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const res = await getTransactions(params);
       if (!res.success || !res.transactions?.length) {
         toast.error("No transactions to export.", { id: tid });
         return;
@@ -135,8 +145,9 @@ export default function TransactionsPage() {
       const rows = res.transactions.map((t) => ({
         Date: new Date(t.date).toLocaleDateString(),
         Category: t.categoryId?.name || "Other",
-        Type: t.type,
+        Type: t.type === "income" ? "Income" : "Expense",
         Amount: t.amount,
+        Currency: user?.currency || "USD",
         Description: t.description || "",
         PaymentMethod: t.paymentMethod || "Digital Bank",
         Recurring: t.isRecurring ? "Yes" : "No",
@@ -149,36 +160,91 @@ export default function TransactionsPage() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      toast.success("Export downloaded!", { id: tid });
+      toast.success("Excel / CSV Export downloaded!", { id: tid });
     } catch {
       toast.error("Export failed.", { id: tid });
     }
   };
 
+  /* ── Export Branded PDF Statement ── */
+  const handleExportPDF = async () => {
+    try {
+      const params = { limit: 5000 };
+      if (typeFilter) params.type = typeFilter;
+      if (categoryFilter) params.categoryId = categoryFilter;
+      if (search) params.search = search;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const res = await getTransactions(params);
+      const txs = res.success && res.transactions ? res.transactions : transactions;
+      await generateTransactionsPDF(user, txs, { typeFilter, categoryFilter, startDate, endDate });
+    } catch {
+      toast.error("Failed to generate PDF statement.");
+    }
+  };
+
+  /* ── Import CSV / Excel ── */
   const handleImportCSV = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const tid = toast.loading("Processing file...");
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        const rows = results.data.map((r) => ({
-          date: r.Date || r.date,
-          categoryName: r.Category || r.category || r.categoryName,
-          type: (r.Type || r.type || "expense").toLowerCase(),
-          amount: parseFloat(r.Amount || r.amount),
-          description: r.Description || r.description || "",
-        }));
         try {
+          if (!results.data || results.data.length === 0) {
+            toast.error("No data found in uploaded file.", { id: tid });
+            return;
+          }
+
+          const rows = results.data
+            .map((r) => {
+              const rawAmount = r.Amount || r.amount || r.AMOUNT || r.Value || r.value || r.Total || r.total || 0;
+              const cleanAmount = typeof rawAmount === "string" ? parseFloat(rawAmount.replace(/[^0-9.-]+/g, "")) : Number(rawAmount);
+
+              const rawType = (r.Type || r.type || r.TYPE || "expense").toLowerCase();
+              const type = rawType.includes("inc") || rawType === "credit" ? "income" : "expense";
+
+              const categoryName = r.Category || r.category || r.CATEGORY || r["Category Name"] || r.categoryName || "General";
+              const description = r.Description || r.description || r.DESCRIPTION || r.Note || r.Notes || r.Title || "";
+              const date = r.Date || r.date || r.DATE || new Date().toISOString();
+              const paymentMethod = r["Payment Method"] || r.PaymentMethod || r.paymentMethod || r.Method || "Digital Bank";
+
+              return {
+                date,
+                categoryName,
+                type,
+                amount: Math.abs(cleanAmount) || 0,
+                description,
+                paymentMethod,
+              };
+            })
+            .filter((r) => r.amount > 0);
+
+          if (rows.length === 0) {
+            toast.error("No valid transactions could be parsed.", { id: tid });
+            return;
+          }
+
           const res = await importTransactionsCSV(rows);
           if (res.success) {
-            toast.success(`Imported ${res.imported} records!`);
+            toast.success(`Successfully imported ${res.imported || rows.length} records!`, { id: tid });
             fetchTransactions();
             window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
+          } else {
+            toast.error(res.message || "Import failed.", { id: tid });
           }
         } catch (err) {
-          toast.error(err.response?.data?.message || "Import failed.");
+          toast.error(err.response?.data?.message || "Failed to process import file.", { id: tid });
+        } finally {
+          e.target.value = "";
         }
+      },
+      error: () => {
+        toast.error("Could not parse file.", { id: tid });
+        e.target.value = "";
       },
     });
   };
@@ -209,21 +275,30 @@ export default function TransactionsPage() {
             </span>
           </div>
           <h1 className="dash-page-title">Expenses & Income</h1>
-          <p className="dash-page-desc">Track where your money goes and stay on top of your daily spending.</p>
+          <p className="dash-page-desc">Track where your money goes, import statements, and stay on top of daily campus spending.</p>
         </div>
 
         <div className="dash-page-actions">
-          <label className="dash-btn-secondary" style={{ cursor: "pointer" }}>
+          {/* Import CSV / Excel */}
+          <label className="dash-btn-secondary" style={{ cursor: "pointer" }} title="Import transactions from CSV or Excel">
             <Upload style={{ width: 15, height: 15 }} />
-            <span>Import CSV</span>
-            <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: "none" }} />
+            <span>Import File</span>
+            <input type="file" accept=".csv,.txt,.tsv" onChange={handleImportCSV} style={{ display: "none" }} />
           </label>
 
-          <button onClick={handleExportCSV} className="dash-btn-secondary">
-            <Download style={{ width: 15, height: 15 }} />
-            <span>Export CSV</span>
+          {/* Export CSV / Excel */}
+          <button onClick={handleExportCSV} className="dash-btn-secondary" title="Export transactions as CSV / Excel spreadsheet">
+            <FileSpreadsheet style={{ width: 15, height: 15, color: "#16a34a" }} />
+            <span>Excel / CSV</span>
           </button>
 
+          {/* Export PDF */}
+          <button onClick={handleExportPDF} className="dash-btn-secondary" title="Generate and download official PDF statement">
+            <FileText style={{ width: 15, height: 15, color: "#2563eb" }} />
+            <span>PDF Statement</span>
+          </button>
+
+          {/* Add Transaction Button */}
           <button
             onClick={() => {
               setEditItem(null);
@@ -240,61 +315,80 @@ export default function TransactionsPage() {
       {/* ── Summary KPI Strip ── */}
       <div className="dash-kpi-grid">
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#dbeafe", color: "#2563eb" }}>
-              <ArrowLeftRight style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Total Transactions</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#eff6ff", color: "#2563eb" }}>
+              <ArrowLeftRight style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value">{total}</div>
-            <p className="dash-kpi-label">Total Transactions</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#eff6ff", color: "#2563eb" }}>
-            All time
-          </span>
+          <div className="dash-kpi-val">{total}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
+              All time
+            </span>
+            <span className="dash-kpi-hint">Total recorded</span>
+          </div>
         </div>
 
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#dcfce7", color: "#16a34a" }}>
-              <TrendingUp style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Money In (Income)</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#dcfce7", color: "#16a34a" }}>
+              <TrendingUp style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value" style={{ color: "#16a34a" }}>
-              {formatCurrency(pageIncome, cur)}
-            </div>
-            <p className="dash-kpi-label">Money In (Income)</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#dcfce7", color: "#16a34a" }}>
-            + Received
-          </span>
+          <div className="dash-kpi-val" style={{ color: "#16a34a" }}>
+            {formatCurrency(pageIncome, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#dcfce7", color: "#16a34a" }}>
+              + Received
+            </span>
+            <span className="dash-kpi-hint">Cash inflows</span>
+          </div>
         </div>
 
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: "#fee2e2", color: "#dc2626" }}>
-              <TrendingDown style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Money Out (Expenses)</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#fee2e2", color: "#dc2626" }}>
+              <TrendingDown style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value" style={{ color: "#0f172a" }}>
-              {formatCurrency(pageExpense, cur)}
-            </div>
-            <p className="dash-kpi-label">Money Out (Expenses)</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: "#fee2e2", color: "#dc2626" }}>
-            − Spent
-          </span>
+          <div className="dash-kpi-val" style={{ color: "#0f172a" }}>
+            {formatCurrency(pageExpense, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#fee2e2", color: "#dc2626" }}>
+              − Spent
+            </span>
+            <span className="dash-kpi-hint">Cash outflows</span>
+          </div>
         </div>
 
         <div className="dash-kpi-card">
-          <div>
-            <div className="dash-kpi-icon-wrap" style={{ background: netFlow >= 0 ? "#dcfce7" : "#fee2e2", color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
-              <Wallet style={{ width: 20, height: 20 }} />
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Net Difference</span>
+            <div className="dash-kpi-icon-box" style={{ background: netFlow >= 0 ? "#dcfce7" : "#fee2e2", color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+              <Wallet style={{ width: 17, height: 17 }} />
             </div>
-            <div className="dash-kpi-value" style={{ color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
-              {formatCurrency(netFlow, cur)}
-            </div>
-            <p className="dash-kpi-label">Net Difference</p>
           </div>
-          <span className="dash-kpi-badge" style={{ background: netFlow >= 0 ? "#dcfce7" : "#fee2e2", color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
-            {netFlow >= 0 ? "Surplus" : "Deficit"}
-          </span>
+          <div className="dash-kpi-val" style={{ color: netFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+            {formatCurrency(netFlow, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{
+              fontSize: 11.5,
+              fontWeight: 700,
+              padding: "2px 8px",
+              borderRadius: 9999,
+              background: netFlow >= 0 ? "#dcfce7" : "#fee2e2",
+              color: netFlow >= 0 ? "#16a34a" : "#dc2626"
+            }}>
+              {netFlow >= 0 ? "Surplus" : "Deficit"}
+            </span>
+            <span className="dash-kpi-hint">{netFlow >= 0 ? "Cash remaining" : "Over budget"}</span>
+          </div>
         </div>
       </div>
 
