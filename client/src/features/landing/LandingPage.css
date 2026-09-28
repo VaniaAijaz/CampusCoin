@@ -1,0 +1,366 @@
+/* CampusCoin Landing Page Design System — Pixel Perfect Replica */
+
+:root {
+  --lp-background: oklch(1 0 0);
+  --lp-foreground: oklch(0.17 0.018 264);
+  --lp-primary: oklch(0.17 0.018 264);
+  --lp-primary-foreground: oklch(1 0 0);
+  --lp-secondary: oklch(0.94 0.025 244);
+  --lp-secondary-foreground: oklch(0.20 0.022 254);
+  --lp-muted: oklch(0.94 0.025 244);
+  --lp-muted-foreground: oklch(0.40 0.025 250);
+  --lp-accent: oklch(0.57 0.19 256);
+  --lp-accent-foreground: oklch(1 0 0);
+  --lp-border: oklch(0.83 0.032 248);
+  --lp-card: oklch(1 0 0);
+  --lp-card-foreground: oklch(0.17 0.018 264);
+  --lp-blue: oklch(0.57 0.19 256);
+  --lp-blue-deep: oklch(0.42 0.16 257);
+  --lp-blue-soft: oklch(0.90 0.041 249);
+  --lp-glass: oklch(1 0 0 / 78%);
+  --lp-frame: oklch(0.87 0.055 240);
+  --lp-wallet-shade: oklch(0.41 0.16 255);
+  --lp-wallet-light: oklch(0.68 0.14 241);
+  --lp-success: oklch(0.63 0.16 148);
+  --lp-shadow-blue: oklch(0.31 0.09 251 / 21%);
+  --lp-surface-band: oklch(0.966 0.018 239);
+  --lp-font: "Plus Jakarta Sans", "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.lp-root {
+  font-family: var(--lp-font);
+  color: var(--lp-foreground);
+  background-color: var(--lp-background);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lp-showcase-frame {
+  padding: clamp(18px, 4.2vw, 43px) clamp(18px, 3.5vw, 36px) 35px;
+  border-radius: 8px;
+  background: linear-gradient(115deg, var(--lp-frame), oklch(0.93 0.026 244) 70%, oklch(0.83 0.062 242));
+}
+
+.lp-showcase {
+  position: relative;
+  min-height: 610px;
+  overflow: hidden;
+  border-radius: 12px;
+  isolation: isolate;
+  background: linear-gradient(150deg, oklch(0.98 0.014 240) 4%, oklch(0.92 0.048 238) 56%, oklch(0.77 0.1 243) 100%);
+  box-shadow: 0 2px 3px oklch(0.3 0.03 250 / 4%);
+}
+
+.lp-showcase::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, oklch(0.99 0.005 248 / 65%), transparent 65%);
+  pointer-events: none;
+}
+
+.lp-wallet-card {
+  width: 315px;
+  height: 220px;
+  padding: 21px 23px 19px;
+  border: 1px solid oklch(1 0 0 / 58%);
+  border-radius: 20px;
+  color: var(--lp-primary-foreground);
+  background: linear-gradient(121deg, var(--lp-wallet-light) -5%, var(--lp-blue) 35%, var(--lp-wallet-shade) 76%, oklch(0.57 0.15 245));
+  box-shadow: 0 24px 45px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 42%);
+  transform: rotate(13deg) skew(-4deg, -1deg);
+  transform-origin: center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.lp-wallet-card:hover {
+  transform: rotate(10deg) skew(-2deg, 0deg) translateY(-4px);
+  box-shadow: 0 28px 55px var(--lp-shadow-blue), inset 0 1px oklch(1 0 0 / 50%);
+}
+
+.lp-wallet-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(148deg, oklch(1 0 0 / 17%), transparent 45%);
+  pointer-events: none;
+}
+
+.lp-wallet-mark {
+  background: linear-gradient(135deg, oklch(1 0 0 / 95%) 50%, oklch(0.82 0.09 241 / 85%) 50%);
+}
+
+.lp-wallet-action {
+  background: oklch(1 0 0 / 86%);
+  color: var(--lp-blue-deep);
+  box-shadow: 0 3px 8px oklch(0.25 0.08 260 / 9%);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.lp-wallet-action:hover {
+  transform: scale(1.08);
+  background: oklch(1 0 0 / 100%);
+}
+
+.lp-wallet-eye {
+  color: oklch(1 0 0 / 72%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.lp-wallet-eye:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lp-notice {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 151px;
+  padding: 12px;
+  border: 1px solid oklch(1 0 0 / 75%);
+  border-radius: 13px;
+  background: var(--lp-glass);
+  box-shadow: 0 10px 25px oklch(0.31 0.08 248 / 12%);
+  backdrop-filter: blur(10px);
+  transform: rotate(12deg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lp-notice:hover {
+  transform: rotate(8deg) translateY(-2px);
+  box-shadow: 0 14px 30px oklch(0.31 0.08 248 / 18%);
+}
+
+.lp-notice-icon-green {
+  background: oklch(0.83 0.1 146);
+  color: oklch(0.36 0.12 147);
+}
+
+.lp-notice-icon-blue {
+  background: oklch(0.77 0.09 270);
+  color: oklch(0.41 0.14 263);
+}
+
+.lp-feature-icon {
+  background: oklch(0.86 0.06 242 / 84%);
+  color: var(--lp-blue);
+  box-shadow: 0 1px 5px oklch(0.34 0.09 248 / 6%);
+}
+
+.lp-eyebrow {
+  background: oklch(0.89 0.049 248 / 85%);
+}
+
+.lp-display-heading {
+  font-size: clamp(42px, 4.8vw, 58px);
+  line-height: 1.015;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.lp-fine-spaced {
+  letter-spacing: 0.24em;
+}
+
+.lp-hero-wallet {
+  filter: drop-shadow(0 25px 35px var(--lp-shadow-blue));
+}
+
+.lp-section-pad {
+  padding-top: clamp(78px, 10vw, 138px);
+  padding-bottom: clamp(78px, 10vw, 138px);
+}
+
+.lp-section-kicker {
+  color: var(--lp-blue);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.lp-section-heading {
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1.16;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.lp-section-band {
+  background: var(--lp-surface-band);
+}
+
+.lp-solution-card {
+  min-height: 265px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--lp-border);
+  border-radius: 8px;
+  background: var(--lp-card);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lp-solution-card:hover {
+  border-color: var(--lp-blue);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px var(--lp-shadow-blue);
+}
+
+.lp-solution-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--lp-blue-soft);
+  color: var(--lp-blue);
+}
+
+.lp-wallet-demo {
+  width: min(100%, 400px);
+  justify-self: center;
+  border-radius: 16px;
+  padding: 32px;
+  color: var(--lp-primary-foreground);
+  background: linear-gradient(125deg, var(--lp-wallet-light), var(--lp-blue-deep) 78%);
+  box-shadow: 0 25px 50px var(--lp-shadow-blue);
+}
+
+.lp-wallet-demo-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lp-insights-demo {
+  width: min(100%, 440px);
+  justify-self: center;
+  border: 1px solid var(--lp-border);
+  border-radius: 8px;
+  background: var(--lp-card);
+  padding: 30px;
+  box-shadow: 0 16px 40px var(--lp-shadow-blue);
+}
+
+.lp-insight-bar {
+  background: linear-gradient(180deg, var(--lp-blue), var(--lp-blue-soft));
+  transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.lp-insight-bar:hover {
+  opacity: 0.85;
+}
+
+.lp-closing-band {
+  background: var(--lp-primary);
+}
+
+/* Button Variants */
+.lp-btn-showcase {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--lp-primary);
+  color: var(--lp-primary-foreground);
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lp-btn-showcase:hover {
+  background: oklch(0.25 0.02 264);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.lp-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--lp-foreground);
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lp-btn-ghost:hover {
+  background: var(--lp-glass);
+  color: var(--lp-blue);
+}
+
+.lp-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--lp-secondary);
+  color: var(--lp-secondary-foreground);
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.lp-btn-secondary:hover {
+  background: oklch(0.90 0.03 244);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  .lp-showcase-frame {
+    margin: 12px;
+    padding: 12px;
+  }
+  .lp-showcase {
+    min-height: 720px;
+  }
+  .lp-showcase::before {
+    background: linear-gradient(180deg, oklch(0.985 0.009 248 / 75%), transparent 90%);
+  }
+  .lp-display-heading {
+    font-size: clamp(39px, 10vw, 53px);
+  }
+  .lp-wallet-card {
+    transform: rotate(10deg) skew(-4deg, -1deg) scale(0.83);
+    transform-origin: top left;
+  }
+  .lp-notice {
+    transform: rotate(10deg) scale(0.82);
+    transform-origin: top left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-root * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
