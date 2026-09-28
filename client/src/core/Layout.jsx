@@ -2,574 +2,392 @@ import { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, ArrowLeftRight, PieChart, Sparkles,
-  BarChart3, Tag, User, Shield, LogOut, Plus, Coins, Calendar,
-  Palette, Check, BookOpen, Sun, Moon, Bell, X, AlertCircle, Repeat
+  LayoutDashboard, ArrowLeftRight, PieChart,
+  BarChart3, Tag, User, LogOut,
+  BookOpen, Bell, X, Repeat, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import CampusCoinLogo from "../components/ui/CampusCoinLogo";
-import Iridescence from "../components/ui/Iridescence";
 import TransactionModal from "../features/transactions/TransactionModal";
 import DemoNoticeModal from "../components/ui/DemoNoticeModal";
 import AdSenseInterstitialModal from "../components/ads/AdSenseInterstitialModal";
 import api from "./api";
 
-
-// Video-Accurate Physical Spatial Glass Standard Recipe
-const glassRecipe =
-  "base-glass bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] transform-gpu backface-hidden";
-
-export const SPRING_CONFIG = {
-  type: "spring",
-  stiffness: 400,
-  damping: 35,
-  mass: 0.8,
-  bounce: 0,
+const C = {
+  hero:        "oklch(0.115 0.018 255)",
+  heroFg:      "oklch(0.985 0.003 250)",
+  heroMuted:   "oklch(0.73 0.018 252)",
+  heroLine:    "oklch(0.31 0.025 255)",
+  brand:       "oklch(0.59 0.22 262)",
+  brandSoft:   "oklch(0.93 0.06 262)",
+  highlight:   "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth:      "oklch(0.64 0.17 157)",
+  growthSoft:  "oklch(0.94 0.05 158)",
+  background:  "oklch(0.99 0.003 250)",
+  foreground:  "oklch(0.16 0.025 260)",
+  muted:       "oklch(0.5 0.025 255)",
+  border:      "oklch(0.9 0.012 255)",
 };
+const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
 
 const PAGE_VARIANTS = {
-  initial: { opacity: 0, y: 10 },
+  initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
+  exit:    { opacity: 0, y: -6 },
 };
+export const SPRING_CONFIG = { type:"spring", stiffness:400, damping:35, mass:0.8, bounce:0 };
 
-const PAGE_TRANSITION = {
-  duration: 0.2,
-  ease: "easeOut",
-};
+function BrandMark() {
+  return (
+    <span aria-hidden="true" style={{
+      position:"relative", display:"inline-flex",
+      width:30, height:30, flexShrink:0,
+      border:`6px solid ${C.brand}`,
+      borderRightColor:"transparent",
+      borderRadius:999,
+      transform:"rotate(-12deg)",
+    }}>
+      <span style={{ position:"absolute", width:7, height:7, borderRadius:999, background:C.highlight, left:4, top:4 }} />
+      <span style={{ position:"absolute", width:9, height:9, borderRadius:999, background:C.growth, right:-5.5, top:-4 }} />
+    </span>
+  );
+}
 
 export default function Layout() {
-  const { user, logout, isAdmin, isAuthenticated, isLoading: authLoading, loading } = useAuth();
-  const isAuthLoading = authLoading !== undefined ? authLoading : loading;
-  const { color, themeId, selectTheme, themes, mode, toggleMode, isDark } = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { color } = useTheme();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [demoModalOpen, setDemoModalOpen] = useState(false);
-  const [announcements, setAnnouncements] = useState([]);
+  const [quickAddOpen,       setQuickAddOpen]      = useState(false);
+  const [demoModalOpen,      setDemoModalOpen]      = useState(false);
+  const [announcements,      setAnnouncements]      = useState([]);
   const [activeAnnouncement, setActiveAnnouncement] = useState(null);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [bellOpen, setBellOpen] = useState(false);
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [bannerDismissed,    setBannerDismissed]    = useState(false);
+  const [bellOpen,           setBellOpen]           = useState(false);
+  const [isMobile,           setIsMobile]           = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
 
-  // Global listener for intercepted Demo Mode mutation attempts
   useEffect(() => {
-    const handleDemoBlocked = () => {
-      setDemoModalOpen(true);
-    };
-    window.addEventListener("campuscoin:demoBlocked", handleDemoBlocked);
-    return () => window.removeEventListener("campuscoin:demoBlocked", handleDemoBlocked);
+    const h = () => setDemoModalOpen(true);
+    window.addEventListener("campuscoin:demoBlocked", h);
+    return () => window.removeEventListener("campuscoin:demoBlocked", h);
   }, []);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Fetch active announcements for Student Dashboard Notification Bell & Top Banner
   useEffect(() => {
     if (!isAuthenticated) return;
-    api.get("/announcements")
-      .then(({ data }) => {
-        if (data.success && data.announcements?.length) {
-          setAnnouncements(data.announcements);
-          setActiveAnnouncement(data.announcements[0]);
-        }
-      })
-      .catch(() => {});
+    api.get("/announcements").then(({ data }) => {
+      if (data.success && data.announcements?.length) {
+        setAnnouncements(data.announcements);
+        setActiveAnnouncement(data.announcements[0]);
+      }
+    }).catch(() => {});
   }, [isAuthenticated]);
 
-  // Real Average Time Tracking: Lightweight Activity-Based Session Heartbeat (60 seconds)
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    let wasActive = false;
-    const registerEngagement = () => {
-      wasActive = true;
-    };
-
-    window.addEventListener("mousemove", registerEngagement, { passive: true });
-    window.addEventListener("scroll", registerEngagement, { passive: true });
-    window.addEventListener("keydown", registerEngagement, { passive: true });
-    window.addEventListener("touchstart", registerEngagement, { passive: true });
-
-    // Initial mount heartbeat
+    let active = false;
+    const reg = () => { active = true; };
+    ["mousemove","scroll","keydown","touchstart"].forEach(e => window.addEventListener(e, reg, { passive:true }));
     api.post("/users/heartbeat").catch(() => {});
-
-    // Every 60 seconds ping heartbeat ONLY if user engaged
-    const heartbeatTimer = setInterval(() => {
-      if (wasActive) {
-        api.post("/users/heartbeat").catch(() => {});
-        wasActive = false;
-      }
+    const t = setInterval(() => {
+      if (active) { api.post("/users/heartbeat").catch(() => {}); active = false; }
     }, 60000);
-
     return () => {
-      clearInterval(heartbeatTimer);
-      window.removeEventListener("mousemove", registerEngagement);
-      window.removeEventListener("scroll", registerEngagement);
-      window.removeEventListener("keydown", registerEngagement);
-      window.removeEventListener("touchstart", registerEngagement);
+      clearInterval(t);
+      ["mousemove","scroll","keydown","touchstart"].forEach(e => window.removeEventListener(e, reg));
     };
   }, [isAuthenticated]);
 
   const navLinks = [
-    { to: "/app", label: "Dashboard", icon: LayoutDashboard, end: true },
-    { to: "/app/transactions", label: "Transactions", icon: ArrowLeftRight },
-    { to: "/app/insights", label: "AI Insights", icon: Sparkles },
-    { to: "/app/khata", label: "Khata (Ledger)", icon: BookOpen },
-    { to: "/app/budget", label: "Budget", icon: PieChart },
-    { to: "/app/subscriptions", label: "Subscriptions", icon: Repeat },
-    { to: "/app/reports", label: "Reports", icon: BarChart3 },
-    { to: "/app/categories", label: "Categories", icon: Tag },
-    { to: "/app/profile", label: "Profile", icon: User },
+    { to:"/app",               label:"Overview",      icon:LayoutDashboard, end:true },
+    { to:"/app/transactions",  label:"Transactions",  icon:ArrowLeftRight },
+    { to:"/app/khata",         label:"Khata",         icon:BookOpen },
+    { to:"/app/budget",        label:"Budget",        icon:PieChart },
+    { to:"/app/subscriptions", label:"Subscriptions", icon:Repeat },
+    { to:"/app/reports",       label:"Reports",       icon:BarChart3 },
+    { to:"/app/categories",    label:"Categories",    icon:Tag },
+    { to:"/app/profile",       label:"Profile",       icon:User },
   ];
 
-  return (
-    <div className="min-h-screen text-white flex flex-col relative overflow-x-hidden selection:bg-white/30 selection:text-white">
-      {/* Dynamic Backgrounds — Iridescence WebGL Canvas */}
-      <div className="fixed inset-0 -z-20 pointer-events-none">
-        <Iridescence
-          color={color}
-          speed={0.8}
-          amplitude={0.12}
-          mouseReact={!isMobile}
-        />
+  const doLogout = async () => {
+    try { await api.post("/users/logout-session"); } catch (_) {}
+    logout(); navigate("/login");
+  };
+
+  const SidebarContent = () => (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", ...M }}>
+      <div style={{ padding:"22px 20px 16px", borderBottom:`1px solid ${C.heroLine}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <BrandMark />
+          <span style={{ fontSize:18, fontWeight:800, color:C.heroFg, letterSpacing:"-0.01em" }}>
+            Campus<span style={{ color:C.highlight }}>Coin</span>
+          </span>
+        </div>
+        <p style={{ fontSize:10, color:C.heroMuted, marginTop:4, fontWeight:500 }}>A Finance App For Students</p>
       </div>
-      {/* Subtle Luminous Tint to enhance contrast */}
-      <div className="fixed inset-0 bg-black/35 backdrop-blur-[2px] -z-10 pointer-events-none" />
 
-      {/* Desktop Left-Aligned Liquid Glass Sidebar */}
-      <aside
-        className={`hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-64 ${glassRecipe} z-40 p-5 justify-between rounded-r-[32px] border-l-0`}
-      >
-        <div className="flex flex-col gap-1">
-          {/* Logo & Brand Identity */}
-          <div className="px-2 py-3 mb-2">
-            <CampusCoinLogo size="md" />
+      {user && (
+        <div style={{ margin:"14px 12px 4px", padding:"12px 13px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:`1px solid ${C.heroLine}`, display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:34, height:34, borderRadius:"50%", background:C.brand, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, flexShrink:0 }}>
+            {user.name?.[0]?.toUpperCase() || "S"}
           </div>
-
-          {/* User Status Card */}
-          {user && (
-            <div className="mx-1 mb-4 p-3 rounded-[20px] bg-white/10 border border-white/20 flex items-center gap-3 shadow-sm">
-              <div className="w-9 h-9 rounded-full bg-white/25 border border-white/30 flex items-center justify-center text-xs font-black text-white shrink-0 shadow-inner">
-                {user.name?.[0]?.toUpperCase() || "S"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate leading-tight">{user.name}</p>
-                <p className="text-[10px] text-white/60 truncate mt-0.5 font-medium">
-                  {user.role === "admin" ? "Platform Admin" : user.academicYear || "Student"}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Menu */}
-          <div className="space-y-1">
-            <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest px-3 py-1 mb-1">
-              Menu
-            </p>
-            {navLinks.slice(0, 4).map((item) => (
-              <SideNavItem key={item.to} item={item} />
-            ))}
-          </div>
-
-          <div className="space-y-1 mt-4">
-            <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest px-3 py-1 mb-1">
-              Tools & Analytics
-            </p>
-            {navLinks.slice(4).map((item) => (
-              <SideNavItem key={item.to} item={item} />
-            ))}
+          <div style={{ minWidth:0 }}>
+            <p style={{ fontSize:13, fontWeight:700, color:C.heroFg, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name}</p>
+            <p style={{ fontSize:10, color:C.heroMuted, margin:0 }}>{user.role==="admin" ? "Platform Admin" : user.academicYear||"Student"}</p>
           </div>
         </div>
+      )}
 
-        {/* Bottom Actions: Theme Switcher & Logout */}
-        <div className="pt-4 border-t border-white/20 flex flex-col gap-2">          <button
-            onClick={async () => {
-              try { await api.post("/users/logout-session"); } catch (_) {}
-              logout();
-              navigate("/login");
-            }}
-            className="flex items-center gap-3 w-full px-4 py-2.5 rounded-full text-white/70 hover:text-white hover:bg-white/15 border border-white/20 text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
+      <nav style={{ flex:1, overflowY:"auto", padding:"10px 8px" }}>
+        <NavGroup label="Main"  links={navLinks.slice(0,4)} location={location} />
+        <NavGroup label="Tools" links={navLinks.slice(4)}  location={location} />
+      </nav>
 
-      {/* Main Content Area */}
-      <div className="flex-1 md:pl-64 flex flex-col min-h-screen pb-24 md:pb-0">
-        {/* Top Liquid Glass Header Nav */}
-        <header
-          className={`sticky top-0 z-30 ${glassRecipe} rounded-b-[28px] md:rounded-none border-t-0 px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col gap-2.5 shadow-sm`}
+      <div style={{ padding:"10px 10px 20px", borderTop:`1px solid ${C.heroLine}` }}>
+        <button onClick={doLogout} style={{
+          display:"flex", alignItems:"center", gap:9, width:"100%",
+          padding:"9px 14px", borderRadius:999,
+          background:"transparent", border:`1px solid ${C.heroLine}`,
+          color:C.heroMuted, fontSize:13, fontWeight:600, cursor:"pointer", ...M, transition:"all 0.15s",
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.08)"; e.currentTarget.style.color=C.heroFg; }}
+          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.heroMuted; }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-base font-bold text-white tracking-tight">
-                {navLinks.find((n) => location.pathname === n.to || (location.pathname.startsWith(n.to) && n.to !== "/app"))?.label || "Overview"}
-              </span>
+          <LogOut style={{ width:14 }} /> Sign Out
+        </button>
+      </div>
+    </div>
+  );
 
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/25 text-xs text-white/80 min-h-[36px]">
-                <Calendar className="w-3.5 h-3.5 text-white/80 shrink-0" />
-                <span className="font-semibold">{new Date().toLocaleString("default", { month: "long", year: "numeric" })}</span>
-              </div>
-            </div>
+  return (
+    <div style={{ minHeight:"100vh", background:C.background, ...M }}>
 
-            <div className="flex items-center gap-2.5">
-              {/* Frosted Glass Notification Bell Dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setBellOpen(!bellOpen)}
-                  title="Campus Announcements"
-                  className="relative w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 flex items-center justify-center text-white transition-colors cursor-pointer min-h-[44px]"
-                >
-                  <Bell className="w-4 h-4 text-white/90" />
-                  {announcements.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-brand-primary rounded-full animate-pulse shadow-[0_0_8px_var(--color-brand-primary)]" />
-                  )}
-                </button>
+      {/* Desktop sidebar */}
+      {!isMobile && (
+        <aside style={{
+          position:"fixed", top:0, left:0, bottom:0, width:248,
+          background:C.hero, zIndex:40,
+          display:"flex", flexDirection:"column",
+          backgroundImage:`linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
+          backgroundSize:"48px 48px",
+        }}>
+          <SidebarContent />
+        </aside>
+      )}
 
+      {/* Main */}
+      <div style={{ marginLeft:isMobile ? 0 : 248, display:"flex", flexDirection:"column", minHeight:"100vh" }}>
+
+        {/* Header */}
+        <header style={{
+          position:"sticky", top:0, zIndex:30,
+          background:"rgba(255,255,255,0.96)", backdropFilter:"blur(14px)",
+          borderBottom:`1px solid ${C.border}`,
+          height:60, padding:"0 24px",
+          display:"flex", alignItems:"center", justifyContent:"space-between", gap:12,
+        }}>
+          <p style={{ fontSize:13, color:C.muted, margin:0, fontWeight:500 }}>
+            {new Date().toLocaleString("default", { weekday:"long", month:"long", day:"numeric", year:"numeric" })}
+          </p>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ position:"relative" }}>
+              <button onClick={() => setBellOpen(o=>!o)} style={{
+                width:36, height:36, borderRadius:"50%",
+                border:`1px solid ${C.border}`, background:"#fff", color:C.muted,
+                display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
+              }}>
+                <Bell style={{ width:15 }} />
+                {announcements.length > 0 && (
+                  <span style={{ position:"absolute", top:7, right:7, width:7, height:7, borderRadius:"50%", background:C.brand }} />
+                )}
+              </button>
+              <AnimatePresence>
                 {bellOpen && (
-                  <div
-                    className="floating-glass absolute right-0 mt-2 w-80 max-w-[90vw] p-3.5 rounded-[24px] z-50 flex flex-col gap-2.5 shadow-2xl"
-                  >
-                    <div className="flex items-center justify-between pb-2 border-b border-white/20 px-1">
-                      <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-white">
-                        <Bell className="w-3.5 h-3.5 text-brand-primary" /> Campus Bulletins
-                      </span>
-                      <span className="text-[10px] text-white/60 font-semibold">{announcements.length} active</span>
+                  <motion.div key="bell"
+                    initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-6 }}
+                    transition={{ duration:0.15 }}
+                    style={{ position:"absolute", right:0, top:44, width:290, background:"#fff", border:`1px solid ${C.border}`, borderRadius:12, padding:14, zIndex:200, boxShadow:"0 8px 32px rgba(0,0,0,0.10)" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.foreground }}>Announcements</span>
+                      <span style={{ fontSize:11, color:C.muted }}>{announcements.length} active</span>
                     </div>
-
-                    <div className="max-h-64 overflow-y-auto space-y-2 pr-0.5">
-                      {announcements.length === 0 ? (
-                        <p className="text-xs text-center py-4 text-white/60">No active campus announcements.</p>
-                      ) : (
-                        announcements.map((ann) => (
-                          <div
-                            key={ann._id}
-                            className="p-3 rounded-2xl bg-white/10 border border-white/20 space-y-1"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-bold text-white truncate">{ann.title}</span>
-                              <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-full shrink-0 ${
-                                ann.priority === 'urgent' ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40' :
-                                ann.priority === 'high' ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40' :
-                                'bg-blue-500/25 text-blue-300 border border-blue-500/40'
-                              }`}>
-                                {ann.priority || 'info'}
-                              </span>
-                            </div>
-                            <p className="text-xs text-white/80 leading-relaxed">{ann.message}</p>
-                            <p className="text-[9px] text-white/50">{new Date(ann.createdAt).toLocaleDateString()}</p>
+                    {announcements.length === 0
+                      ? <p style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"10px 0" }}>No announcements.</p>
+                      : announcements.map(ann => (
+                          <div key={ann._id} style={{ padding:"8px 10px", borderRadius:8, background:C.background, border:`1px solid ${C.border}`, marginBottom:6 }}>
+                            <p style={{ fontSize:12, fontWeight:700, color:C.foreground, margin:"0 0 2px" }}>{ann.title}</p>
+                            <p style={{ fontSize:11, color:C.muted, margin:0 }}>{ann.message}</p>
                           </div>
                         ))
-                      )}
-                    </div>
-                  </div>
+                    }
+                  </motion.div>
                 )}
-              </div>
-
-              {/* Profile Avatar Pill */}
-              {isAuthLoading || !user ? (
-                <div className="w-10 h-10 rounded-full bg-white/15 animate-pulse min-h-[44px]" />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <NavLink
-                    to="/app/profile"
-                    className="flex items-center gap-2 p-1 rounded-full bg-white/15 border border-white/30 hover:bg-white/25 transition-transform active:scale-95 text-xs font-medium text-white shadow-sm min-h-[44px]"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-white/25 text-white border border-white/40 flex items-center justify-center text-sm font-bold shadow-inner">
-                      {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                    </div>
-                  </NavLink>
-
-                  {/* Highly Visible Mobile Log Out Button */}
-                  <button
-                    onClick={async () => {
-                      try { await api.post("/users/logout-session"); } catch (_) {}
-                      logout();
-                      navigate("/login");
-                    }}
-                    title="Log Out"
-                    className="md:hidden flex items-center justify-center px-3 py-1.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition-all cursor-pointer min-h-[38px] gap-1.5 shadow-sm active:scale-95"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
-              )}
+              </AnimatePresence>
             </div>
+            <NavLink to="/app/profile" style={{
+              width:36, height:36, borderRadius:"50%",
+              background:C.brandSoft, border:`1.5px solid ${C.brand}40`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:13, fontWeight:800, color:C.brand, textDecoration:"none",
+            }}>
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </NavLink>
           </div>
         </header>
 
-        {/* Frosted Glass Top Announcement Banner (Student Dashboard Notification) */}
+        {/* Banner */}
         {activeAnnouncement && !bannerDismissed && (
-          <div className="mx-4 sm:mx-6 lg:mx-8 mt-3 p-3 rounded-2xl bg-white/10 backdrop-blur-[80px] border border-white/25 flex items-center justify-between gap-3 shadow-lg transform-gpu">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${
-                activeAnnouncement.priority === 'urgent' ? 'bg-rose-400 animate-ping' :
-                activeAnnouncement.priority === 'high' ? 'bg-amber-400 animate-pulse' :
-                'bg-brand-primary animate-pulse'
-              }`} />
-              <span className="text-[10px] font-black shrink-0 uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/15 border border-white/25 text-white">
-                {activeAnnouncement.priority || "Announcement"}
-              </span>
-              <p className="text-xs text-white truncate font-medium">
-                <span className="font-bold mr-1.5 text-white">{activeAnnouncement.title}:</span>
-                <span className="text-white/80">{activeAnnouncement.message}</span>
-              </p>
-            </div>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className="p-1.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
-              title="Dismiss banner"
-            >
-              <X className="w-3.5 h-3.5" />
+          <div style={{ margin:"10px 20px 0", padding:"8px 14px", borderRadius:8, background:C.brandSoft, border:`1px solid ${C.brand}28`, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+            <p style={{ fontSize:12, color:C.foreground, margin:0, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              <strong>{activeAnnouncement.title}:</strong> {activeAnnouncement.message}
+            </p>
+            <button onClick={() => setBannerDismissed(true)} style={{ background:"none", border:"none", cursor:"pointer", color:C.muted }}>
+              <X style={{ width:13 }} />
             </button>
           </div>
         )}
 
-        {/* Mobile Sticky Liquid Glass Bottom Navigation Bar */}
-        <MobileBottomNav navLinks={navLinks} quickAdd={() => setQuickAddOpen(true)} />
+        {isMobile && <MobileBottomNav navLinks={navLinks} />}
 
-        {/* Dynamic Route Container with AnimatePresence mode="wait" (Zero Flashing) */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main style={{ flex:1, padding:isMobile ? "16px 16px 80px" : "28px 28px 32px", maxWidth:1280, width:"100%", margin:"0 auto" }}>
           <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              variants={PAGE_VARIANTS}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={PAGE_TRANSITION}
-              className="w-full transform-gpu backface-hidden"
-              style={{ willChange: "transform, opacity" }}
-            >
+            <motion.div key={location.pathname} variants={PAGE_VARIANTS} initial="initial" animate="animate" exit="exit" transition={{ duration:0.18, ease:"easeOut" }}>
               <Outlet context={{ openQuickAdd: () => setQuickAddOpen(true) }} />
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
 
-      {/* Global Quick Add Transaction Modal */}
       <TransactionModal
         isOpen={quickAddOpen}
         onClose={() => setQuickAddOpen(false)}
-        onSuccess={() => {
-          setQuickAddOpen(false);
-          window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
-        }}
+        onSuccess={() => { setQuickAddOpen(false); window.dispatchEvent(new CustomEvent("campuscoin:txUpdated")); }}
       />
-
-      {/* Interactive Demo Mode Mutation Interception Modal */}
-      <DemoNoticeModal
-        isOpen={demoModalOpen}
-        onClose={() => setDemoModalOpen(false)}
-      />
-
-      {/* Global 3-Second Timed AdSense Ad for Free Tier Users (Ad-Free for Premium $2/mo) */}
+      <DemoNoticeModal isOpen={demoModalOpen} onClose={() => setDemoModalOpen(false)} />
       <AdSenseInterstitialModal />
     </div>
   );
 }
 
-/**
- * Sliding "Magic Pill" Navigation for Desktop Sidebar
- * Uses motion.div layoutId="activeTab" with spring physics: stiffness: 400, damping: 30
- */
+function NavGroup({ label, links, location }) {
+  return (
+    <div style={{ marginTop:12, marginBottom:4 }}>
+      <p style={{ fontSize:9.5, fontWeight:800, letterSpacing:"0.13em", textTransform:"uppercase", color:C.heroMuted, padding:"0 10px 6px", margin:0, opacity:0.7 }}>{label}</p>
+      {links.map(item => <SideNavItem key={item.to} item={item} />)}
+    </div>
+  );
+}
+
 function SideNavItem({ item }) {
-  const { icon: Icon, to, label, badge, end } = item;
-
+  const { icon:Icon, to, label, end } = item;
   return (
-    <NavLink to={to} end={end} className="relative block rounded-full min-h-[44px]">
+    <NavLink to={to} end={end} style={({ isActive }) => ({
+      display:"flex", alignItems:"center", gap:10,
+      padding:"9px 12px", borderRadius:999, marginBottom:2,
+      fontSize:13, fontWeight: isActive ? 700 : 500,
+      color: isActive ? C.highlightFg : C.heroMuted,
+      background: isActive ? C.highlight : "transparent",
+      textDecoration:"none", transition:"all 0.15s", ...M,
+    })}>
       {({ isActive }) => (
         <>
-          {isActive && (
-            <motion.div
-              layoutId="activeTab"
-              className="absolute inset-0 rounded-full bg-white/25 border border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.15)] z-0 transform-gpu backface-hidden"
-              transition={SPRING_CONFIG}
-              style={{ willChange: "transform, opacity" }}
-            />
-          )}
-          <div
-            className={`relative z-10 flex items-center justify-between px-4 py-2.5 rounded-full text-xs font-medium cursor-pointer transition-colors min-h-[44px] ${
-              isActive ? "text-white font-bold" : "text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Icon className="w-4 h-4 shrink-0 text-white" />
-              <span>{label}</span>
-            </div>
-            {badge && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30 font-bold">
-                {badge}
-              </span>
-            )}
-          </div>
+          <Icon style={{ width:15, height:15, flexShrink:0, color: isActive ? C.highlightFg : C.heroMuted }} />
+          {label}
         </>
       )}
     </NavLink>
   );
 }
 
-/**
- * Sliding "Magic Pill" Navigation for Mobile Bottom Navigation Bar
- */
-function MobileNavItem({ item }) {
-  const { icon: Icon, to, label, end } = item;
+const MC = { brand:C.brand, soft:C.brandSoft, border:C.border, muted:C.muted, highlight:C.highlight, highlightFg:C.highlightFg };
 
-  return (
-    <NavLink to={to} end={end} className="relative flex flex-col items-center justify-center p-2 rounded-2xl min-h-[44px] min-w-[48px]">
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <motion.div
-              layoutId="activeMobileTab"
-              className="absolute inset-0 rounded-2xl bg-white/20 border border-white/30 z-0 transform-gpu backface-hidden"
-              transition={SPRING_CONFIG}
-              style={{ willChange: "transform, opacity" }}
-            />
-          )}
-          <Icon className={`relative z-10 w-5 h-5 transition-colors ${isActive ? "text-white" : "text-white/60"}`} />
-          <span className={`relative z-10 text-[10px] mt-0.5 leading-none font-semibold transition-colors ${isActive ? "text-white font-bold" : "text-white/60"}`}>
-            {label.split(" ")[0]}
-          </span>
-        </>
-      )}
-    </NavLink>
-  );
-}
-
-/* ─── Mobile Bottom Nav with "More" sheet ─────────────────────────── */
-const GLASS_MOBILE =
-  "bg-white/[0.08] backdrop-blur-[48px] backdrop-saturate-[160%] border border-white/15";
-
-function MobileBottomNav({ navLinks, quickAdd }) {
+function MobileBottomNav({ navLinks }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const primary = navLinks.slice(0, 4);
   const extra   = navLinks.slice(4);
 
   return (
     <>
-      {/* Backdrop */}
       <AnimatePresence>
         {moreOpen && (
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-            onClick={() => setMoreOpen(false)}
-          />
+          <>
+            <motion.div key="bd" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+              onClick={() => setMoreOpen(false)}
+              style={{ position:"fixed", inset:0, zIndex:40, background:"rgba(0,0,0,0.3)" }} />
+            <motion.div key="sheet"
+              initial={{ y:"100%", opacity:0 }} animate={{ y:0, opacity:1 }} exit={{ y:"100%", opacity:0 }}
+              transition={{ type:"spring", stiffness:380, damping:32 }}
+              style={{ position:"fixed", bottom:62, left:10, right:10, zIndex:50, background:"#fff", border:`1.5px solid ${MC.border}`, borderRadius:20, padding:"12px 12px 14px", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", ...M }}>
+              <div style={{ width:30, height:3, background:MC.border, borderRadius:99, margin:"0 auto 12px" }} />
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:7 }}>
+                {extra.map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div key={item.to} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.04 }}>
+                      <NavLink to={item.to} end={item.end} onClick={() => setMoreOpen(false)}
+                        style={({ isActive }) => ({
+                          display:"flex", flexDirection:"column", alignItems:"center", gap:5,
+                          padding:"10px 6px", borderRadius:12, textDecoration:"none",
+                          background: isActive ? MC.soft : "#f7f7fc",
+                          border:`1.5px solid ${isActive ? MC.brand+"40" : MC.border}`, ...M,
+                        })}>
+                        {({ isActive }) => (
+                          <>
+                            <Icon style={{ width:18, color: isActive ? MC.brand : MC.muted }} />
+                            <span style={{ fontSize:10, fontWeight:600, color: isActive ? MC.brand : MC.muted, textAlign:"center" }}>{item.label}</span>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      {/* More sheet — slides up */}
-      <AnimatePresence>
-        {moreOpen && (
-          <motion.div
-            key="sheet"
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 32 }}
-            className={`md:hidden fixed bottom-[72px] left-3 right-3 z-50 rounded-[28px] ${GLASS_MOBILE} shadow-[0_-8px_40px_rgba(0,0,0,0.35)] p-4`}
-          >
-            {/* Sheet handle */}
-            <div className="w-10 h-1 bg-white/25 rounded-full mx-auto mb-4" />
-
-            <div className="grid grid-cols-3 gap-2">
-              {extra.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={item.to}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <NavLink
-                      to={item.to}
-                      end={item.end}
-                      onClick={() => setMoreOpen(false)}
-                      className={({ isActive }) =>
-                        `flex flex-col items-center gap-1.5 p-3 rounded-[18px] transition-all
-                        ${isActive
-                          ? "bg-white/20 border border-white/30"
-                          : "bg-white/8 border border-white/10 hover:bg-white/15"
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-white/60"}`} />
-                          <span className={`text-[10px] font-semibold leading-none text-center
-                            ${isActive ? "text-white" : "text-white/55"}`}>
-                            {item.label}
-                          </span>
-                          {item.badge && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
+      <nav style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:40, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(10px)", borderTop:`1.5px solid ${MC.border}`, display:"flex", justifyContent:"space-around", alignItems:"center", padding:"5px 4px 10px", ...M }}>
+        {primary.map(item => <MobNavItem key={item.to} item={item} />)}
+        {extra.length > 0 && (
+          <button onClick={() => setMoreOpen(o=>!o)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"5px 10px", background:"none", border:"none", cursor:"pointer" }}>
+            <motion.div animate={{ rotate: moreOpen ? 45 : 0 }} transition={{ type:"spring", stiffness:400, damping:25 }}
+              style={{ display:"flex", flexDirection:"column", gap:3 }}>
+              {[0,1,2].map(i => <span key={i} style={{ display:"block", width:14, height:1.5, borderRadius:99, background: moreOpen ? MC.brand : MC.muted }} />)}
+            </motion.div>
+            <span style={{ fontSize:9, fontWeight:600, color: moreOpen ? MC.brand : MC.muted, marginTop:2 }}>More</span>
+          </button>
         )}
-      </AnimatePresence>
-
-      {/* Bottom bar */}
-      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 ${GLASS_MOBILE} rounded-t-[28px] shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-safe`}>
-        <div className="flex justify-around items-center px-2 py-2">
-          {primary.map((item) => (
-            <MobileNavItem key={item.to} item={item} />
-          ))}
-
-          {/* More */}
-          {extra.length > 0 && (
-            <button
-              onClick={() => setMoreOpen((o) => !o)}
-              className="relative flex flex-col items-center justify-center p-2 min-w-[48px] gap-0.5"
-            >
-              {moreOpen && (
-                <motion.div
-                  layoutId="moreActive"
-                  className="absolute inset-0 rounded-2xl bg-white/20 border border-white/30"
-                  transition={SPRING_CONFIG}
-                />
-              )}
-              <motion.div
-                animate={{ rotate: moreOpen ? 45 : 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="relative z-10 w-5 h-5 flex flex-col justify-center items-center gap-[4px]"
-              >
-                <span className={`block h-0.5 w-4 rounded-full transition-colors ${moreOpen ? "bg-white" : "bg-white/60"}`} />
-                <span className={`block h-0.5 w-4 rounded-full transition-colors ${moreOpen ? "bg-white" : "bg-white/60"}`} />
-                <span className={`block h-0.5 w-4 rounded-full transition-colors ${moreOpen ? "bg-white" : "bg-white/60"}`} />
-              </motion.div>
-              <span className={`relative z-10 text-[10px] font-semibold ${moreOpen ? "text-white" : "text-white/55"}`}>
-                More
-              </span>
-            </button>
-          )}
-        </div>
       </nav>
     </>
+  );
+}
+
+function MobNavItem({ item }) {
+  const { icon:Icon, to, label, end } = item;
+  return (
+    <NavLink to={to} end={end} style={({ isActive }) => ({
+      display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+      padding:"5px 10px", borderRadius:10, textDecoration:"none",
+      background: isActive ? MC.soft : "transparent",
+    })}>
+      {({ isActive }) => (
+        <>
+          <Icon style={{ width:18, color: isActive ? MC.brand : MC.muted }} />
+          <span style={{ fontSize:9, fontWeight: isActive ? 700 : 500, color: isActive ? MC.brand : MC.muted }}>
+            {label.split(" ")[0]}
+          </span>
+        </>
+      )}
+    </NavLink>
   );
 }
