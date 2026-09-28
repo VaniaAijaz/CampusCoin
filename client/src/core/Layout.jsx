@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,6 +16,14 @@ import {
   Sparkles,
   Menu,
   Coins,
+  Megaphone,
+  CheckCheck,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  Clock,
+  ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -46,6 +54,64 @@ const PAGE_VARIANTS = {
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -4 },
 };
+
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return "Recently";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHrs = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function getPriorityBadge(priority, type) {
+  const p = (priority || "").toLowerCase();
+  const t = (type || "").toLowerCase();
+
+  if (p === "critical" || p === "urgent" || t === "warning") {
+    return {
+      label: p === "critical" ? "CRITICAL" : "URGENT",
+      bg: "#fee2e2",
+      color: "#dc2626",
+      border: "#fca5a5",
+      icon: AlertTriangle,
+    };
+  }
+  if (p === "high" || t === "update") {
+    return {
+      label: "UPDATE",
+      bg: "#eff6ff",
+      color: "#2563eb",
+      border: "#bfdbfe",
+      icon: Megaphone,
+    };
+  }
+  if (t === "tip") {
+    return {
+      label: "TIP",
+      bg: "#faf5ff",
+      color: "#7c3aed",
+      border: "#e9d5ff",
+      icon: Sparkles,
+    };
+  }
+  return {
+    label: "NOTICE",
+    bg: "#f0fdf4",
+    color: "#16a34a",
+    border: "#bbf7d0",
+    icon: Info,
+  };
+}
 
 function BrandMark({ size = 36 }) {
   return (
@@ -96,6 +162,36 @@ export default function Layout() {
     typeof window !== "undefined" && window.innerWidth < 1024
   );
 
+  const [readIds, setReadIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("campuscoin_read_announcements") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const bellRef = useRef(null);
+
+  const fetchAnnouncements = useCallback(() => {
+    if (!isAuthenticated) return;
+    api
+      .get("/announcements")
+      .then(({ data }) => {
+        if (data.success && Array.isArray(data.announcements)) {
+          setAnnouncements(data.announcements);
+          if (data.announcements.length > 0) {
+            const urgent = data.announcements.find(
+              (a) => a.priority === "urgent" || a.priority === "critical" || a.type === "warning"
+            );
+            setActiveAnnouncement(urgent || data.announcements[0]);
+          } else {
+            setActiveAnnouncement(null);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
+
   useEffect(() => {
     const h = () => setDemoModalOpen(true);
     window.addEventListener("campuscoin:demoBlocked", h);
@@ -112,15 +208,50 @@ export default function Layout() {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Initial & periodic announcement fetching
   useEffect(() => {
-    if (!isAuthenticated) return;
-    api.get("/announcements").then(({ data }) => {
-      if (data.success && data.announcements?.length) {
-        setAnnouncements(data.announcements);
-        setActiveAnnouncement(data.announcements[0]);
+    fetchAnnouncements();
+    const interval = setInterval(fetchAnnouncements, 30000); // 30s live poll
+    window.addEventListener("focus", fetchAnnouncements);
+    window.addEventListener("campuscoin:announcementsUpdated", fetchAnnouncements);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", fetchAnnouncements);
+      window.removeEventListener("campuscoin:announcementsUpdated", fetchAnnouncements);
+    };
+  }, [fetchAnnouncements]);
+
+  // Click outside to close Bell dropdown
+  useEffect(() => {
+    if (!bellOpen) return;
+    const handleClickOutside = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) {
+        setBellOpen(false);
       }
-    }).catch(() => {});
-  }, [isAuthenticated]);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [bellOpen]);
+
+  // Mark all announcements as read
+  const handleMarkAllRead = () => {
+    const allIds = announcements.map((a) => a._id);
+    const merged = Array.from(new Set([...readIds, ...allIds]));
+    setReadIds(merged);
+    localStorage.setItem("campuscoin_read_announcements", JSON.stringify(merged));
+  };
+
+  // Mark single announcement as read
+  const handleMarkSingleRead = (id) => {
+    if (!readIds.includes(id)) {
+      const updated = [...readIds, id];
+      setReadIds(updated);
+      localStorage.setItem("campuscoin_read_announcements", JSON.stringify(updated));
+    }
+  };
+
+  const unreadAnnouncements = announcements.filter((a) => !readIds.includes(a._id));
+  const unreadCount = unreadAnnouncements.length;
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -334,7 +465,7 @@ export default function Layout() {
             position: "sticky",
             top: 0,
             zIndex: 30,
-            background: "rgba(255, 255, 255, 0.8)",
+            background: "rgba(255, 255, 255, 0.82)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             borderBottom: "1px solid rgba(172, 217, 251, 0.4)",
@@ -372,70 +503,305 @@ export default function Layout() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Notifications Bell */}
-            <div style={{ position: "relative" }}>
+            {/* Notifications Bell with Dynamic Announcement Indicator */}
+            <div ref={bellRef} style={{ position: "relative" }}>
               <button
                 onClick={() => setBellOpen((o) => !o)}
+                title={unreadCount > 0 ? `${unreadCount} new campus announcement(s)` : "Notifications & Announcements"}
                 style={{
-                  width: 36,
-                  height: 36,
+                  position: "relative",
+                  width: 38,
+                  height: 38,
                   borderRadius: "50%",
-                  border: `1px solid ${C.border}`,
-                  background: "#fff",
-                  color: C.muted,
+                  border: `1px solid ${unreadCount > 0 ? "#bfdbfe" : C.border}`,
+                  background: unreadCount > 0 ? "#eff6ff" : "#ffffff",
+                  color: unreadCount > 0 ? "#2563eb" : C.muted,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                  boxShadow: unreadCount > 0 ? "0 2px 8px rgba(37, 99, 235, 0.16)" : "0 1px 3px rgba(0,0,0,0.02)",
                   transition: "all 0.15s ease",
                 }}
               >
-                <Bell style={{ width: 15, height: 15 }} />
-                {announcements.length > 0 && (
-                  <span style={{ position: "absolute", top: 8, right: 8, width: 6, height: 6, borderRadius: "50%", background: C.brand }} />
+                <Bell style={{ width: 16, height: 16 }} />
+
+                {/* Animated Unread Badge */}
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -3,
+                      right: -3,
+                      minWidth: 18,
+                      height: 18,
+                      padding: "0 4px",
+                      borderRadius: 9999,
+                      background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                      color: "#ffffff",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 2px 6px rgba(220, 38, 38, 0.4)",
+                      border: "2px solid #ffffff",
+                      animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                    }}
+                  >
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 )}
               </button>
 
+              {/* Rich Announcement Notification Center Dropdown */}
               <AnimatePresence>
                 {bellOpen && (
                   <motion.div
-                    key="bell"
-                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    key="announcement-bell-dropdown"
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                    transition={{ duration: 0.15 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 28 }}
                     style={{
                       position: "absolute",
                       right: 0,
-                      top: 46,
-                      width: 290,
-                      background: "#fff",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 14,
-                      padding: 14,
-                      zIndex: 200,
-                      boxShadow: "0 10px 30px rgba(15,23,42,0.1)",
+                      top: 48,
+                      width: isMobile ? 320 : 360,
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      zIndex: 999,
+                      boxShadow: "0 20px 48px -8px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.06)",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: C.foreground }}>Campus Updates</span>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: C.brand, background: C.brandSoft, padding: "2px 7px", borderRadius: 9999 }}>
-                        {announcements.length} active
-                      </span>
-                    </div>
-                    {announcements.length === 0 ? (
-                      <p style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "10px 0", margin: 0 }}>
-                        No new updates right now.
-                      </p>
-                    ) : (
-                      announcements.map((ann) => (
-                        <div key={ann._id} style={{ padding: "8px 10px", borderRadius: 8, background: "#f8fafc", border: `1px solid ${C.border}`, marginBottom: 6 }}>
-                          <p style={{ fontSize: 12, fontWeight: 700, color: C.foreground, margin: "0 0 2px" }}>{ann.title}</p>
-                          <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{ann.message}</p>
+                    {/* Header */}
+                    <div
+                      style={{
+                        padding: "14px 18px",
+                        background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                        borderBottom: "1px solid #f1f5f9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: "#eff6ff",
+                            color: "#2563eb",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Megaphone size={14} />
                         </div>
-                      ))
-                    )}
+                        <div>
+                          <h4 style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0, letterSpacing: "-0.01em" }}>
+                            Campus Updates
+                          </h4>
+                          <span style={{ fontSize: 10.5, color: "#64748b", fontWeight: 600 }}>
+                            {announcements.length} announcement{announcements.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+
+                      {unreadCount > 0 ? (
+                        <button
+                          onClick={handleMarkAllRead}
+                          title="Mark all as read"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "4px 9px",
+                            borderRadius: 8,
+                            background: "#eff6ff",
+                            border: "1px solid #dbeafe",
+                            color: "#2563eb",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          <CheckCheck size={12} />
+                          <span>Mark Read</span>
+                        </button>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            color: "#16a34a",
+                            background: "#dcfce7",
+                            padding: "2px 8px",
+                            borderRadius: 9999,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <CheckCircle2 size={11} /> All read
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Announcement Cards List */}
+                    <div
+                      style={{
+                        maxHeight: "360px",
+                        overflowY: "auto",
+                        padding: "10px 12px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
+                      {announcements.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "32px 16px" }}>
+                          <div
+                            style={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: "50%",
+                              background: "#eff6ff",
+                              color: "#2563eb",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              margin: "0 auto 10px",
+                            }}
+                          >
+                            <CheckCircle2 size={20} />
+                          </div>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>No new announcements</p>
+                          <p style={{ fontSize: 11.5, color: "#64748b", margin: "4px 0 0" }}>
+                            You are all caught up with recent campus broadcasts.
+                          </p>
+                        </div>
+                      ) : (
+                        announcements.map((ann) => {
+                          const isUnread = !readIds.includes(ann._id);
+                          const badge = getPriorityBadge(ann.priority, ann.type);
+                          const BadgeIcon = badge.icon;
+
+                          return (
+                            <div
+                              key={ann._id}
+                              onClick={() => handleMarkSingleRead(ann._id)}
+                              style={{
+                                padding: "12px 14px",
+                                borderRadius: 12,
+                                background: isUnread ? "#f8faff" : "#ffffff",
+                                border: `1px solid ${isUnread ? "#bfdbfe" : "#f1f5f9"}`,
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                                position: "relative",
+                              }}
+                            >
+                              {/* Unread Left Dot */}
+                              {isUnread && (
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    left: 6,
+                                    top: 15,
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: "50%",
+                                    background: "#2563eb",
+                                  }}
+                                />
+                              )}
+
+                              {/* Card Header */}
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6, paddingLeft: isUnread ? 8 : 0 }}>
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    padding: "2px 7px",
+                                    borderRadius: 6,
+                                    background: badge.bg,
+                                    color: badge.color,
+                                    border: `1px solid ${badge.border}`,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 3,
+                                    letterSpacing: "0.03em",
+                                  }}
+                                >
+                                  <BadgeIcon size={10} />
+                                  {badge.label}
+                                </span>
+
+                                <span style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <Clock size={10} />
+                                  {formatRelativeTime(ann.createdAt || ann.created_at)}
+                                </span>
+                              </div>
+
+                              {/* Title & Message */}
+                              <div style={{ paddingLeft: isUnread ? 8 : 0 }}>
+                                <h5 style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", margin: "0 0 3px", letterSpacing: "-0.01em" }}>
+                                  {ann.title}
+                                </h5>
+                                <p style={{ fontSize: 11.5, color: "#475569", margin: 0, lineHeight: 1.45 }}>
+                                  {ann.message}
+                                </p>
+                              </div>
+
+                              {/* Footer Author Tag */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, paddingLeft: isUnread ? 8 : 0, fontSize: 10, color: "#64748b", fontWeight: 600 }}>
+                                <ShieldCheck size={11} color="#2563eb" />
+                                <span>Campus Admin Broadcast</span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div
+                      style={{
+                        padding: "9px 16px",
+                        background: "#f8fafc",
+                        borderTop: "1px solid #f1f5f9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        fontSize: 11,
+                        color: "#64748b",
+                      }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                        Live Feed
+                      </span>
+                      <button
+                        onClick={fetchAnnouncements}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#2563eb",
+                          fontWeight: 700,
+                          fontSize: 11,
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                      >
+                        Refresh
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -489,12 +855,23 @@ export default function Layout() {
         isOpen={quickAddOpen}
         onClose={() => setQuickAddOpen(false)}
         onSuccess={() => {
-          setQuickAddOpen(false);
-          window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
+          // Trigger any dashboard refresh
         }}
       />
-      <DemoNoticeModal isOpen={demoModalOpen} onClose={() => setDemoModalOpen(false)} />
+
+      <DemoNoticeModal
+        isOpen={demoModalOpen}
+        onClose={() => setDemoModalOpen(false)}
+      />
+
       <AdSenseInterstitialModal />
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.15); opacity: 0.85; }
+        }
+      `}</style>
     </div>
   );
 }
