@@ -96,18 +96,31 @@ app.get("/api/announcements", protect, async (req, res) => {
   }
 });
 
-// Health check endpoints
-const healthPayload = (req, res) => {
-  res.json({
-    name: "Campus Coin API",
-    status: "healthy",
-    version: "1.0.0",
-    environment: process.env.NODE_ENV || "development",
-    timestamp: new Date().toISOString(),
+// Serve static assets in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/dist")));
+  app.get("*", (req, res, next) => {
+    // Only serve index.html for non-API routes
+    if (!req.path.startsWith("/api/")) {
+      res.sendFile(path.resolve(__dirname, "../client/dist", "index.html"));
+    } else {
+      next();
+    }
   });
-};
-app.get("/", healthPayload);
-app.get("/api/health", healthPayload);
+} else {
+  // Health check endpoints
+  const healthPayload = (req, res) => {
+    res.json({
+      name: "Campus Coin API",
+      status: "healthy",
+      version: "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+      timestamp: new Date().toISOString(),
+    });
+  };
+  app.get("/", healthPayload);
+  app.get("/api/health", healthPayload);
+}
 
 // Fallback 404 & Global Error Middleware
 app.use(notFoundHandler);
