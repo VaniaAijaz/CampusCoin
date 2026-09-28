@@ -7,12 +7,18 @@ import {
   Calendar, User, DollarSign, X, Clock, Filter,
 } from "lucide-react";
 import { getDebts, createDebt, updateDebt, deleteDebt } from "../debts/debtApi";
+import { useAuth } from "../auth/AuthContext";
+import { getCurrencySymbol, formatCurrency } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
 import "../dashboard/Dashboard.css";
 
 export default function KhataPage() {
+  const { user } = useAuth();
+  const cur = user?.currency_preference || "USD";
+  const curSymbol = getCurrencySymbol(cur);
+
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -84,8 +90,8 @@ export default function KhataPage() {
       return;
     }
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) {
-      toast.error("Please enter a valid amount.");
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast.error("Please enter a valid positive amount.");
       return;
     }
     createMutation.mutate({
@@ -153,7 +159,7 @@ export default function KhataPage() {
             </div>
           </div>
           <div className="dash-kpi-val" style={{ color: "var(--dash-emerald)" }}>
-            ${totalOwedToMe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(totalOwedToMe, cur)}
           </div>
           <div className="dash-kpi-hint">
             {pendingDebts.filter(d => d.direction === "owed_to_me").length} person(s) owe you
@@ -168,7 +174,7 @@ export default function KhataPage() {
             </div>
           </div>
           <div className="dash-kpi-val" style={{ color: "var(--dash-danger)" }}>
-            ${totalIOwe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(totalIOwe, cur)}
           </div>
           <div className="dash-kpi-hint">
             {pendingDebts.filter(d => d.direction === "i_owe").length} person(s) to repay
@@ -186,7 +192,7 @@ export default function KhataPage() {
             </div>
           </div>
           <div className="dash-kpi-val" style={{ color: netBalance >= 0 ? "var(--dash-emerald)" : "var(--dash-danger)" }}>
-            {netBalance >= 0 ? "+" : "-"}${Math.abs(netBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {netBalance >= 0 ? "+" : "-"}{formatCurrency(Math.abs(netBalance), cur)}
           </div>
           <div className="dash-kpi-hint">{netBalance >= 0 ? "Overall positive position" : "You have more debts to pay"}</div>
         </div>
@@ -343,7 +349,7 @@ export default function KhataPage() {
                       color: isPaid ? "var(--dash-muted)" : isLent ? "var(--dash-emerald)" : "var(--dash-danger)",
                       textDecoration: isPaid ? "line-through" : "none",
                     }}>
-                      {isLent ? "+" : "-"}${Number(debt.amount).toFixed(2)}
+                      {isLent ? "+" : "-"}{formatCurrency(debt.amount, cur)}
                     </span>
                     <button
                       onClick={() => setItemToDelete(debt._id)}
@@ -364,14 +370,24 @@ export default function KhataPage() {
       <Portal>
         <AnimatePresence>
           {modalOpen && (
-            <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "16px",
+              }}
+            >
               <motion.div
                 key="khata-bd"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setModalOpen(false)}
-                style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(6px)", zIndex: -1 }}
+                style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(6px)", zIndex: -1 }}
               />
               <motion.div
                 key="khata-modal"
@@ -379,13 +395,15 @@ export default function KhataPage() {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 12 }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
                 className="dash-card"
                 style={{
                   width: "100%",
                   maxWidth: "440px",
                   padding: "24px",
                   boxShadow: "0 24px 64px rgba(15, 23, 42, 0.16)",
-                  zIndex: 51,
+                  zIndex: 1,
+                  background: "#ffffff",
                 }}
               >
                 {/* Modal Header */}
@@ -397,6 +415,7 @@ export default function KhataPage() {
                     <p style={{ fontSize: "12px", color: "var(--dash-muted)", margin: "2px 0 0" }}>Record money lent or borrowed</p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setModalOpen(false)}
                     style={{
                       width: "32px",
@@ -456,7 +475,7 @@ export default function KhataPage() {
                   <div>
                     <label className="dash-form-label">Person's Name</label>
                     <div style={{ position: "relative" }}>
-                      <User size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)" }} />
+                      <User size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)", pointerEvents: "none" }} />
                       <input
                         type="text"
                         required
@@ -471,19 +490,37 @@ export default function KhataPage() {
 
                   {/* Amount */}
                   <div>
-                    <label className="dash-form-label">Amount ($)</label>
+                    <label className="dash-form-label">Amount ({curSymbol})</label>
                     <div style={{ position: "relative" }}>
-                      <DollarSign size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)" }} />
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: "14px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "var(--dash-muted)",
+                          fontWeight: 700,
+                          fontSize: "14px",
+                          pointerEvents: "none",
+                          userSelect: "none",
+                        }}
+                      >
+                        {curSymbol}
+                      </span>
                       <input
-                        type="number"
-                        step="any"
-                        min="0.01"
+                        type="text"
+                        inputMode="decimal"
                         required
                         placeholder="0.00"
                         value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                            setAmount(val);
+                          }
+                        }}
                         className="dash-input"
-                        style={{ paddingLeft: "38px", fontWeight: 700 }}
+                        style={{ paddingLeft: curSymbol.length > 2 ? "46px" : "38px", fontWeight: 700 }}
                       />
                     </div>
                   </div>
@@ -494,7 +531,7 @@ export default function KhataPage() {
                       Due Date <span style={{ fontWeight: 400, color: "var(--dash-muted)", textTransform: "none" }}>(optional)</span>
                     </label>
                     <div style={{ position: "relative" }}>
-                      <Calendar size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)" }} />
+                      <Calendar size={15} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)", pointerEvents: "none" }} />
                       <input
                         type="date"
                         value={dueDate}
@@ -534,3 +571,4 @@ export default function KhataPage() {
     </div>
   );
 }
+
