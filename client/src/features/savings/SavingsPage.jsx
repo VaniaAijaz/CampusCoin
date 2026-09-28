@@ -218,22 +218,21 @@ export default function SavingsPage() {
         </div>
       </div>
 
-      {/* ── 4 SUMMARY KPI CARDS (Exact match with dash-kpi-card design) ── */}
-      <div className="dash-kpi-grid">
+      {/* ── 4 SUMMARY KPI CARDS (Exact match with other tabs) ── */}
+      <div className="dash-kpi-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {/* 1. Overview Available Balance */}
         <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Overview Balance</span>
-            <div className="dash-kpi-icon-box" style={{ background: "#eff6ff", color: "#2563eb" }}>
-              <Wallet style={{ width: 17, height: 17 }} />
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-blue-soft)", color: "var(--dash-blue)" }}>
+              <Wallet size={18} />
             </div>
           </div>
-          <div className="dash-kpi-val">{formatCurrency(summary.availableOverviewBalance, cur)}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
-              Available
-            </span>
-            <span className="dash-kpi-hint">After goal deduction</span>
+          <div className="dash-kpi-val" style={{ color: "var(--dash-foreground)" }}>
+            {formatCurrency(summary.availableOverviewBalance, cur)}
+          </div>
+          <div className="dash-kpi-hint">
+            Available after goal allocation
           </div>
         </div>
 
@@ -241,18 +240,15 @@ export default function SavingsPage() {
         <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Goal Target</span>
-            <div className="dash-kpi-icon-box" style={{ background: "#f3e8ff", color: "#7c3aed" }}>
-              <Target style={{ width: 17, height: 17 }} />
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-purple-soft)", color: "var(--dash-purple)" }}>
+              <Target size={18} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "#7c3aed" }}>
+          <div className="dash-kpi-val" style={{ color: "var(--dash-purple)" }}>
             {formatCurrency(summary.goalAmount, cur)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#f3e8ff", color: "#7c3aed" }}>
-              Allocated
-            </span>
-            <span className="dash-kpi-hint">Reserved from overview</span>
+          <div className="dash-kpi-hint">
+            Reserved from overview balance
           </div>
         </div>
 
@@ -260,18 +256,15 @@ export default function SavingsPage() {
         <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Saved in Vault</span>
-            <div className="dash-kpi-icon-box" style={{ background: "#dcfce7", color: "#16a34a" }}>
-              <PiggyBank style={{ width: 17, height: 17 }} />
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-emerald-soft)", color: "var(--dash-emerald)" }}>
+              <PiggyBank size={18} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: "#16a34a" }}>
+          <div className="dash-kpi-val" style={{ color: "var(--dash-emerald)" }}>
             {formatCurrency(summary.currentSaved, cur)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#dcfce7", color: "#16a34a" }}>
-              {progressPercentage}% Saved
-            </span>
-            <span className="dash-kpi-hint">Locked safely</span>
+          <div className="dash-kpi-hint">
+            {progressPercentage}% of goal achieved
           </div>
         </div>
 
@@ -279,18 +272,15 @@ export default function SavingsPage() {
         <div className="dash-kpi-card">
           <div className="dash-kpi-header">
             <span className="dash-kpi-label">Remaining to Goal</span>
-            <div className="dash-kpi-icon-box" style={{ background: "#fef3c7", color: "#d97706" }}>
-              <TrendingUp style={{ width: 17, height: 17 }} />
+            <div className="dash-kpi-icon-box" style={{ background: "var(--dash-amber-soft)", color: "var(--dash-amber)" }}>
+              <TrendingUp size={18} />
             </div>
           </div>
-          <div className="dash-kpi-val" style={{ color: summary.remainingGoal > 0 ? "#d97706" : "#16a34a" }}>
+          <div className="dash-kpi-val" style={{ color: summary.remainingGoal > 0 ? "var(--dash-amber)" : "var(--dash-emerald)" }}>
             {formatCurrency(summary.remainingGoal, cur)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: summary.remainingGoal > 0 ? "#fef3c7" : "#dcfce7", color: summary.remainingGoal > 0 ? "#d97706" : "#16a34a" }}>
-              {summary.remainingGoal > 0 ? "In Progress" : "Completed"}
-            </span>
-            <span className="dash-kpi-hint">Left to reach target</span>
+          <div className="dash-kpi-hint">
+            {summary.remainingGoal > 0 ? "Left to reach target" : "Goal fully reached"}
           </div>
         </div>
       </div>
