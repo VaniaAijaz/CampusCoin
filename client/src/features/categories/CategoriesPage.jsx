@@ -346,13 +346,30 @@ export default function CategoriesPage() {
                 {!editingCat && (
                   <div>
                     <label style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", display:"block", marginBottom:8 }}>Type</label>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:4, background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
+                    <div style={{ position:"relative", display:"grid", gridTemplateColumns:"1fr 1fr", padding:4, background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          bottom: 4,
+                          left: 4,
+                          width: "calc(50% - 4px)",
+                          borderRadius: 8,
+                          background: type === "income" ? C.highlight : C.hero,
+                          transform: type === "income" ? "translateX(calc(100% - 0px))" : "translateX(0)",
+                          transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s ease",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                          pointerEvents: "none",
+                          zIndex: 1,
+                        }}
+                      />
                       {["expense","income"].map(t => (
                         <button key={t} type="button" onClick={() => setType(t)} style={{
+                          position:"relative", zIndex:2,
                           padding:"9px 0", borderRadius:8, cursor:"pointer", textTransform:"capitalize",
-                          background: type===t ? C.hero : "transparent",
-                          color: type===t ? C.heroFg : C.muted,
-                          border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
+                          background: "transparent",
+                          color: type===t ? (t==="income" ? C.highlightFg : C.heroFg) : C.muted,
+                          border:"none", fontSize:13, fontWeight:700, ...M, transition:"color 0.2s",
                         }}>
                           {t}
                         </button>

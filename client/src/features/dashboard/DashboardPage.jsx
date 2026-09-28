@@ -14,6 +14,8 @@ import {
   ChevronRight,
   GraduationCap,
   Tag,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { getDashboardMetrics, getRecentTransactions } from "../transactions/transactionApi";
@@ -266,6 +268,10 @@ export default function DashboardPage() {
   const income = metrics?.currentMonth?.income || 0;
   const expense = metrics?.currentMonth?.expense || 0;
   const balance = income - expense;
+  const digitalBal = metrics?.currentMonth?.digital?.balance ?? 
+    (recentTx || []).filter(t => t.paymentMethod !== "Cash").reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
+  const cashBal = metrics?.currentMonth?.cash?.balance ?? 
+    (recentTx || []).filter(t => t.paymentMethod === "Cash").reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
   const avail = (budgets || []).reduce((a, b) => a + (b.limitAmount - (b.spentAmount || 0)), 0) || 0;
   const cur = user?.currency || "USD";
   const month = new Date().toLocaleString("default", { month: "long", year: "numeric" });
@@ -478,10 +484,12 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {[
+                { label: "Digital Bank", value: digitalBal, accent: "oklch(0.73 0.18 252)", icon: <CreditCard style={{ width: 14 }} /> },
+                { label: "Cash in Hand", value: cashBal, accent: C.growth, icon: <Banknote style={{ width: 14 }} /> },
                 { label: "Income", value: income, accent: C.highlight, icon: <ArrowUpRight style={{ width: 14 }} /> },
-                { label: "Expense", value: expense, accent: C.growth, icon: <ArrowDownRight style={{ width: 14 }} /> },
+                { label: "Expense", value: expense, accent: "oklch(0.65 0.24 16)", icon: <ArrowDownRight style={{ width: 14 }} /> },
               ].map((t) => (
                 <div
                   key={t.label}
@@ -489,11 +497,12 @@ export default function DashboardPage() {
                     background: "rgba(255,255,255,0.06)",
                     border: `1px solid ${C.heroLine}`,
                     borderRadius: 8,
-                    padding: "18px 22px",
-                    minWidth: 140,
+                    padding: "16px 18px",
+                    minWidth: 125,
+                    flex: "1 1 auto",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                     <span style={{ color: t.accent }}>{t.icon}</span>
                     <span
                       style={{
@@ -507,7 +516,7 @@ export default function DashboardPage() {
                       {t.label}
                     </span>
                   </div>
-                  <div style={{ fontSize: 26, fontWeight: 900, color: C.heroFg, letterSpacing: "-0.03em" }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: C.heroFg, letterSpacing: "-0.03em" }}>
                     <NumberTicker value={t.value} currencyCode={cur} />
                   </div>
                 </div>

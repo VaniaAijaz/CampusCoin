@@ -515,6 +515,34 @@ const getDashboardMetrics = async (req, res) => {
 
     const baseNetSavings = baseIncomeTotal - baseExpenseTotal;
 
+    // Aggregate digital vs cash payment methods
+    const [digitalIncAgg, digitalExpAgg, cashIncAgg, cashExpAgg] = await Promise.all([
+      Transaction.aggregate([
+        { $match: { userId, type: "income", paymentMethod: { $ne: "Cash" }, date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      Transaction.aggregate([
+        { $match: { userId, type: "expense", paymentMethod: { $ne: "Cash" }, date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      Transaction.aggregate([
+        { $match: { userId, type: "income", paymentMethod: "Cash", date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      Transaction.aggregate([
+        { $match: { userId, type: "expense", paymentMethod: "Cash", date: { $gte: startOfMonth, $lte: endOfMonth }, isDeleted: false } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+    ]);
+
+    const baseDigitalInc = digitalIncAgg[0]?.total || 0;
+    const baseDigitalExp = (digitalExpAgg[0]?.total || 0) + currentSubsTotal;
+    const baseDigitalNet = baseDigitalInc - baseDigitalExp;
+
+    const baseCashInc = cashIncAgg[0]?.total || 0;
+    const baseCashExp = cashExpAgg[0]?.total || 0;
+    const baseCashNet = baseCashInc - baseCashExp;
+
     // 6-Month Trend Aggregation Pipeline
     const sixMonthTrends = [];
     for (let i = 5; i >= 0; i--) {
@@ -579,6 +607,16 @@ const getDashboardMetrics = async (req, res) => {
         income: CurrencyService.fromBase(baseIncomeTotal, userCurrency),
         expense: CurrencyService.fromBase(baseExpenseTotal, userCurrency),
         netSavings: CurrencyService.fromBase(baseNetSavings, userCurrency),
+        digital: {
+          income: CurrencyService.fromBase(baseDigitalInc, userCurrency),
+          expense: CurrencyService.fromBase(baseDigitalExp, userCurrency),
+          balance: CurrencyService.fromBase(baseDigitalNet, userCurrency),
+        },
+        cash: {
+          income: CurrencyService.fromBase(baseCashInc, userCurrency),
+          expense: CurrencyService.fromBase(baseCashExp, userCurrency),
+          balance: CurrencyService.fromBase(baseCashNet, userCurrency),
+        },
       },
       trends: sixMonthTrends,
       categoryBreakdown: formattedCategoryBreakdown,

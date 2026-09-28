@@ -170,35 +170,138 @@ export default function TransactionModal({ isOpen, onClose, editTransaction=null
                   </button>
                 </div>
 
-                {/* Type switcher inside header */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:14, padding:4, background:"rgba(255,255,255,0.07)", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)" }}>
-                  {[["expense","Expense"],["income","Income"]].map(([val,label])=>(
-                    <button key={val} type="button" onClick={()=>setType(val)} style={{
-                      padding:"9px 0", borderRadius:9, cursor:"pointer",
-                      background: type===val ? (val==="income" ? C.highlight : C.brand) : "transparent",
-                      color: type===val ? (val==="income" ? C.highlightFg : "#fff") : "rgba(255,255,255,0.55)",
-                      border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
-                    }}>{label}</button>
-                  ))}
+                {/* Type switcher inside header with animated sliding pill */}
+                <div style={{ position:"relative", display:"grid", gridTemplateColumns:"1fr 1fr", marginTop:14, padding:4, background:"rgba(255,255,255,0.08)", borderRadius:12, border:"1px solid rgba(255,255,255,0.12)" }}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      bottom: 4,
+                      left: 4,
+                      width: "calc(50% - 4px)",
+                      borderRadius: 9,
+                      background: type === "income" ? C.highlight : C.brand,
+                      transform: type === "income" ? "translateX(calc(100% - 0px))" : "translateX(0)",
+                      transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s ease",
+                      boxShadow: type === "income" ? `0 2px 12px ${C.highlight}66` : `0 2px 12px ${C.brand}66`,
+                      pointerEvents: "none",
+                      zIndex: 1,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setType("expense")}
+                    style={{
+                      position: "relative",
+                      zIndex: 2,
+                      padding: "10px 0",
+                      borderRadius: 9,
+                      cursor: "pointer",
+                      background: "transparent",
+                      border: "none",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      color: type === "expense" ? "#ffffff" : "rgba(255,255,255,0.6)",
+                      transition: "color 0.2s",
+                      ...M,
+                    }}
+                  >
+                    Expense
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType("income")}
+                    style={{
+                      position: "relative",
+                      zIndex: 2,
+                      padding: "10px 0",
+                      borderRadius: 9,
+                      cursor: "pointer",
+                      background: "transparent",
+                      border: "none",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      color: type === "income" ? C.highlightFg : "rgba(255,255,255,0.6)",
+                      transition: "color 0.2s",
+                      ...M,
+                    }}
+                  >
+                    Income
+                  </button>
                 </div>
               </div>
 
               {/* Form body */}
               <form onSubmit={handleSubmit} style={{ padding:"20px 24px 24px", display:"flex", flexDirection:"column", gap:16 }}>
 
-                {/* Payment method */}
+                {/* Payment method with animated sliding pill */}
                 <div>
                   <label style={labelSt}>Payment Method</label>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:4, background:C.altBg, borderRadius:12, border:`1px solid ${C.border}` }}>
-                    {[["Digital Bank",<CreditCard style={{ width:14 }} />],["Cash",<Banknote style={{ width:14 }} />]].map(([val,icon])=>(
-                      <button key={val} type="button" onClick={()=>setPaymentMethod(val)} style={{
-                        display:"flex", alignItems:"center", justifyContent:"center", gap:7,
-                        padding:"9px 0", borderRadius:9, cursor:"pointer",
-                        background: paymentMethod===val ? C.hero : "transparent",
-                        color: paymentMethod===val ? C.heroFg : C.muted,
-                        border:"none", fontSize:13, fontWeight:700, ...M, transition:"all 0.15s",
-                      }}>{icon}{val}</button>
-                    ))}
+                  <div style={{ position:"relative", display:"grid", gridTemplateColumns:"1fr 1fr", padding:4, background:C.altBg, borderRadius:12, border:`1.5px solid ${C.border}` }}>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 4,
+                        bottom: 4,
+                        left: 4,
+                        width: "calc(50% - 4px)",
+                        borderRadius: 9,
+                        background: C.hero,
+                        transform: paymentMethod === "Cash" ? "translateX(calc(100% - 0px))" : "translateX(0)",
+                        transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                        pointerEvents: "none",
+                        zIndex: 1,
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("Digital Bank")}
+                      style={{
+                        position: "relative",
+                        zIndex: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 7,
+                        padding: "9px 0",
+                        borderRadius: 9,
+                        cursor: "pointer",
+                        background: "transparent",
+                        border: "none",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: paymentMethod === "Digital Bank" ? C.heroFg : C.muted,
+                        transition: "color 0.2s",
+                        ...M,
+                      }}
+                    >
+                      <CreditCard style={{ width: 14 }} /> Digital Bank
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("Cash")}
+                      style={{
+                        position: "relative",
+                        zIndex: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 7,
+                        padding: "9px 0",
+                        borderRadius: 9,
+                        cursor: "pointer",
+                        background: "transparent",
+                        border: "none",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: paymentMethod === "Cash" ? C.heroFg : C.muted,
+                        transition: "color 0.2s",
+                        ...M,
+                      }}
+                    >
+                      <Banknote style={{ width: 14 }} /> Cash
+                    </button>
                   </div>
                 </div>
 

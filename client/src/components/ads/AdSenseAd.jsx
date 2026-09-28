@@ -146,7 +146,7 @@ export default function AdSenseAd({
 
   // 1. STRICT AD-FREE CHECK: Free users see ads; Premium users ($2/month ≈ PKR 500) see NO ads!
   const isPremium = Boolean(user?.isPremium || user?.plan === "premium");
-  if (isPremium || isDismissed) {
+  if (isPremium) {
     return null;
   }
 
@@ -291,9 +291,9 @@ export default function AdSenseAd({
             </button>
             <button
               type="button"
-              onClick={() => setIsDismissed(true)}
+              onClick={() => setUpgradeModalOpen(true)}
               className="text-white/40 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
-              title="Dismiss ad"
+              title="Remove ads with Premium ($2/mo)"
             >
               <X className="w-3.5 h-3.5" />
             </button>

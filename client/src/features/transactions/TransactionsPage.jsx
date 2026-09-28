@@ -135,6 +135,8 @@ export default function TransactionsPage() {
   const cur = user?.currency || "USD";
   const pageIncome  = transactions.filter(t=>t.type==="income").reduce((a,t)=>a+t.amount,0);
   const pageExpense = transactions.filter(t=>t.type==="expense").reduce((a,t)=>a+t.amount,0);
+  const digitalNet  = transactions.filter(t=>t.paymentMethod!=="Cash").reduce((a,t)=>a+(t.type==="income"?t.amount:-t.amount),0);
+  const cashNet     = transactions.filter(t=>t.paymentMethod==="Cash").reduce((a,t)=>a+(t.type==="income"?t.amount:-t.amount),0);
 
   return (
     <div style={{ ...M, display:"flex", flexDirection:"column", gap:20 }}>
@@ -163,17 +165,19 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* SUMMARY STRIP */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:0, border:`1px solid ${C.border}`, borderRadius:8, overflow:"hidden", background:C.border }}>
+      {/* SUMMARY STRIP WITH DIGITAL & CASH METRICS */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:1, border:`1px solid ${C.border}`, borderRadius:8, overflow:"hidden", background:C.border }}>
         {[
-          { label:"Total Records", value:total,       raw:true,  accent:C.brand,  soft:C.brandSoft  },
-          { label:"Page Income",   value:pageIncome,  raw:false, accent:C.growth, soft:C.growthSoft },
-          { label:"Page Expenses", value:pageExpense, raw:false, accent:C.brand,  soft:C.brandSoft  },
+          { label:"Total Records", value:total,       raw:true,  accent:C.brand,  soft:C.brandSoft, icon:<ArrowLeftRight style={{ width:16 }} /> },
+          { label:"Page Income",   value:pageIncome,  raw:false, accent:C.growth, soft:C.growthSoft, icon:<ArrowLeftRight style={{ width:16 }} /> },
+          { label:"Page Expenses", value:pageExpense, raw:false, accent:C.brand,  soft:C.brandSoft, icon:<ArrowLeftRight style={{ width:16 }} /> },
+          { label:"Digital Cash",  value:digitalNet,  raw:false, accent:"oklch(0.73 0.18 252)", soft:"oklch(0.93 0.05 250)", icon:<CreditCard style={{ width:16 }} /> },
+          { label:"Physical Cash", value:cashNet,     raw:false, accent:C.growth, soft:C.growthSoft, icon:<Banknote style={{ width:16 }} /> },
         ].map(s => (
-          <div key={s.label} style={{ background:"#fff", padding:"18px 20px" }}>
-            <div style={{ width:36, height:36, borderRadius:"50%", background:s.soft, color:s.accent, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:10 }}><ArrowLeftRight style={{ width:16 }} /></div>
-            <div style={{ fontSize:"clamp(1.4rem,3vw,2rem)", fontWeight:900, color:C.foreground, letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>{s.raw ? (s.value ?? 0) : formatCurrency(s.value || 0, cur)}</div>
-            <p style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{s.label}</p>
+          <div key={s.label} style={{ background:"#fff", padding:"16px 18px" }}>
+            <div style={{ width:34, height:34, borderRadius:"50%", background:s.soft, color:s.accent, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:8 }}>{s.icon}</div>
+            <div style={{ fontSize:"clamp(1.3rem,2.5vw,1.8rem)", fontWeight:900, color:C.foreground, letterSpacing:"-0.03em", lineHeight:1, marginBottom:4 }}>{s.raw ? (s.value ?? 0) : formatCurrency(s.value || 0, cur)}</div>
+            <p style={{ fontSize:10, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{s.label}</p>
           </div>
         ))}
       </div>

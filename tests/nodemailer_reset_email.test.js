@@ -96,7 +96,7 @@ describe("Nodemailer Password Reset & Email Notification Test Suite", () => {
       expect(res.body.message).toMatch(/if that email is registered/i);
     });
 
-    it("should trigger nodemailer reset email and persist reset token hash in database", async () => {
+    it("should trigger nodemailer reset email and persist reset token hash in database without leaking token in HTTP response", async () => {
       const sendMailSpy = jest.spyOn(transporter, "sendMail").mockResolvedValueOnce({
         messageId: "<reset-msg-5678@campuscoin>",
         response: "250 Message accepted",
@@ -108,9 +108,14 @@ describe("Nodemailer Password Reset & Email Notification Test Suite", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.token).toBeDefined();
+      // Strictly verify no direct reset link is leaked in HTTP response
+      expect(res.body.token).toBeUndefined();
+      expect(res.body.resetUrl).toBeUndefined();
 
-      const token = res.body.token;
+      // Verify email was dispatched by Nodemailer
+      expect(sendMailSpy).toHaveBeenCalledTimes(1);
+      const emailHtml = sendMailSpy.mock.calls[0][0].html;
+      expect(emailHtml).toContain("/reset-password/");
 
       // Verify DB state
       const updatedUser = await User.findOne({ email: testEmail });
@@ -126,10 +131,21 @@ describe("Nodemailer Password Reset & Email Notification Test Suite", () => {
     let validResetToken;
 
     beforeEach(async () => {
-      const res = await request(app)
+      const sendMailSpy = jest.spyOn(transporter, "sendMail").mockResolvedValueOnce({
+        messageId: "<reset-msg-1234@campuscoin>",
+        response: "250 Message accepted",
+      });
+
+      await request(app)
         .post("/api/auth/forgot-password")
         .send({ email: testEmail });
-      validResetToken = res.body.token;
+
+      if (sendMailSpy.mock.calls.length > 0) {
+        const emailHtml = sendMailSpy.mock.calls[0][0].html;
+        const match = emailHtml.match(/\/reset-password\/([a-f0-9]+)/);
+        validResetToken = match ? match[1] : null;
+      }
+      sendMailSpy.mockRestore();
     });
 
     it("should reject password reset when token is invalid or tampered", async () => {
