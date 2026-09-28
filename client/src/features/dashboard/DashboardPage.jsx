@@ -15,6 +15,7 @@ import {
   GraduationCap,
   CreditCard,
   Banknote,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { getDashboardMetrics, getRecentTransactions } from "../transactions/transactionApi";
@@ -40,37 +41,18 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-/* ── Canonical CampusCoin Design Tokens ── */
-const C = {
-  hero: "oklch(0.115 0.018 255)",
-  heroFg: "oklch(0.985 0.003 250)",
-  heroMuted: "oklch(0.73 0.018 252)",
-  heroLine: "oklch(0.31 0.025 255)",
-  brand: "oklch(0.59 0.22 262)",
-  brandSoft: "oklch(0.93 0.06 262)",
-  highlight: "oklch(0.88 0.18 157)",
-  highlightFg: "oklch(0.17 0.04 160)",
-  growth: "oklch(0.64 0.17 157)",
-  growthSoft: "oklch(0.94 0.05 158)",
-  background: "oklch(0.99 0.003 250)",
-  foreground: "oklch(0.16 0.025 260)",
-  muted: "oklch(0.5 0.025 255)",
-  border: "oklch(0.9 0.012 255)",
-  altBg: "oklch(0.965 0.01 254)",
-};
-const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+import "./Dashboard.css";
 
 const CATEGORY_CHART_COLORS = [
-  "oklch(0.59 0.22 262)", // brand blue
-  "oklch(0.64 0.17 157)", // growth green
-  "oklch(0.88 0.18 157)", // highlight lime
-  "oklch(0.61 0.23 290)", // purple
-  "oklch(0.73 0.18 252)", // sky
-  "oklch(0.83 0.17 70)",  // amber
-  "oklch(0.59 0.18 230)", // teal
-  "oklch(0.65 0.24 16)",  // rose
-  "oklch(0.5 0.025 255)", // slate
+  "#2563eb", // brand blue
+  "#16a34a", // growth green
+  "#8b5cf6", // purple
+  "#f59e0b", // amber
+  "#06b6d4", // cyan
+  "#ec4899", // pink
+  "#14b8a6", // teal
+  "#f97316", // orange
+  "#64748b", // slate
 ];
 
 const DEFAULT_STUDENT_CATEGORIES = [
@@ -89,31 +71,22 @@ const ChartTooltip = ({ active, payload, label, cur }) => {
   return (
     <div
       style={{
-        ...M,
-        background: "#fff",
-        border: `1.5px solid ${C.border}`,
-        borderRadius: 10,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 12,
         padding: "10px 14px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
         fontSize: 12,
+        fontFamily: "var(--dash-font)",
       }}
     >
-      <p
-        style={{
-          fontWeight: 700,
-          color: C.muted,
-          marginBottom: 8,
-          fontSize: 10,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-        }}
-      >
+      <p style={{ fontWeight: 700, color: "#64748b", marginBottom: 6, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
         {label}
       </p>
       {payload.map((p, i) => (
-        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 3 }}>
-          <span style={{ color: p.color, fontWeight: 600 }}>{p.name}</span>
-          <span style={{ color: C.foreground, fontWeight: 800 }}>{formatCurrency(p.value, cur)}</span>
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 2 }}>
+          <span style={{ color: p.color, fontWeight: 600 }}>{p.name}:</span>
+          <span style={{ color: "#0f172a", fontWeight: 800 }}>{formatCurrency(p.value, cur)}</span>
         </div>
       ))}
     </div>
@@ -126,36 +99,23 @@ const CategoryPieTooltip = ({ active, payload, cur }) => {
   return (
     <div
       style={{
-        ...M,
-        background: "#fff",
-        border: `1.5px solid ${C.border}`,
-        borderRadius: 10,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 12,
         padding: "10px 14px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
         fontSize: 12,
+        fontFamily: "var(--dash-font)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: data.payload.fill || data.color || C.brand,
-          }}
-        />
-        <span style={{ fontWeight: 800, color: C.foreground }}>{data.name}</span>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: data.payload.fill || data.color || "#2563eb" }} />
+        <span style={{ fontWeight: 800, color: "#0f172a" }}>{data.name}</span>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 14 }}>
-        <span style={{ color: C.muted, fontSize: 11 }}>Amount Spent:</span>
-        <span style={{ fontWeight: 900, color: C.foreground }}>{formatCurrency(data.value, cur)}</span>
+        <span style={{ color: "#64748b", fontSize: 11 }}>Spent:</span>
+        <span style={{ fontWeight: 900, color: "#0f172a" }}>{formatCurrency(data.value, cur)}</span>
       </div>
-      {data.payload.count !== undefined && (
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 14, marginTop: 2 }}>
-          <span style={{ color: C.muted, fontSize: 11 }}>Transactions:</span>
-          <span style={{ fontWeight: 700, color: C.brand }}>{data.payload.count}</span>
-        </div>
-      )}
     </div>
   );
 };
@@ -251,8 +211,8 @@ export default function DashboardPage() {
       ctx = gsap.context(() => {
         gsap.fromTo(
           ".di",
-          { y: 16, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "power2.out", clearProps: "transform,opacity" }
+          { y: 14, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.45, stagger: 0.05, ease: "power2.out", clearProps: "transform,opacity" }
         );
       }, ref);
     });
@@ -308,7 +268,7 @@ export default function DashboardPage() {
           _id: cat._id,
           name: cat.name,
           icon: cat.icon || "tag",
-          color: cat.color || "#0118A3",
+          color: cat.color || "#2563eb",
           total: matched ? Number(matched.total) || 0 : 0,
           count: matched ? Number(matched.count) || 0 : 0,
         });
@@ -346,178 +306,137 @@ export default function DashboardPage() {
   if (isAuthLoading) return <DashboardSkeleton />;
 
   return (
-    <div ref={ref} style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* 1. HERO */}
+    <div ref={ref} className="dash-root" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* ── 1. FROSTED LIGHT HERO BALANCE CARD ── */}
       <div
         className="di"
         style={{
-          background: C.hero,
-          borderRadius: 8,
-          padding: "clamp(2rem,4vw,2.8rem)",
+          background: "linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)",
+          border: "1px solid rgba(219, 234, 254, 0.9)",
+          borderRadius: 20,
+          padding: "clamp(1.6rem, 3.5vw, 2.2rem)",
           position: "relative",
           overflow: "hidden",
+          boxShadow: "0 10px 30px -5px rgba(37, 99, 235, 0.07), 0 2px 6px rgba(15, 23, 42, 0.02)",
         }}
       >
+        {/* Soft Radial Ambient Glow */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            opacity: 0.16,
-            backgroundImage: `linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
-            backgroundSize: "72px 72px",
-            WebkitMaskImage: "linear-gradient(to bottom,black,transparent 90%)",
-            maskImage: "linear-gradient(to bottom,black,transparent 90%)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: 400,
-            height: 400,
-            right: -120,
-            top: -120,
-            border: `1px solid ${C.heroLine}`,
+            right: -30,
+            top: -30,
+            width: 260,
+            height: 260,
             borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            width: 250,
-            height: 250,
-            right: -60,
-            top: -60,
-            border: `1px solid ${C.brand}50`,
-            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
 
         <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Header Tag */}
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              padding: "6px 12px",
-              borderRadius: 999,
-              border: `1px solid ${C.heroLine}`,
+              gap: 7,
+              padding: "5px 12px",
+              borderRadius: 9999,
+              background: "#eff6ff",
+              border: "1px solid #dbeafe",
               fontSize: 12,
-              fontWeight: 600,
-              color: C.heroMuted,
-              marginBottom: 24,
+              fontWeight: 700,
+              color: "#2563eb",
+              marginBottom: 16,
             }}
           >
-            <Sparkles style={{ width: 14, color: C.highlight }} /> {month} · Net Balance
+            <Sparkles style={{ width: 14, height: 14, color: "#2563eb" }} />
+            <span>{month} · Net Balance</span>
           </div>
+
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "1fr auto",
-              gap: 32,
+              gap: 28,
               alignItems: "center",
               flexWrap: "wrap",
             }}
           >
+            {/* Left Balance Display */}
             <div>
               <div
                 style={{
-                  fontSize: "clamp(3rem,7vw,5rem)",
+                  fontSize: "clamp(2.5rem, 6vw, 4rem)",
                   fontWeight: 900,
-                  color: C.heroFg,
-                  letterSpacing: "-0.04em",
-                  lineHeight: 0.9,
-                  marginBottom: 20,
+                  color: "#0f172a",
+                  letterSpacing: "-0.035em",
+                  lineHeight: 1,
+                  marginBottom: 16,
                 }}
               >
                 <NumberTicker value={balance} currencyCode={cur} />
               </div>
+
               <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
                 <span
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    background: `${C.highlight}20`,
-                    border: `1px solid ${C.heroLine}`,
-                    borderRadius: 999,
+                    background: balance >= 0 ? "#dcfce7" : "#fee2e2",
+                    border: `1px solid ${balance >= 0 ? "#bbf7d0" : "#fecdd3"}`,
+                    borderRadius: 9999,
                     padding: "6px 14px",
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: 700,
-                    color: C.highlight,
+                    color: balance >= 0 ? "#16a34a" : "#dc2626",
                   }}
                 >
                   {balance >= 0 ? (
                     <>
-                      <ArrowUpRight style={{ width: 13 }} /> Positive cash flow
+                      <ArrowUpRight style={{ width: 14, height: 14 }} /> Positive cash flow
                     </>
                   ) : (
                     <>
-                      <ArrowDownRight style={{ width: 13 }} /> Negative cash flow
+                      <ArrowDownRight style={{ width: 14, height: 14 }} /> Deficit cash flow
                     </>
                   )}
                 </span>
-                <button
-                  onClick={openAdd}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    height: 44,
-                    padding: "0 24px",
-                    borderRadius: 999,
-                    background: C.highlight,
-                    color: C.highlightFg,
-                    border: "none",
-                    fontSize: 14,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    ...M,
-                    boxShadow: `0 4px 20px ${C.highlight}55`,
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "oklch(0.82 0.18 157)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = C.highlight)}
-                >
-                  <Plus style={{ width: 16 }} /> Add Transaction
+
+                <button onClick={openAdd} className="dash-btn-primary" style={{ height: 38, padding: "0 20px" }}>
+                  <Plus style={{ width: 15, height: 15 }} />
+                  <span>Add Transaction</span>
                 </button>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+
+            {/* Right Financial Breakdown Pods */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, minWidth: 280 }}>
               {[
-                { label: "Digital Bank", value: digitalBal, accent: "oklch(0.73 0.18 252)", icon: <CreditCard style={{ width: 14 }} /> },
-                { label: "Cash in Hand", value: cashBal, accent: C.growth, icon: <Banknote style={{ width: 14 }} /> },
-                { label: "Income", value: income, accent: C.highlight, icon: <ArrowUpRight style={{ width: 14 }} /> },
-                { label: "Expense", value: expense, accent: "oklch(0.65 0.24 16)", icon: <ArrowDownRight style={{ width: 14 }} /> },
+                { label: "Digital Bank", value: digitalBal, color: "#2563eb", bg: "#eff6ff", border: "#dbeafe", icon: <CreditCard style={{ width: 14, height: 14 }} /> },
+                { label: "Cash in Hand", value: cashBal, color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0", icon: <Banknote style={{ width: 14, height: 14 }} /> },
+                { label: "Income", value: income, color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0", icon: <ArrowUpRight style={{ width: 14, height: 14 }} /> },
+                { label: "Expense", value: expense, color: "#dc2626", bg: "#fee2e2", border: "#fecdd3", icon: <ArrowDownRight style={{ width: 14, height: 14 }} /> },
               ].map((t) => (
                 <div
                   key={t.label}
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: `1px solid ${C.heroLine}`,
-                    borderRadius: 8,
-                    padding: "16px 18px",
-                    minWidth: 125,
-                    flex: "1 1 auto",
+                    background: "#ffffff",
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    boxShadow: "0 2px 6px rgba(15, 23, 42, 0.02)",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <span style={{ color: t.accent }}>{t.icon}</span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: C.heroMuted,
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.07em",
-                      }}
-                    >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <span style={{ color: t.color }}>{t.icon}</span>
+                    <span style={{ fontSize: 10.5, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       {t.label}
                     </span>
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: C.heroFg, letterSpacing: "-0.03em" }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", letterSpacing: "-0.02em" }}>
                     <NumberTicker value={t.value} currencyCode={cur} />
                   </div>
                 </div>
@@ -527,149 +446,97 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. KPI STRIP — 4 columns horizontal */}
-      <div
-        className="di"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 0,
-          border: `1px solid ${C.border}`,
-          borderRadius: 8,
-          overflow: "hidden",
-          background: C.border,
-        }}
-      >
-        {[
-          {
-            label: "Total Income",
-            value: income,
-            accent: C.growth,
-            soft: C.growthSoft,
-            icon: <ArrowUpRight style={{ width: 20 }} />,
-            tag: "This month",
-          },
-          {
-            label: "Total Expenses",
-            value: expense,
-            accent: C.brand,
-            soft: C.brandSoft,
-            icon: <ArrowDownRight style={{ width: 20 }} />,
-            tag: "This month",
-          },
-          {
-            label: "Budget Remaining",
-            value: avail,
-            accent: C.growth,
-            soft: C.growthSoft,
-            icon: <Target style={{ width: 20 }} />,
-            tag: `${budgets?.length || 0} active`,
-          },
-          {
-            label: "Transactions",
-            value: recentTx?.length || 0,
-            accent: C.brand,
-            soft: C.brandSoft,
-            icon: <FileText style={{ width: 20 }} />,
-            tag: "Logged",
-            raw: true,
-          },
-        ].map((card) => (
-          <div key={card.label} style={{ background: "#fff", padding: "24px 20px" }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: card.soft,
-                color: card.accent,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-              }}
-            >
-              {card.icon}
+      {/* ── 2. 4-KPI SUMMARY STRIP ── */}
+      <div className="dash-kpi-grid">
+        {/* Total Income */}
+        <div className="dash-kpi-card di">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Total Income</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#dcfce7", color: "#16a34a" }}>
+              <ArrowUpRight style={{ width: 18, height: 18 }} />
             </div>
-            <div
-              style={{
-                fontSize: "clamp(1.8rem,3vw,2.4rem)",
-                fontWeight: 900,
-                color: C.foreground,
-                letterSpacing: "-0.04em",
-                lineHeight: 1,
-                marginBottom: 6,
-              }}
-            >
-              {card.raw ? card.value : <NumberTicker value={card.value} currencyCode={cur} />}
-            </div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                margin: "0 0 8px",
-              }}
-            >
-              {card.label}
-            </p>
-            <span
-              style={{
-                display: "inline-block",
-                fontSize: 11,
-                fontWeight: 600,
-                color: card.accent,
-                background: card.soft,
-                borderRadius: 999,
-                padding: "3px 10px",
-              }}
-            >
-              {card.tag}
-            </span>
           </div>
-        ))}
+          <div className="dash-kpi-val" style={{ color: "#16a34a" }}>
+            {formatCurrency(income, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#dcfce7", color: "#16a34a" }}>
+              This month
+            </span>
+            <span className="dash-kpi-hint">Total cash inflows</span>
+          </div>
+        </div>
+
+        {/* Total Expenses */}
+        <div className="dash-kpi-card di">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Total Expenses</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#fee2e2", color: "#dc2626" }}>
+              <ArrowDownRight style={{ width: 18, height: 18 }} />
+            </div>
+          </div>
+          <div className="dash-kpi-val" style={{ color: "#0f172a" }}>
+            {formatCurrency(expense, cur)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#fee2e2", color: "#dc2626" }}>
+              This month
+            </span>
+            <span className="dash-kpi-hint">Total cash outflows</span>
+          </div>
+        </div>
+
+        {/* Budget Remaining */}
+        <div className="dash-kpi-card di">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Budget Remaining</span>
+            <div className="dash-kpi-icon-box" style={{ background: avail >= 0 ? "#dcfce7" : "#fee2e2", color: avail >= 0 ? "#16a34a" : "#dc2626" }}>
+              <Target style={{ width: 18, height: 18 }} />
+            </div>
+          </div>
+          <div className="dash-kpi-val" style={{ color: avail >= 0 ? "#16a34a" : "#dc2626" }}>
+            {avail >= 0 ? formatCurrency(avail, cur) : `-${formatCurrency(Math.abs(avail), cur)}`}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: avail >= 0 ? "#dcfce7" : "#fee2e2", color: avail >= 0 ? "#16a34a" : "#dc2626" }}>
+              {budgets?.length || 0} active
+            </span>
+            <span className="dash-kpi-hint">Budgets configured</span>
+          </div>
+        </div>
+
+        {/* Transactions */}
+        <div className="dash-kpi-card di">
+          <div className="dash-kpi-header">
+            <span className="dash-kpi-label">Transactions</span>
+            <div className="dash-kpi-icon-box" style={{ background: "#eff6ff", color: "#2563eb" }}>
+              <FileText style={{ width: 18, height: 18 }} />
+            </div>
+          </div>
+          <div className="dash-kpi-val">{recentTx?.length || 0}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
+              Logged
+            </span>
+            <span className="dash-kpi-hint">Recent records</span>
+          </div>
+        </div>
       </div>
 
-
-
-      {/* 4. CATEGORY SPENDING OVERVIEW SECTION (All Categories with Spent Amounts) */}
+      {/* ── 3. CATEGORY SPENDING OVERVIEW ── */}
       <div className="di" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: C.brand,
-                margin: "0 0 4px",
-              }}
-            >
-              Expense Breakdown
-            </p>
-            <h2
-              style={{
-                fontSize: "clamp(1.3rem,2.5vw,1.7rem)",
-                fontWeight: 900,
-                color: C.foreground,
-                margin: 0,
-                letterSpacing: "-0.02em",
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2563eb", display: "inline-block" }} />
+              <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2563eb" }}>
+                Expense Breakdown
+              </span>
+            </div>
+            <h2 style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.65rem)", fontWeight: 900, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
               Student Spending by Category
             </h2>
-            <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", fontWeight: 500 }}>
+            <p style={{ fontSize: 13, color: "#64748b", margin: "3px 0 0", fontWeight: 500 }}>
               All your configured expense categories and how much has been spent this month.
             </p>
           </div>
@@ -681,102 +548,38 @@ export default function DashboardPage() {
                   fontSize: 12,
                   fontWeight: 700,
                   padding: "6px 14px",
-                  borderRadius: 999,
-                  background: C.brandSoft,
-                  color: C.brand,
-                  border: `1px solid ${C.border}`,
+                  borderRadius: 9999,
+                  background: "#eff6ff",
+                  color: "#2563eb",
+                  border: "1px solid #dbeafe",
                 }}
               >
                 🔥 Top Spend: <strong>{topCategory.name}</strong> ({formatCurrency(topCategory.total, cur)})
               </span>
             )}
-            <Link
-              to="/app/categories"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 13,
-                fontWeight: 700,
-                color: C.brand,
-                textDecoration: "none",
-                padding: "6px 14px",
-                borderRadius: 999,
-                background: C.altBg,
-                border: `1px solid ${C.border}`,
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.brand;
-                e.currentTarget.style.background = C.brandSoft;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.background = C.altBg;
-              }}
-            >
+            <Link to="/app/categories" className="dash-btn-secondary" style={{ height: 36, fontSize: 12.5, padding: "0 14px" }}>
               <span>Categories Tab</span>
-              <ChevronRight style={{ width: 14 }} />
+              <ChevronRight style={{ width: 14, height: 14 }} />
             </Link>
           </div>
         </div>
 
-        {/* Donut Chart + Category Portfolio Bento Grid */}
-        <div
-          style={{
-            display: "grid",
-            gap: 16,
-            gridTemplateColumns: activeCategoriesWithSpending.length > 0 ? "340px 1fr" : "1fr",
-          }}
-        >
-          {/* Donut Distribution Chart (when there are active expenses) */}
+        {/* Donut Chart + Category Grid */}
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: activeCategoriesWithSpending.length > 0 ? "320px 1fr" : "1fr" }}>
+          {/* Donut Distribution */}
           {activeCategoriesWithSpending.length > 0 && (
-            <div
-              style={{
-                background: "#fff",
-                border: `1.5px solid ${C.border}`,
-                borderRadius: 8,
-                padding: "20px 22px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
+            <div className="dash-card" style={{ padding: "20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      color: C.muted,
-                    }}
-                  >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b" }}>
                     Active Share
                   </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: C.brand,
-                      background: C.brandSoft,
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                    }}
-                  >
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", background: "#eff6ff", padding: "2px 8px", borderRadius: 9999 }}>
                     {activeCategoriesWithSpending.length} Active
                   </span>
                 </div>
 
-                <div style={{ height: 190, position: "relative" }}>
+                <div style={{ height: 180, position: "relative" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -785,8 +588,8 @@ export default function DashboardPage() {
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={78}
+                        innerRadius={48}
+                        outerRadius={74}
                         paddingAngle={3}
                       >
                         {pieData.map((e, i) => (
@@ -808,10 +611,10 @@ export default function DashboardPage() {
                       pointerEvents: "none",
                     }}
                   >
-                    <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
                       Total Spent
                     </span>
-                    <span style={{ fontSize: 15, fontWeight: 900, color: C.foreground }}>
+                    <span style={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>
                       {formatCurrency(totalCategorizedExpense, cur)}
                     </span>
                   </div>
@@ -825,7 +628,7 @@ export default function DashboardPage() {
                   gridTemplateColumns: "1fr 1fr",
                   gap: "6px 10px",
                   paddingTop: 12,
-                  borderTop: `1px solid ${C.border}`,
+                  borderTop: "1px solid #f1f5f9",
                   marginTop: 6,
                 }}
               >
@@ -846,18 +649,10 @@ export default function DashboardPage() {
                           display: "block",
                         }}
                       />
-                      <span
-                        style={{
-                          color: C.muted,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          flex: 1,
-                        }}
-                      >
+                      <span style={{ color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                         {cat.name}
                       </span>
-                      <span style={{ fontWeight: 800, color: C.foreground, flexShrink: 0 }}>{pct}%</span>
+                      <span style={{ fontWeight: 800, color: "#0f172a", flexShrink: 0 }}>{pct}%</span>
                     </div>
                   );
                 })}
@@ -865,31 +660,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Full Category Portfolio Cards (Shows every category with its spent amount) */}
-          <div
-            style={{
-              background: "#fff",
-              border: `1.5px solid ${C.border}`,
-              borderRadius: 8,
-              padding: "20px 22px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingBottom: 10,
-                borderBottom: `1px solid ${C.border}`,
-              }}
-            >
-              <h3 style={{ fontSize: 15, fontWeight: 800, color: C.foreground, margin: 0 }}>
+          {/* Full Category Portfolio Cards */}
+          <div className="dash-card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10, borderBottom: "1px solid #f1f5f9" }}>
+              <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", margin: 0 }}>
                 Categories & Monthly Spending
               </h3>
-              <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>
                 {categoriesList.length} categories · Total: <strong>{formatCurrency(totalCategorizedExpense, cur)}</strong>
               </span>
             </div>
@@ -897,9 +674,9 @@ export default function DashboardPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
                 gap: 10,
-                maxHeight: 320,
+                maxHeight: 290,
                 overflowY: "auto",
                 paddingRight: 4,
               }}
@@ -920,39 +697,22 @@ export default function DashboardPage() {
                       flexDirection: "column",
                       justifyContent: "space-between",
                       padding: "12px 14px",
-                      borderRadius: 8,
-                      background: hasSpent ? C.altBg : "#fafafa",
-                      border: `1px solid ${hasSpent ? C.border : "oklch(0.93 0.008 255)"}`,
+                      borderRadius: 12,
+                      background: hasSpent ? "#f8fafc" : "#ffffff",
+                      border: `1px solid ${hasSpent ? "#e2e8f0" : "#f1f5f9"}`,
                       textDecoration: "none",
-                      transition: "all 0.15s",
-                      opacity: hasSpent ? 1 : 0.82,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = C.brand;
-                      e.currentTarget.style.background = "#fff";
-                      e.currentTarget.style.opacity = "1";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = hasSpent ? C.border : "oklch(0.93 0.008 255)";
-                      e.currentTarget.style.background = hasSpent ? C.altBg : "#fafafa";
-                      e.currentTarget.style.opacity = hasSpent ? "1" : "0.82";
+                      transition: "all 0.15s ease",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
-                      }}
-                    >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         <div
                           style={{
                             width: 32,
                             height: 32,
                             borderRadius: 8,
-                            background: `${catColor}20`,
+                            background: `${catColor}18`,
+                            color: catColor,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -962,48 +722,22 @@ export default function DashboardPage() {
                           <CategoryIcon categoryName={cat.name} className="w-4 h-4" />
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <p
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 800,
-                              color: C.foreground,
-                              margin: 0,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
+                          <p style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {cat.name}
                           </p>
-                          <span style={{ fontSize: 10, color: C.muted }}>
+                          <span style={{ fontSize: 10, color: "#64748b" }}>
                             {hasSpent ? `${cat.count} txs · ${pct}% of total` : "0 transactions"}
                           </span>
                         </div>
                       </div>
 
-                      <span
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 900,
-                          color: hasSpent ? C.foreground : C.muted,
-                          letterSpacing: "-0.02em",
-                          flexShrink: 0,
-                        }}
-                      >
+                      <span style={{ fontSize: 13.5, fontWeight: 900, color: hasSpent ? "#0f172a" : "#94a3b8", letterSpacing: "-0.02em", flexShrink: 0 }}>
                         {formatCurrency(spent, cur)}
                       </span>
                     </div>
 
-                    {/* Visual progress bar */}
-                    <div
-                      style={{
-                        height: 4,
-                        background: `${C.border}`,
-                        borderRadius: 99,
-                        overflow: "hidden",
-                        marginTop: 4,
-                      }}
-                    >
+                    {/* Progress Bar */}
+                    <div style={{ height: 4, background: "#e2e8f0", borderRadius: 99, overflow: "hidden", marginTop: 4 }}>
                       <div
                         style={{
                           height: "100%",
@@ -1022,131 +756,53 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 5. BENTO: Chart + Transactions */}
+      {/* ── 4. BENTO: TRENDS CHART + RECENT TRANSACTIONS ── */}
       <div className="di" style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 340px" }}>
-        {/* Chart */}
-        <div
-          style={{
-            background: "#fff",
-            border: `1px solid ${C.border}`,
-            borderRadius: 8,
-            padding: "clamp(1.4rem,3vw,2rem)",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              color: C.brand,
-              margin: "0 0 8px",
-            }}
-          >
-            6-month overview
-          </p>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 20,
-              borderBottom: `1px solid ${C.border}`,
-              paddingBottom: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "clamp(1.3rem,2.5vw,1.7rem)",
-                fontWeight: 900,
-                color: C.foreground,
-                margin: 0,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Income vs. Expenses
-            </h3>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: C.muted,
-                background: C.altBg,
-                border: `1px solid ${C.border}`,
-                borderRadius: 999,
-                padding: "5px 12px",
-              }}
-            >
+        {/* Cash Flow Trends Chart */}
+        <div className="dash-card" style={{ padding: "20px", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, borderBottom: "1px solid #f1f5f9", paddingBottom: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2563eb", marginBottom: 2 }}>
+                6-Month Overview
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                Income vs. Expenses
+              </h3>
+            </div>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 9999, padding: "4px 10px" }}>
               Past 6 Months
             </span>
           </div>
-          <div style={{ flex: 1, minHeight: 240 }}>
-            <ResponsiveContainer width="100%" height={240}>
+
+          <div style={{ flex: 1, minHeight: 230 }}>
+            <ResponsiveContainer width="100%" height={230}>
               <AreaChart data={chartData} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gi" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={C.growth} stopOpacity={0.2} />
-                    <stop offset="100%" stopColor={C.growth} stopOpacity={0} />
+                    <stop offset="0%" stopColor="#16a34a" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="ge" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={C.brand} stopOpacity={0.15} />
-                    <stop offset="100%" stopColor={C.brand} stopOpacity={0} />
+                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-                <XAxis dataKey="month" stroke={C.muted} fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis
-                  stroke={C.muted}
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => formatCurrency(v, cur)}
-                />
-                <Tooltip content={<ChartTooltip cur={cur} />} cursor={{ stroke: `${C.brand}30`, strokeWidth: 1 }} />
-                <Area
-                  type="monotone"
-                  dataKey="income"
-                  name="Income"
-                  stroke={C.growth}
-                  strokeWidth={2.5}
-                  fill="url(#gi)"
-                  dot={{ r: 3.5, fill: C.growth, strokeWidth: 0 }}
-                  activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expense"
-                  name="Expense"
-                  stroke={C.brand}
-                  strokeWidth={2.5}
-                  fill="url(#ge)"
-                  dot={{ r: 3.5, fill: C.brand, strokeWidth: 0 }}
-                  activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v, cur)} />
+                <Tooltip content={<ChartTooltip cur={cur} />} cursor={{ stroke: "rgba(37,99,235,0.2)", strokeWidth: 1 }} />
+                <Area type="monotone" dataKey="income" name="Income" stroke="#16a34a" strokeWidth={2.5} fill="url(#gi)" dot={{ r: 3, fill: "#16a34a", strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="expense" name="Expense" stroke="#2563eb" strokeWidth={2.5} fill="url(#ge)" dot={{ r: 3, fill: "#2563eb", strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 20,
-              paddingTop: 12,
-              borderTop: `1px solid ${C.border}`,
-              marginTop: 8,
-            }}
-          >
+
+          <div style={{ display: "flex", gap: 16, paddingTop: 10, borderTop: "1px solid #f1f5f9", marginTop: 8 }}>
             {[
-              { l: "Income", c: C.growth },
-              { l: "Expense", c: C.brand },
+              { l: "Income", c: "#16a34a" },
+              { l: "Expense", c: "#2563eb" },
             ].map((x) => (
-              <div
-                key={x.l}
-                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, fontWeight: 600 }}
-              >
+              <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#64748b", fontWeight: 600 }}>
                 <span style={{ width: 9, height: 9, borderRadius: "50%", background: x.c, display: "block" }} />
                 {x.l}
               </div>
@@ -1154,340 +810,164 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Transactions — brand blue */}
-        <div
-          style={{
-            background: C.brand,
-            borderRadius: 8,
-            padding: "clamp(1.4rem,3vw,2rem)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              opacity: 0.1,
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.3) 1px,transparent 1px)`,
-              backgroundSize: "40px 40px",
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: "rgba(255,255,255,0.6)",
-                margin: "0 0 8px",
-              }}
-            >
-              Activity
-            </p>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-              <h3
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: C.heroFg,
-                  margin: 0,
-                  letterSpacing: "-0.02em",
-                }}
-              >
+        {/* Recent Transactions Card (Clean Light SaaS Card) */}
+        <div className="dash-card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10, borderBottom: "1px solid #f1f5f9" }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2563eb", marginBottom: 2 }}>
+                Activity
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>
                 Recent Transactions
               </h3>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "3px 10px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.15)",
-                  color: C.heroFg,
-                }}
-              >
-                {recentTx?.length || 0}
-              </span>
             </div>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, background: "#eff6ff", color: "#2563eb" }}>
+              {recentTx?.length || 0}
+            </span>
           </div>
-          <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
             {displayTx.length > 0 ? (
-              displayTx.map((tx) => (
-                <div
-                  key={tx._id}
-                  onClick={() => setSelectedTx(tx)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "9px 11px",
-                    borderRadius: 8,
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    cursor: "pointer",
-                    transition: "background 0.12s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        flexShrink: 0,
-                        background: tx.type === "income" ? `${C.growth}30` : "rgba(255,255,255,0.12)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <CategoryIcon
-                        categoryName={tx.categoryId?.name}
-                        className="w-4 h-4"
-                        useEmerald={tx.type === "income"}
-                      />
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: C.heroFg,
-                          margin: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {tx.description || "Transaction"}
-                      </p>
-                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", margin: 0 }}>
-                        {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} ·{" "}
-                        {tx.categoryId?.name || "General"}
-                      </p>
-                    </div>
-                  </div>
-                  <span
+              displayTx.map((tx) => {
+                const isInc = tx.type === "income";
+                return (
+                  <div
+                    key={tx._id}
+                    onClick={() => setSelectedTx(tx)}
                     style={{
-                      fontSize: 13,
-                      fontWeight: 900,
-                      flexShrink: 0,
-                      paddingLeft: 8,
-                      color: tx.type === "income" ? C.highlight : "rgba(255,255,255,0.9)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      background: "#f8fafc",
+                      border: "1px solid #f1f5f9",
+                      cursor: "pointer",
+                      transition: "all 0.12s ease",
                     }}
                   >
-                    {tx.type === "income" ? "+" : "−"}
-                    {formatCurrency(tx.amount, cur)}
-                  </span>
-                </div>
-              ))
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                          flexShrink: 0,
+                          background: isInc ? "#dcfce7" : "#eff6ff",
+                          color: isInc ? "#16a34a" : "#2563eb",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <CategoryIcon categoryName={tx.categoryId?.name} className="w-4 h-4" useEmerald={isInc} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {tx.description || "Transaction"}
+                        </p>
+                        <p style={{ fontSize: 10.5, color: "#64748b", margin: 0 }}>
+                          {new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {tx.categoryId?.name || "General"}
+                        </p>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 800, flexShrink: 0, paddingLeft: 6, color: isInc ? "#16a34a" : "#0f172a" }}>
+                      {isInc ? "+ " : "− "}
+                      {formatCurrency(tx.amount, cur)}
+                    </span>
+                  </div>
+                );
+              })
             ) : (
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "24px 0",
-                  gap: 12,
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,0.12)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <FileText style={{ width: 20, color: "rgba(255,255,255,0.6)" }} />
-                </div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: C.heroFg, margin: "0 0 4px", textAlign: "center" }}>
-                  No transactions yet
-                </p>
-                <button
-                  onClick={openAdd}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    height: 38,
-                    padding: "0 18px",
-                    borderRadius: 999,
-                    background: C.highlight,
-                    color: C.highlightFg,
-                    border: "none",
-                    fontSize: 13,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    ...M,
-                  }}
-                >
-                  <Plus style={{ width: 13 }} /> Add first
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 0", gap: 8 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#64748b", margin: 0 }}>No transactions yet</p>
+                <button onClick={openAdd} className="dash-btn-primary" style={{ height: 32, fontSize: 12, padding: "0 12px" }}>
+                  <Plus style={{ width: 13, height: 13 }} /> Add first
                 </button>
               </div>
             )}
           </div>
+
           <Link
             to="/app/transactions"
-            style={{
-              position: "relative",
-              zIndex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              padding: "10px 0",
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.25)",
-              color: C.heroFg,
-              fontSize: 13,
-              fontWeight: 700,
-              textDecoration: "none",
-              ...M,
-              transition: "background 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            className="dash-btn-secondary"
+            style={{ width: "100%", height: 36, fontSize: 12.5, justifyContent: "center" }}
           >
-            View All Transactions <ChevronRight style={{ width: 14 }} />
+            <span>View All Transactions</span>
+            <ChevronRight style={{ width: 14, height: 14 }} />
           </Link>
         </div>
       </div>
 
-      {/* 6. BUDGET BENTO */}
+      {/* ── 5. BUDGET HEALTH CARDS ── */}
       {budgets?.length > 0 && (
-        <div className="di">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 16,
-              flexWrap: "wrap",
-            }}
-          >
+        <div className="di" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
-              <p
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  color: C.brand,
-                  margin: "0 0 6px",
-                }}
-              >
+              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2563eb", marginBottom: 2 }}>
                 Budget Health
-              </p>
-              <h2
-                style={{
-                  fontSize: "clamp(1.4rem,3vw,1.9rem)",
-                  fontWeight: 900,
-                  color: C.foreground,
-                  margin: 0,
-                  letterSpacing: "-0.02em",
-                }}
-              >
+              </div>
+              <h2 style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.65rem)", fontWeight: 900, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
                 Spending Limit Tracking
               </h2>
             </div>
-            <Link
-              to="/app/budget"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 13,
-                fontWeight: 700,
-                color: C.brand,
-                textDecoration: "none",
-              }}
-            >
-              Manage <ChevronRight style={{ width: 14 }} />
+            <Link to="/app/budget" className="dash-btn-secondary" style={{ height: 34, fontSize: 12, padding: "0 12px" }}>
+              <span>Manage Budgets</span>
+              <ChevronRight style={{ width: 14, height: 14 }} />
             </Link>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 16 }}>
-            {(budgets || []).slice(0, 4).map((b, i) => {
-              const pct = Math.min(100, Math.round(((b.spentAmount || 0) / b.limitAmount) * 100));
-              const schemes = [
-                { bg: C.brand, fg: C.heroFg, bar: C.highlight },
-                { bg: C.hero, fg: C.heroFg, bar: C.growth },
-                { bg: C.growthSoft, fg: C.foreground, bar: C.growth },
-                { bg: C.highlight, fg: C.highlightFg, bar: C.hero },
-              ];
-              const s = schemes[i % 4];
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
+            {(budgets || []).slice(0, 4).map((b) => {
+              const spent = b.spentAmount || 0;
+              const limit = b.limitAmount || 100;
+              const rawPct = limit > 0 ? (spent / limit) * 100 : 0;
+              const isOver = rawPct >= 100;
+              const pct = isOver ? 100 : Math.round(rawPct);
+              const remaining = limit - spent;
+
               return (
-                <div
-                  key={b._id}
-                  style={{
-                    background: s.bg,
-                    borderRadius: 8,
-                    padding: "clamp(1.2rem,3vw,1.6rem)",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    minHeight: 160,
-                  }}
-                >
+                <div key={b._id} className="dash-card" style={{ padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div>
-                    <p
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: s.fg,
-                        opacity: 0.7,
-                        margin: "0 0 6px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.07em",
-                      }}
-                    >
-                      {b.category?.name || "Budget"}
-                    </p>
-                    <div
-                      style={{
-                        fontSize: "clamp(1.5rem,3vw,2rem)",
-                        fontWeight: 900,
-                        color: s.fg,
-                        letterSpacing: "-0.03em",
-                      }}
-                    >
-                      {formatCurrency(b.limitAmount - (b.spentAmount || 0), cur)}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <p style={{ fontSize: 13.5, fontWeight: 800, color: "#0f172a", margin: 0 }}>
+                        {b.categoryId?.name || b.category?.name || "Budget"}
+                      </p>
+                      <span
+                        style={{
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          padding: "2px 7px",
+                          borderRadius: 9999,
+                          background: isOver ? "#fee2e2" : "#dcfce7",
+                          color: isOver ? "#dc2626" : "#16a34a",
+                        }}
+                      >
+                        {isOver ? "Exceeded" : `${pct}% spent`}
+                      </span>
                     </div>
-                    <p style={{ fontSize: 11, color: s.fg, opacity: 0.55, margin: "2px 0 0" }}>remaining</p>
+
+                    <div style={{ fontSize: 20, fontWeight: 900, color: isOver ? "#dc2626" : "#0f172a", letterSpacing: "-0.02em" }}>
+                      {remaining >= 0 ? formatCurrency(remaining, cur) : `-${formatCurrency(Math.abs(remaining), cur)}`}
+                    </div>
+                    <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>{remaining >= 0 ? "remaining" : "over limit"}</p>
                   </div>
-                  <div style={{ marginTop: 14 }}>
-                    <div style={{ height: 4, background: `${s.fg}20`, borderRadius: 99, overflow: "hidden", marginBottom: 6 }}>
+
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ height: 4, background: "#e2e8f0", borderRadius: 99, overflow: "hidden", marginBottom: 4 }}>
                       <div
                         style={{
                           height: "100%",
                           width: `${pct}%`,
-                          background: s.bar,
+                          background: isOver ? "#dc2626" : pct >= 75 ? "#f59e0b" : "#16a34a",
                           borderRadius: 99,
                           transition: "width 0.5s",
                         }}
                       />
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 10, color: s.fg, opacity: 0.6, fontWeight: 500 }}>
-                        {formatCurrency(b.spentAmount || 0, cur)} spent
-                      </span>
-                      <span style={{ fontSize: 10, color: s.fg, opacity: 0.7, fontWeight: 700 }}>
-                        {pct}%
-                      </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#64748b" }}>
+                      <span>{formatCurrency(spent, cur)} used</span>
+                      <span>Cap: {formatCurrency(limit, cur)}</span>
                     </div>
                   </div>
                 </div>
@@ -1497,63 +977,17 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 7. QUICK ACCESS */}
-      <div className="di" style={{ background: C.altBg, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px 0", borderBottom: `1px solid ${C.border}` }}>
-          <p
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-              color: C.brand,
-              margin: 0,
-            }}
-          >
-            Quick access
-          </p>
+      {/* ── 6. QUICK ACCESS LINKS ── */}
+      <div className="dash-card di" style={{ padding: "16px 20px" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#2563eb", marginBottom: 12 }}>
+          Quick Access
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
-            gap: 0,
-            background: C.border,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
           {[
-            {
-              to: "/app/transactions",
-              icon: ArrowUpRight,
-              label: "Transactions",
-              desc: "View & manage",
-              accent: C.brand,
-              soft: C.brandSoft,
-            },
-            {
-              to: "/app/budget",
-              icon: PieIcon,
-              label: "Budget",
-              desc: "Track categories",
-              accent: C.growth,
-              soft: C.growthSoft,
-            },
-            {
-              to: "/app/reports",
-              icon: TrendingUp,
-              label: "Reports",
-              desc: "Analytics",
-              accent: C.brand,
-              soft: C.brandSoft,
-            },
-            {
-              to: "/app/profile",
-              icon: GraduationCap,
-              label: "Profile",
-              desc: "Your account",
-              accent: C.growth,
-              soft: C.growthSoft,
-            },
+            { to: "/app/transactions", icon: ArrowUpRight, label: "Transactions", desc: "View & record", color: "#2563eb", bg: "#eff6ff" },
+            { to: "/app/budget", icon: PieIcon, label: "Budget", desc: "Monthly limits", color: "#16a34a", bg: "#dcfce7" },
+            { to: "/app/reports", icon: TrendingUp, label: "Reports", desc: "Analytics & PDF", color: "#8b5cf6", bg: "#f3e8ff" },
+            { to: "/app/profile", icon: GraduationCap, label: "Profile", desc: "Preferences", color: "#f59e0b", bg: "#fef3c7" },
           ].map((q) => {
             const Icon = q.icon;
             return (
@@ -1563,35 +997,35 @@ export default function DashboardPage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
-                  padding: "18px 20px",
-                  background: "#fff",
+                  gap: 10,
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "#f8fafc",
+                  border: "1px solid #f1f5f9",
                   textDecoration: "none",
-                  transition: "background 0.12s",
+                  transition: "all 0.15s ease",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = q.soft)}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
               >
                 <div
                   style={{
-                    width: 38,
-                    height: 38,
+                    width: 34,
+                    height: 34,
                     borderRadius: 10,
-                    background: q.soft,
-                    color: q.accent,
+                    background: q.bg,
+                    color: q.color,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <Icon style={{ width: 17 }} />
+                  <Icon style={{ width: 16, height: 16 }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: C.foreground, margin: 0 }}>{q.label}</p>
-                  <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{q.desc}</p>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", margin: 0 }}>{q.label}</p>
+                  <p style={{ fontSize: 11, color: "#64748b", margin: 0 }}>{q.desc}</p>
                 </div>
-                <ChevronRight style={{ width: 14, color: C.muted, marginLeft: "auto" }} />
+                <ChevronRight style={{ width: 14, height: 14, color: "#94a3b8", marginLeft: "auto" }} />
               </Link>
             );
           })}
