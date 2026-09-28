@@ -7,7 +7,14 @@ const getCategories = async (req, res) => {
   try {
     const { type } = req.query;
     const filter = {
-      $or: [{ isDefault: true }, { userId: req.user._id }],
+      $or: [
+        { isDefault: true },
+        { is_default: true },
+        { userId: null },
+        { user_id: null },
+        { userId: req.user._id },
+        { user_id: req.user._id },
+      ],
     };
     if (type) filter.type = type;
     const cacheKey = `campuscoin:user:${req.user._id}:categories:${type || 'all'}`;

@@ -674,7 +674,7 @@ export default function DashboardPage() {
                 padding: "6px 14px",
                 borderRadius: 999,
                 background: C.altBg,
-                border: `1.5px solid ${C.border}`,
+                border: `1px solid ${C.border}`,
                 transition: "all 0.15s",
               }}
               onMouseEnter={(e) => {
