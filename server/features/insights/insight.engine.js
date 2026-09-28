@@ -49,7 +49,7 @@ const analyzeUserFinances = async (userId) => {
     categories,
     recentExpenseTxns,
   ] = await Promise.all([
-    // Current month expenses by category
+    // Current month expenses by category with transactions
     Transaction.aggregate([
       {
         $match: {
@@ -147,7 +147,7 @@ const analyzeUserFinances = async (userId) => {
     // All categories map
     Category.find({}).lean(),
 
-    // Recent 20 expense transactions for discretionary detection
+    // Recent 30 expense transactions for discretionary detection
     Transaction.find({
       userId,
       type: "expense",
@@ -156,7 +156,7 @@ const analyzeUserFinances = async (userId) => {
     })
       .populate("categoryId", "name icon")
       .sort({ date: -1 })
-      .limit(20)
+      .limit(30)
       .lean(),
   ]);
 
@@ -191,7 +191,7 @@ const analyzeUserFinances = async (userId) => {
 
   // Build complete structured categories breakdown
   const categoriesBreakdown = currentMonthExpensesAgg.map((catExp) => {
-    const catId = catExp._id.toString();
+    const catId = catExp._id ? catExp._id.toString() : "uncategorized";
     const cat = categoryMap[catId] || { name: "General", icon: "tag" };
     const currentAmount = CurrencyService.fromBase(catExp.total, userCurrency);
     const avgAmount = avg3MonthMap[catId] || 0;
@@ -199,6 +199,14 @@ const analyzeUserFinances = async (userId) => {
 
     const vs3MonthAvgPercent = avgAmount > 0 ? Math.round(((currentAmount - avgAmount) / avgAmount) * 100) : 0;
     const momPercent = lastAmount > 0 ? Math.round(((currentAmount - lastAmount) / lastAmount) * 100) : 0;
+
+    // Convert transactions to user currency and sort descending
+    const convertedTxns = (catExp.transactions || []).map((t) => ({
+      _id: t._id,
+      amount: CurrencyService.fromBase(t.amount, userCurrency),
+      description: t.description || cat.name,
+      date: t.date,
+    })).sort((a, b) => b.amount - a.amount);
 
     return {
       categoryId: catId,
@@ -210,6 +218,7 @@ const analyzeUserFinances = async (userId) => {
       vs3MonthAvgPercent,
       momPercent,
       transactionCount: catExp.count,
+      transactions: convertedTxns,
     };
   });
 
@@ -218,7 +227,7 @@ const analyzeUserFinances = async (userId) => {
     const catId = b.categoryId?._id ? b.categoryId._id.toString() : b.categoryId?.toString();
     const catName = b.categoryId?.name || "General";
     const limit = CurrencyService.fromBase(b.limitAmount, userCurrency);
-    const catExp = currentMonthExpensesAgg.find((c) => c._id.toString() === catId);
+    const catExp = currentMonthExpensesAgg.find((c) => c._id && c._id.toString() === catId);
     const spent = catExp ? CurrencyService.fromBase(catExp.total, userCurrency) : CurrencyService.fromBase(b.spentAmount || 0, userCurrency);
     const pctUsed = limit > 0 ? Math.round((spent / limit) * 100) : 0;
 
@@ -255,6 +264,14 @@ const analyzeUserFinances = async (userId) => {
     billingCycle: s.billing_cycle || "monthly",
   }));
 
+  // Discretionary spending detection
+  const discretionaryCategoryKeywords = ["entertainment", "movie", "game", "shopping", "clothes", "dining", "takeout", "cafe", "coffee", "leisure", "social"];
+  const discretionaryBreakdown = categoriesBreakdown.filter((c) =>
+    discretionaryCategoryKeywords.some((kw) => c.categoryName.toLowerCase().includes(kw))
+  );
+  const discretionaryTotal = discretionaryBreakdown.reduce((sum, c) => sum + c.currentAmount, 0);
+  const discretionaryTxnCount = discretionaryBreakdown.reduce((sum, c) => sum + c.transactionCount, 0);
+
   // Build verified financial profile for Gemini AI
   const financialProfile = {
     studentName: user?.name || "Student",
@@ -272,6 +289,11 @@ const analyzeUserFinances = async (userId) => {
     activeBudgets,
     activeGoals,
     activeSubscriptions,
+    discretionarySpending: {
+      total: Math.round(discretionaryTotal),
+      count: discretionaryTxnCount,
+      percentOfExpense: totalExpense > 0 ? Math.round((discretionaryTotal / totalExpense) * 100) : 0,
+    },
     recentTransactions: recentExpenseTxns.map((t) => ({
       description: t.description,
       amount: Math.round(CurrencyService.fromBase(t.amount, userCurrency)),
@@ -284,11 +306,11 @@ const analyzeUserFinances = async (userId) => {
     },
   };
 
-  // Build dynamic fallback insights
+  // Build dynamic deterministic insights
   const generatedInsights = [];
 
   // =========================================================================
-  // RULE 16: DATA CONFIDENCE / INSUFFICIENT DATA
+  // 1. DATA CONFIDENCE / INSUFFICIENT DATA (Rule 20)
   // =========================================================================
   if (allUserTxCount < 3) {
     generatedInsights.push({
@@ -298,9 +320,9 @@ const analyzeUserFinances = async (userId) => {
       title: "ℹ️ Limited transaction history",
       summary: `We've only analyzed ${allUserTxCount} recorded transaction${allUserTxCount === 1 ? "" : "s"} so far.`,
       recommendation:
-        "Keep recording your daily campus expenses to unlock autonomous trend analysis and personalized recommendations.",
+        "Keep recording your income and expenses and CampusCoin AI will start identifying useful patterns.",
       explanation:
-        "CampusCoin AI requires transactions across multiple days and categories to compute verified statistical baselines.",
+        "We've only analyzed a limited amount of transaction history. Keep recording your daily transactions across categories to compute verified statistical baselines.",
       supportingMetrics: {
         transactionCount: allUserTxCount,
         currency: userCurrency,
@@ -327,10 +349,11 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 5: HIGH SPENDING CATEGORY
+  // 2. HIGH SPENDING CATEGORY (Rule 9)
   // =========================================================================
   for (const catExp of categoriesBreakdown) {
-    if (catExp.avgAmount > 5 && catExp.vs3MonthAvgPercent >= 20 && (catExp.currentAmount - catExp.avgAmount) > 10) {
+    // Meaningfully above user's own normal spending
+    if (catExp.avgAmount > 5 && catExp.vs3MonthAvgPercent >= 20 && (catExp.currentAmount - catExp.avgAmount) > 5) {
       const remainingWeeks = Math.max(1, Math.ceil(daysRemaining / 7));
       const suggestedWeekly = Math.max(10, Math.round((catExp.avgAmount * 1.05 - catExp.currentAmount * 0.8) / remainingWeeks));
 
@@ -338,10 +361,10 @@ const analyzeUserFinances = async (userId) => {
         category: "take_action",
         priority: catExp.vs3MonthAvgPercent >= 35 ? "high" : "medium",
         insightType: "high_spending",
-        title: `${getCategoryEmoji(catExp.categoryName)} ${catExp.categoryName} spending is elevated`,
-        summary: `You've spent ${formatAmount(catExp.currentAmount, userCurrency)} on ${catExp.categoryName} this month. That's ${catExp.vs3MonthAvgPercent}% above your 3-month baseline.`,
+        title: `${getCategoryEmoji(catExp.categoryName)} ${catExp.categoryName} spending is getting high`,
+        summary: `You've spent ${formatAmount(catExp.currentAmount, userCurrency)} on ${catExp.categoryName.toLowerCase()} this month. That's ${catExp.vs3MonthAvgPercent}% above your previous 3-month average.`,
         recommendation: `Consider keeping your remaining weekly ${catExp.categoryName.toLowerCase()} expenses around ${formatAmount(suggestedWeekly, userCurrency)}.`,
-        explanation: `Your current ${catExp.categoryName} spending is ${catExp.vs3MonthAvgPercent}% above your 3-month baseline average of ${formatAmount(catExp.avgAmount, userCurrency)}.`,
+        explanation: `We noticed that your ${catExp.categoryName.toLowerCase()} spending has increased and is currently ${catExp.vs3MonthAvgPercent}% above your previous 3-month average of ${formatAmount(catExp.avgAmount, userCurrency)}.`,
         supportingMetrics: {
           currentAmount: catExp.currentAmount,
           avgAmount: catExp.avgAmount,
@@ -363,19 +386,26 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 6: SPENDING SPIKE DETECTION
+  // 3. SPENDING SPIKE DETECTION WITH UNDERLYING TXNS (Rule 10)
   // =========================================================================
   for (const catExp of categoriesBreakdown) {
-    if (catExp.lastMonthAmount > 5 && catExp.momPercent >= 35 && (catExp.currentAmount - catExp.lastMonthAmount) > 15) {
+    if (catExp.lastMonthAmount > 5 && catExp.momPercent >= 35 && (catExp.currentAmount - catExp.lastMonthAmount) > 10) {
       const diff = catExp.currentAmount - catExp.lastMonthAmount;
+
+      // Identify top contributing transactions
+      const topTxns = (catExp.transactions || []).slice(0, 4);
+      const topTxnsTotal = Math.round(topTxns.reduce((s, t) => s + t.amount, 0));
+      const topCount = topTxns.length;
+      const driverDetail = topCount > 0 ? ` Most of this increase came from ${topCount} transaction${topCount > 1 ? "s" : ""} totaling ${formatAmount(topTxnsTotal, userCurrency)}.` : "";
+
       generatedInsights.push({
         category: "take_action",
         priority: catExp.momPercent >= 50 ? "high" : "medium",
         insightType: "spending_spike",
         title: `📈 ${catExp.categoryName} spending increased`,
-        summary: `You spent ${catExp.momPercent}% more on ${catExp.categoryName} than last month (+${formatAmount(diff, userCurrency)}).`,
-        recommendation: `Review recent ${catExp.categoryName.toLowerCase()} transactions to determine if this increase was caused by one-time required purchases.`,
-        explanation: `Last month you spent ${formatAmount(catExp.lastMonthAmount, userCurrency)} on ${catExp.categoryName}. This month you've recorded ${formatAmount(catExp.currentAmount, userCurrency)}.`,
+        summary: `You spent ${catExp.momPercent}% more on ${catExp.categoryName} than last month.${driverDetail}`,
+        recommendation: `Review recent ${catExp.categoryName.toLowerCase()} transactions to determine whether this was driven by one-time required purchases or recurring habits.`,
+        explanation: `Last month you spent ${formatAmount(catExp.lastMonthAmount, userCurrency)} on ${catExp.categoryName}. This month you've recorded ${formatAmount(catExp.currentAmount, userCurrency)} (${formatAmount(diff, userCurrency)} increase).`,
         supportingMetrics: {
           currentAmount: catExp.currentAmount,
           lastMonthAmount: catExp.lastMonthAmount,
@@ -398,7 +428,7 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 10 & 3: BUDGET EXCEEDED & SHORTFALL WARNINGS
+  // 4. BUDGET EXCEEDED & SHORTFALL WARNINGS & TRANSPORT (Rules 7, 14)
   // =========================================================================
   for (const b of activeBudgets) {
     const isTransport = b.categoryName.toLowerCase().includes("transport") || b.categoryName.toLowerCase().includes("transit") || b.categoryName.toLowerCase().includes("travel");
@@ -412,10 +442,10 @@ const analyzeUserFinances = async (userId) => {
           insightType: isTransport ? "transport_overbudget" : "budget_exceeded",
           title: isTransport ? `🚕 Transport spending is rising` : `⚠️ ${b.categoryName} budget exceeded`,
           summary: isTransport
-            ? `You've spent ${formatAmount(b.spent, userCurrency)} on transport against your ${formatAmount(b.limit, userCurrency)} cap (${formatAmount(overAmount, userCurrency)} over budget).`
+            ? `You're currently ${formatAmount(overAmount, userCurrency)} over your ${formatAmount(b.limit, userCurrency)} transport budget.`
             : `You've spent ${formatAmount(b.spent, userCurrency)} of your ${formatAmount(b.limit, userCurrency)} ${b.categoryName} budget (${b.percentUsed}% used).`,
           recommendation: isTransport
-            ? `Consider reviewing recent transit receipts or adjusting your transport budget to prevent further overruns.`
+            ? `Consider reviewing recent transit receipts or adjusting your transport budget to accommodate your commute routine.`
             : `You are currently ${formatAmount(overAmount, userCurrency)} over budget. Pause discretionary spending in this category for the remaining ${daysRemaining} days.`,
           explanation: `Allocated limit for ${b.categoryName}: ${formatAmount(b.limit, userCurrency)}. Logged transactions: ${formatAmount(b.spent, userCurrency)}.`,
           supportingMetrics: {
@@ -448,7 +478,7 @@ const analyzeUserFinances = async (userId) => {
           title: `⚡ ${b.categoryName} approaching monthly cap`,
           summary: `You've used ${b.percentUsed}% of your ${formatAmount(b.limit, userCurrency)} ${b.categoryName} budget with ${daysRemaining} days remaining.`,
           recommendation: `You have ${formatAmount(remaining, userCurrency)} remaining. Try keeping daily ${b.categoryName.toLowerCase()} spending under ${formatAmount(dailySafe, userCurrency)}/day.`,
-          explanation: `At your current rate, this category will exceed its ${formatAmount(b.limit, userCurrency)} cap before month-end unless daily velocity is moderated.`,
+          explanation: `At your current velocity, this category will exceed its ${formatAmount(b.limit, userCurrency)} cap before month-end unless daily pace is moderated.`,
           supportingMetrics: {
             currentAmount: b.spent,
             budgetLimit: b.limit,
@@ -473,18 +503,18 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 7: SAVING OPPORTUNITY
+  // 5. SAVING OPPORTUNITIES (Rule 11)
   // =========================================================================
-  if (netSurplus > 20 && totalIncome > 50) {
-    const suggestedSave = Math.max(10, Math.round(netSurplus * 0.5));
+  if (netSurplus > 15 && totalIncome > 30) {
+    const suggestedSave = Math.max(10, Math.round(netSurplus * 0.45));
     generatedInsights.push({
       category: "grow",
       priority: "medium",
       insightType: "saving_opportunity",
       title: `💰 You have room to save`,
-      summary: `You currently have around ${formatAmount(netSurplus, userCurrency)} unspent this month.`,
-      recommendation: `Consider moving ${formatAmount(suggestedSave, userCurrency)} toward a savings goal or emergency fund.`,
-      explanation: `Total income (${formatAmount(totalIncome, userCurrency)}) exceeds total expenses (${formatAmount(totalExpense, userCurrency)}), providing a healthy buffer.`,
+      summary: `You usually finish the month with around ${formatAmount(netSurplus, userCurrency)} unspent.`,
+      recommendation: `Consider saving ${formatAmount(suggestedSave, userCurrency)} toward a savings target or emergency cushion.`,
+      explanation: `Total income (${formatAmount(totalIncome, userCurrency)}) exceeds total expenses (${formatAmount(totalExpense, userCurrency)}), providing a healthy financial buffer.`,
       supportingMetrics: {
         currentAmount: Math.round(netSurplus),
         suggestedMonthly: suggestedSave,
@@ -499,7 +529,7 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 8: ACTIVE SAVINGS GOAL
+  // 6. ACTIVE SAVINGS GOAL (Rule 12)
   // =========================================================================
   if (activeGoals.length > 0) {
     const activeGoal = activeGoals[0];
@@ -517,7 +547,7 @@ const analyzeUserFinances = async (userId) => {
         title: `🎯 Goal: ${activeGoal.targetName}`,
         summary: `Target: ${formatAmount(activeGoal.targetAmount, userCurrency)} · Saved: ${formatAmount(activeGoal.currentSaved, userCurrency)} (${activeGoal.progressPercent}%)`,
         recommendation: `Saving ${formatAmount(suggestedMonthly, userCurrency)}/month could help you reach your ${formatAmount(activeGoal.targetAmount, userCurrency)} goal in approximately ${estMonths} month${estMonths > 1 ? "s" : ""}.`,
-        explanation: `You've accumulated ${formatAmount(activeGoal.currentSaved, userCurrency)} toward your goal. ${formatAmount(activeGoal.remainingToSave, userCurrency)} remains for full completion.`,
+        explanation: `You've accumulated ${formatAmount(activeGoal.currentSaved, userCurrency)} toward your ${activeGoal.targetName} goal. ${formatAmount(activeGoal.remainingToSave, userCurrency)} remains for full completion.`,
         supportingMetrics: {
           goalTarget: activeGoal.targetAmount,
           goalSaved: activeGoal.currentSaved,
@@ -539,7 +569,7 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 9: SUBSCRIPTION INSIGHTS
+  // 7. SUBSCRIPTION INSIGHTS (Rule 13)
   // =========================================================================
   if (activeSubscriptions.length > 0) {
     const totalSubs = activeSubscriptions.reduce((sum, s) => sum + s.amount, 0);
@@ -549,8 +579,8 @@ const analyzeUserFinances = async (userId) => {
       priority: "low",
       insightType: "recurring_subscriptions",
       title: `🧾 Recurring subscriptions detected`,
-      summary: `You've spent ${formatAmount(totalSubs, userCurrency)} across ${activeSubscriptions.length} recurring subscription${activeSubscriptions.length > 1 ? "s" : ""} this month.`,
-      recommendation: `These recurring payments appear regularly in your transaction history. Review your active subscriptions to verify they still align with your campus routine.`,
+      summary: `You've spent ${formatAmount(totalSubs, userCurrency)} on recurring subscriptions this month.`,
+      recommendation: `This payment appears regularly in your transaction history. Review your active subscriptions to confirm they still align with your campus routine.`,
       explanation: `Detected active recurring services including ${activeSubscriptions.slice(0, 3).map((s) => s.name).join(", ")}.`,
       supportingMetrics: {
         currentAmount: totalSubs,
@@ -564,9 +594,122 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 12: MONTH-END FORECAST & SPENDING DRIVERS
+  // 8. DISCRETIONARY SPENDING (Rule 15)
   // =========================================================================
-  if (totalExpense > 10 && currentDay >= 3) {
+  if (discretionaryTotal > 20 && totalExpense > 40 && (discretionaryTotal / totalExpense) >= 0.25) {
+    const discPercent = Math.round((discretionaryTotal / totalExpense) * 100);
+    generatedInsights.push({
+      category: "save",
+      priority: "medium",
+      insightType: "discretionary_spending",
+      title: `🛍️ Discretionary spending overview`,
+      summary: `Discretionary purchases accounted for ${formatAmount(discretionaryTotal, userCurrency)} (${discPercent}% of your monthly expenses).`,
+      recommendation: `These expenses appear to be discretionary based on their categories/descriptions. Review recent receipts to identify optional areas where minor cuts can boost your savings.`,
+      explanation: `Tracked categories including ${discretionaryBreakdown.map((c) => c.categoryName).join(", ")} representing ${discPercent}% of total expenses this month.`,
+      supportingMetrics: {
+        currentAmount: discretionaryTotal,
+        percentChange: discPercent,
+        transactionCount: discretionaryTxnCount,
+        currency: userCurrency,
+      },
+      actionType: "review_spending",
+      actionPayload: {
+        categoryName: discretionaryBreakdown[0]?.categoryName || "Entertainment",
+        type: "expense",
+      },
+      generatedAt: new Date(),
+    });
+  }
+
+  // =========================================================================
+  // 9. EMERGENCY SAVINGS (Rule 17)
+  // =========================================================================
+  const hasEmergencyGoal = activeGoals.some((g) => g.targetName.toLowerCase().includes("emergency"));
+  if (!hasEmergencyGoal && netSurplus > 25 && totalIncome > 50) {
+    const suggestedEmergencyTarget = Math.max(100, Math.round(totalExpense * 2));
+    const suggestedMonthlyBuffer = Math.max(15, Math.round(netSurplus * 0.3));
+
+    generatedInsights.push({
+      category: "grow",
+      priority: "low",
+      insightType: "emergency_savings",
+      title: `🛡️ Build an emergency cushion`,
+      summary: `You currently have steady positive cash flow but no designated emergency savings goal.`,
+      recommendation: `Consider creating an emergency savings target of ~${formatAmount(suggestedEmergencyTarget, userCurrency)} to safeguard against unexpected campus or academic expenses.`,
+      explanation: `With a monthly surplus of ${formatAmount(netSurplus, userCurrency)}, allocating ${formatAmount(suggestedMonthlyBuffer, userCurrency)}/month can build a 2-month security cushion.`,
+      supportingMetrics: {
+        goalTarget: suggestedEmergencyTarget,
+        suggestedMonthly: suggestedMonthlyBuffer,
+        currency: userCurrency,
+      },
+      actionType: "create_emergency_goal",
+      actionPayload: {
+        suggestedTarget: suggestedEmergencyTarget,
+        suggestedMonthly: suggestedMonthlyBuffer,
+      },
+      generatedAt: new Date(),
+    });
+  }
+
+  // =========================================================================
+  // 10. BUDGET RECOMMENDATIONS / REBALANCING (Rule 18)
+  // =========================================================================
+  const rebalanceCandidates = [];
+  for (const b of activeBudgets) {
+    const catExp = categoriesBreakdown.find((c) => c.categoryId === b.categoryId);
+    const avg = catExp?.avgAmount || 0;
+    if (avg > 10 && b.limit > 0) {
+      if (b.spent > b.limit * 1.15) {
+        // Consistently over budget -> recommend realistic increase based on history
+        const suggested = Math.round(Math.max(b.spent, avg) * 1.1);
+        rebalanceCandidates.push({
+          categoryId: b.categoryId,
+          categoryName: b.categoryName,
+          currentLimit: b.limit,
+          suggestedLimit: suggested,
+          difference: suggested - b.limit,
+        });
+      } else if (b.spent < b.limit * 0.6 && daysRemaining < 10 && avg < b.limit * 0.75) {
+        // Consistently oversized budget -> recommend trimming cap
+        const suggested = Math.round(Math.max(avg * 1.15, b.spent * 1.2));
+        if (suggested < b.limit) {
+          rebalanceCandidates.push({
+            categoryId: b.categoryId,
+            categoryName: b.categoryName,
+            currentLimit: b.limit,
+            suggestedLimit: suggested,
+            difference: suggested - b.limit,
+          });
+        }
+      }
+    }
+  }
+
+  if (rebalanceCandidates.length > 0) {
+    generatedInsights.push({
+      category: "save",
+      priority: "medium",
+      insightType: "budget_adjustment",
+      title: `⚖️ Budget recommendations available`,
+      summary: `Based on your actual history, CampusCoin AI suggests adjusting ${rebalanceCandidates.length} category ${rebalanceCandidates.length === 1 ? "budget" : "budgets"}.`,
+      recommendation: `Review the proposed adjustments (CURRENT → SUGGESTED) to align your monthly limits with your real campus spending habits.`,
+      explanation: `Calculated from your actual transaction patterns across monitored categories over the past 3 months.`,
+      supportingMetrics: {
+        suggestedBudgets: rebalanceCandidates,
+        currency: userCurrency,
+      },
+      actionType: "adjust_budget",
+      actionPayload: {
+        suggestedBudgets: rebalanceCandidates,
+      },
+      generatedAt: new Date(),
+    });
+  }
+
+  // =========================================================================
+  // 11. MONTH-END FORECAST & SPENDING DRIVERS (Rule 16)
+  // =========================================================================
+  if (totalExpense > 10 && currentDay >= 2) {
     const drivers = categoriesBreakdown
       .map((c) => ({
         categoryName: c.categoryName,
@@ -582,7 +725,7 @@ const analyzeUserFinances = async (userId) => {
 
     if (totalBudgetCap > 0 && projectedMonthEndExpense > totalBudgetCap) {
       const overBudget = projectedMonthEndExpense - totalBudgetCap;
-      forecastPacingMsg = ` That's approximately ${formatAmount(overBudget, userCurrency)} above your total monthly budget cap.`;
+      forecastPacingMsg = ` Projected to exceed your total budget cap by ~${formatAmount(overBudget, userCurrency)}.`;
       priority = "high";
     }
 
@@ -591,7 +734,7 @@ const analyzeUserFinances = async (userId) => {
       priority,
       insightType: "month_end_forecast",
       title: `📅 Month-end spending forecast`,
-      summary: `At your current spending rate (${formatAmount(dailyBurnRate, userCurrency)}/day), you're projected to spend ${formatAmount(projectedMonthEndExpense, userCurrency)} this month.${forecastPacingMsg}`,
+      summary: `At your current rate (${formatAmount(dailyBurnRate, userCurrency)}/day), you're projected to spend ${formatAmount(projectedMonthEndExpense, userCurrency)} this month.${forecastPacingMsg}`,
       recommendation: `Top spending drivers: ${drivers.map((d) => `${d.categoryName} (${formatAmount(d.amount, userCurrency)})`).join(", ")}.`,
       explanation: `Calculated deterministically based on ${currentDay} elapsed days with ${daysRemaining} days remaining in the billing cycle.`,
       supportingMetrics: {
@@ -613,7 +756,7 @@ const analyzeUserFinances = async (userId) => {
   }
 
   // =========================================================================
-  // RULE 29: EMPTY / ALL CAUGHT UP STATE
+  // 12. EMPTY / ALL CAUGHT UP STATE (Rule 35)
   // =========================================================================
   if (generatedInsights.length === 0) {
     generatedInsights.push({
@@ -622,7 +765,7 @@ const analyzeUserFinances = async (userId) => {
       insightType: "all_caught_up",
       title: `✨ You're all caught up`,
       summary: `No unusual spending patterns or budget overruns were detected right now.`,
-      recommendation: `Your spending velocity is steady and well-balanced. Keep recording your daily transactions to maintain your financial health score!`,
+      recommendation: `Your spending velocity is steady and well-balanced. Keep recording your transactions and CampusCoin AI will highlight useful patterns when they appear.`,
       explanation: `All monitored categories are within historical baselines and budget limits.`,
       supportingMetrics: {
         currentAmount: totalExpense,
@@ -680,3 +823,4 @@ module.exports = {
   formatAmount,
   getCategoryEmoji,
 };
+

@@ -18,6 +18,7 @@ import DashboardSkeleton from "../../components/ui/DashboardSkeleton";
 import NumberTicker from "../../components/ui/NumberTicker";
 import { formatCurrency } from "../../utils/currencyUtils";
 import AdSenseAd from "../../components/ads/AdSenseAd";
+import AiInsightsDashboardWidget from "../insights/AiInsightsDashboardWidget";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const C = {
@@ -188,7 +189,12 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* 3. BENTO: Chart + Transactions */}
+      {/* 3. AI FINANCIAL INSIGHTS COPILOT WIDGET */}
+      <div className="di">
+        <AiInsightsDashboardWidget />
+      </div>
+
+      {/* 4. BENTO: Chart + Transactions */}
       <div className="di" style={{ display:"grid", gap:16, gridTemplateColumns:"1fr 340px" }}>
         {/* Chart */}
         <div style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:"clamp(1.4rem,3vw,2rem)", display:"flex", flexDirection:"column" }}>

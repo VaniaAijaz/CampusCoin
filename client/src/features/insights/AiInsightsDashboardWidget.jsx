@@ -9,9 +9,8 @@ import {
   ChevronDown,
   ArrowUpRight,
   AlertTriangle,
-  TrendingUp,
+  Flame,
   Target,
-  Repeat,
   Info,
   CheckCircle2,
   Sliders,
@@ -22,9 +21,40 @@ import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 
-// Video-Accurate Physical Spatial Glass Standard Recipe
-const glassCard =
-  "base-glass glass-card rounded-3xl bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] text-white transform-gpu backface-hidden";
+/* ── Canonical CampusCoin Design Tokens ── */
+const C = {
+  hero: "oklch(0.115 0.018 255)",
+  heroFg: "oklch(0.985 0.003 250)",
+  heroMuted: "oklch(0.73 0.018 252)",
+  heroLine: "oklch(0.31 0.025 255)",
+  brand: "oklch(0.59 0.22 262)",
+  brandSoft: "oklch(0.93 0.06 262)",
+  highlight: "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth: "oklch(0.64 0.17 157)",
+  growthSoft: "oklch(0.94 0.05 158)",
+  background: "oklch(0.99 0.003 250)",
+  foreground: "oklch(0.16 0.025 260)",
+  muted: "oklch(0.5 0.025 255)",
+  border: "oklch(0.9 0.012 255)",
+  altBg: "oklch(0.965 0.01 254)",
+
+  // Category Semantic Colors
+  takeAction: "#e11d48",
+  takeActionSoft: "#ffe4e6",
+  takeActionBorder: "#fecdd3",
+  save: "#d97706",
+  saveSoft: "#fef3c7",
+  saveBorder: "#fde68a",
+  grow: "#059669",
+  growSoft: "#d1fae5",
+  growBorder: "#a7f3d0",
+  understand: "#2563eb",
+  understandSoft: "#dbeafe",
+  understandBorder: "#bfdbfe",
+};
+
+const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
 
 export default function AiInsightsDashboardWidget() {
   const { user } = useAuth();
@@ -53,37 +83,42 @@ export default function AiInsightsDashboardWidget() {
   const insights = data?.insights || [];
   const totalCount = data?.totalCount || insights.length;
   const isRefreshing = isFetching || refreshMutation.isPending;
+  const cur = user?.currency || "USD";
 
-  const getCategoryTheme = (cat) => {
+  const getCategoryConfig = (cat) => {
     switch (cat) {
       case "take_action":
         return {
-          pill: "bg-rose-500/20 text-rose-300 border-rose-500/40",
-          dot: "bg-rose-400",
           label: "Take Action",
-          border: "hover:border-rose-500/30",
+          color: C.takeAction,
+          bg: C.takeActionSoft,
+          border: C.takeActionBorder,
+          icon: AlertTriangle,
         };
       case "save":
         return {
-          pill: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-          dot: "bg-amber-400",
           label: "Save",
-          border: "hover:border-amber-500/30",
+          color: C.save,
+          bg: C.saveSoft,
+          border: C.saveBorder,
+          icon: Flame,
         };
       case "grow":
         return {
-          pill: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-          dot: "bg-emerald-400",
           label: "Grow",
-          border: "hover:border-emerald-500/30",
+          color: C.grow,
+          bg: C.growSoft,
+          border: C.growBorder,
+          icon: Target,
         };
       case "understand":
       default:
         return {
-          pill: "bg-sky-500/20 text-sky-300 border-sky-500/40",
-          dot: "bg-sky-400",
           label: "Understand",
-          border: "hover:border-sky-500/30",
+          color: C.understand,
+          bg: C.understandSoft,
+          border: C.understandBorder,
+          icon: Info,
         };
     }
   };
@@ -93,266 +128,498 @@ export default function AiInsightsDashboardWidget() {
     switch (actionType) {
       case "review_spending":
         if (actionPayload?.categoryId) {
-          navigate(`/app/transactions?category=${encodeURIComponent(actionPayload.categoryName || relatedCategoryName || "")}`);
+          navigate(
+            `/app/transactions?categoryId=${actionPayload.categoryId}&category=${encodeURIComponent(
+              actionPayload.categoryName || relatedCategoryName || ""
+            )}`
+          );
         } else {
           navigate("/app/transactions");
         }
         break;
+
       case "set_limit":
       case "adjust_budget":
         if (actionPayload?.categoryId) {
-          navigate(`/app/budget?open=create&category=${encodeURIComponent(actionPayload.categoryName || relatedCategoryName || "")}&limit=${actionPayload.suggestedLimit || ""}`);
+          navigate(
+            `/app/budgets?open=create&categoryId=${actionPayload.categoryId}&category=${encodeURIComponent(
+              actionPayload.categoryName || ""
+            )}&limit=${actionPayload.suggestedLimit || ""}`
+          );
         } else {
-          navigate("/app/budget");
+          navigate("/app/budgets");
         }
         break;
+
       case "create_savings_plan":
-      case "create_emergency_goal":
-        navigate("/app/insights");
+      case "open_savings_goals":
+        navigate("/app/savings");
         break;
+
       case "review_subscriptions":
         navigate("/app/subscriptions");
         break;
-      case "view_spending_drivers":
-        navigate("/app/insights");
-        break;
+
       default:
         navigate("/app/insights");
+        break;
     }
   };
 
-  const getActionButtonLabel = (actionType) => {
-    switch (actionType) {
-      case "review_spending":
-        return "Review Spending";
-      case "set_limit":
-        return "Set Limit";
-      case "adjust_budget":
-        return "Adjust Budget";
-      case "create_savings_plan":
-        return "Create Savings Plan";
-      case "review_subscriptions":
-        return "Review Subscriptions";
-      case "view_spending_drivers":
-        return "View Drivers";
-      case "create_emergency_goal":
-        return "Create Emergency Goal";
-      default:
-        return "Explore Insight";
-    }
+  const toggleWhy = (id) => {
+    setExpandedWhyId((prev) => (prev === id ? null : id));
   };
 
   return (
-    <div className={`${glassCard} p-6 sm:p-7 relative overflow-hidden transition-all duration-300`}>
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-2xl bg-gradient-to-br from-amber-400/30 to-brand-primary/30 border border-white/20 text-amber-300 shadow-inner">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+    <div
+      style={{
+        ...M,
+        background: "#fff",
+        border: `1.5px solid ${C.border}`,
+        borderRadius: 8,
+        padding: "22px 24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}
+    >
+      {/* ── WIDGET HEADER ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                color: C.brand,
+              }}
+            >
+              AI Copilot
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                padding: "2px 8px",
+                borderRadius: 999,
+                background: C.brandSoft,
+                color: C.brand,
+              }}
+            >
+              Personalized
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2 drop-shadow-sm">
-                AI Financial Insights
-              </h3>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/15 border border-white/25 text-white/90">
-                {totalCount > 0 ? `${totalCount} recommendations` : "Copilot"}
-              </span>
-            </div>
-            <p className="text-xs text-white/60 mt-0.5 font-medium">
-              Data-grounded actionable advice tailored to your student spending velocity
-            </p>
-          </div>
+          <h3
+            style={{
+              fontSize: "clamp(1.2rem,2.5vw,1.5rem)",
+              fontWeight: 900,
+              color: C.foreground,
+              margin: 0,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.1,
+            }}
+          >
+            Financial Insights & Recommendations
+          </h3>
+          <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", fontWeight: 500 }}>
+            Real-time pattern analysis from your verified transactions and monthly limits.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => refreshMutation.mutate()}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-semibold text-white/90 transition-all cursor-pointer disabled:opacity-50 min-h-[36px]"
-            title="Refresh analysis"
+            title="Recalculate Insights"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "7px 14px",
+              borderRadius: 999,
+              background: C.altBg,
+              border: `1.5px solid ${C.border}`,
+              fontSize: 12,
+              fontWeight: 700,
+              color: C.foreground,
+              cursor: isRefreshing ? "not-allowed" : "pointer",
+              transition: "all 0.15s",
+              opacity: isRefreshing ? 0.6 : 1,
+              ...M,
+            }}
+            onMouseEnter={(e) => {
+              if (!isRefreshing) e.currentTarget.style.background = C.brandSoft;
+            }}
+            onMouseLeave={(e) => {
+              if (!isRefreshing) e.currentTarget.style.background = C.altBg;
+            }}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-amber-300" : ""}`} />
-            <span>{isRefreshing ? "Analyzing..." : "Re-evaluate"}</span>
+            <RefreshCw
+              style={{
+                width: 12,
+                animation: isRefreshing ? "spin 1s linear infinite" : "none",
+              }}
+            />
+            {isRefreshing ? "Analyzing..." : "Recalculate"}
           </button>
 
           <Link
             to="/app/insights"
-            className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-xs font-bold text-white transition-all shadow-sm min-h-[36px]"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "7px 16px",
+              borderRadius: 999,
+              background: C.highlight,
+              color: C.highlightFg,
+              fontSize: 12,
+              fontWeight: 800,
+              textDecoration: "none",
+              ...M,
+              boxShadow: `0 2px 10px ${C.highlight}44`,
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "oklch(0.82 0.18 157)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = C.highlight)}
           >
-            <span>View All</span>
-            <ChevronRight className="w-3.5 h-3.5" />
+            <span>View All ({totalCount})</span>
+            <ChevronRight style={{ width: 14 }} />
           </Link>
         </div>
       </div>
 
-      {/* Insights Cards List */}
-      <div className="mt-5 space-y-4">
-        {isLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3 text-white/60 text-xs">
-            <RefreshCw className="w-6 h-6 animate-spin text-amber-300" />
-            <span>Analyzing campus spending patterns...</span>
-          </div>
-        ) : insights.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-2">
-            <CheckCircle2 className="w-8 h-8 text-emerald-300 mx-auto" />
-            <h4 className="text-sm font-bold text-white">✨ You're all caught up</h4>
-            <p className="text-xs text-white/60 max-w-md mx-auto">
-              No unusual spending spikes or budget overruns detected right now. Keep recording your transactions to maintain your financial health score!
-            </p>
-          </div>
-        ) : (
-          insights.map((item) => {
-            const theme = getCategoryTheme(item.category);
+      {/* ── CARDS GRID ── */}
+      {isLoading ? (
+        <div
+          style={{
+            padding: "40px 0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            color: C.muted,
+            fontSize: 13,
+          }}
+        >
+          <span
+            style={{
+              width: 16,
+              height: 16,
+              border: `2px solid ${C.border}`,
+              borderTopColor: C.brand,
+              borderRadius: "50%",
+              display: "inline-block",
+              animation: "spin 0.7s linear infinite",
+            }}
+          />
+          Analyzing spending habits & evaluating budgets...
+        </div>
+      ) : insights.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {insights.slice(0, 3).map((item) => {
+            const cat = getCategoryConfig(item.category);
             const isWhyOpen = expandedWhyId === item._id;
+            const metrics = item.supportingMetrics || {};
 
             return (
               <div
                 key={item._id}
-                className={`p-4 sm:p-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/10 ${theme.border} transition-all space-y-3 relative`}
+                style={{
+                  background: C.altBg,
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: 8,
+                  padding: "16px 18px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  transition: "border-color 0.15s",
+                }}
               >
-                {/* Top Badge Row */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${theme.pill}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${theme.dot}`} />
-                      {theme.label}
+                <div>
+                  {/* Top Badges */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: cat.bg,
+                        color: cat.color,
+                        border: `1px solid ${cat.border}`,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      <cat.icon style={{ width: 11 }} />
+                      {cat.label}
                     </span>
 
-                    {item.priority === "high" && (
-                      <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[9px] font-black uppercase">
-                        High Priority
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 6px",
+                        borderRadius: 999,
+                        background:
+                          item.priority === "high"
+                            ? C.takeActionSoft
+                            : item.priority === "medium"
+                            ? C.saveSoft
+                            : "#fff",
+                        color:
+                          item.priority === "high"
+                            ? C.takeAction
+                            : item.priority === "medium"
+                            ? C.save
+                            : C.muted,
+                        border: `1px solid ${C.border}`,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {item.priority}
+                    </span>
+                  </div>
+
+                  {/* Title & Recommendation */}
+                  <h4
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: C.foreground,
+                      margin: "0 0 6px",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {item.title}
+                  </h4>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: C.muted,
+                      margin: "0 0 10px",
+                      lineHeight: 1.45,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {item.recommendation}
+                  </p>
+
+                  {/* Deterministic Metrics Strip */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      flexWrap: "wrap",
+                      marginBottom: 10,
+                    }}
+                  >
+                    {metrics.currentAmount !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: C.foreground,
+                          background: "#fff",
+                          border: `1px solid ${C.border}`,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        Spent: {formatCurrency(metrics.currentAmount, cur)}
+                      </span>
+                    )}
+                    {metrics.percentageChange !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: metrics.percentageChange > 0 ? C.takeAction : C.growth,
+                          background:
+                            metrics.percentageChange > 0 ? C.takeActionSoft : C.growthSoft,
+                          border: `1px solid ${
+                            metrics.percentageChange > 0 ? C.takeActionBorder : C.growBorder
+                          }`,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        {metrics.percentageChange > 0 ? "+" : ""}
+                        {metrics.percentageChange}%
+                      </span>
+                    )}
+                    {metrics.budgetLimit !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: C.muted,
+                          background: "#fff",
+                          border: `1px solid ${C.border}`,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        Cap: {formatCurrency(metrics.budgetLimit, cur)}
                       </span>
                     )}
                   </div>
 
-                  {item.generatedAt && (
-                    <span className="text-[10px] text-white/50 font-medium">
-                      {new Date(item.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                  )}
-                </div>
-
-                {/* Title & Summary */}
-                <div>
-                  <h4 className="text-sm sm:text-base font-black text-white tracking-tight">
-                    {item.title}
-                  </h4>
-                  <p className="text-xs text-white/80 mt-1 leading-relaxed font-medium">
-                    {item.summary}
-                  </p>
-                </div>
-
-                {/* Recommendation Callout */}
-                <div className="p-3 rounded-xl bg-white/5 border border-white/15 text-xs text-white/90 leading-relaxed font-medium flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
-                  <span>{item.recommendation}</span>
-                </div>
-
-                {/* Actions & "Why?" row */}
-                <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    {item.actionType && item.actionType !== "none" && (
-                      <button
-                        onClick={() => handleAction(item)}
-                        className="px-3.5 py-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer min-h-[34px]"
-                      >
-                        <span>{getActionButtonLabel(item.actionType)}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-
+                  {/* "Why am I getting this?" Expandable */}
+                  <div style={{ marginBottom: 10 }}>
                     <button
-                      onClick={() => setExpandedWhyId(isWhyOpen ? null : item._id)}
-                      className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/15 text-white/75 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer min-h-[34px]"
+                      onClick={() => toggleWhy(item._id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: C.brand,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                        ...M,
+                      }}
                     >
-                      <span>Why am I getting this?</span>
-                      {isWhyOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                      <span>Why?</span>
+                      <ChevronDown
+                        style={{
+                          width: 12,
+                          transform: isWhyOpen ? "rotate(180deg)" : "none",
+                          transition: "transform 0.15s",
+                        }}
+                      />
                     </button>
-                  </div>
 
-                  <Link
-                    to="/app/insights"
-                    className="text-[11px] font-bold text-sky-300 hover:text-sky-200 transition-colors flex items-center gap-1"
-                  >
-                    <span>Full Analysis</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
+                    {isWhyOpen && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          padding: "8px 10px",
+                          background: "#fff",
+                          border: `1px solid ${C.border}`,
+                          borderRadius: 6,
+                          fontSize: 11,
+                          color: C.foreground,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {item.explanation}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Expandable "Why am I getting this?" breakdown */}
-                <AnimatePresence>
-                  {isWhyOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden pt-2"
-                    >
-                      <div className="p-3.5 rounded-xl bg-black/40 border border-white/15 space-y-2 text-xs text-white/80">
-                        <div className="flex items-center gap-1.5 text-white font-bold text-xs border-b border-white/10 pb-1.5">
-                          <Info className="w-3.5 h-3.5 text-sky-300" />
-                          <span>Data Grounding & Verified Numbers</span>
-                        </div>
-                        <p className="leading-relaxed text-white/90">
-                          {item.explanation}
-                        </p>
-
-                        {/* Supporting Numerical Metrics Pill Box */}
-                        {item.supportingMetrics && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-                            {item.supportingMetrics.currentAmount !== undefined && (
-                              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                                <span className="text-[10px] text-white/50 block font-semibold">Current Spend</span>
-                                <span className="font-black text-white text-xs">
-                                  {formatCurrency(item.supportingMetrics.currentAmount, item.supportingMetrics.currency || user?.currency)}
-                                </span>
-                              </div>
-                            )}
-                            {item.supportingMetrics.avgAmount !== undefined && (
-                              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                                <span className="text-[10px] text-white/50 block font-semibold">3-Mo Average</span>
-                                <span className="font-black text-white text-xs">
-                                  {formatCurrency(item.supportingMetrics.avgAmount, item.supportingMetrics.currency || user?.currency)}
-                                </span>
-                              </div>
-                            )}
-                            {item.supportingMetrics.percentChange !== undefined && (
-                              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                                <span className="text-[10px] text-white/50 block font-semibold">Difference</span>
-                                <span className={`font-black text-xs ${item.supportingMetrics.percentChange > 0 ? "text-rose-300" : "text-emerald-300"}`}>
-                                  {item.supportingMetrics.percentChange > 0 ? "+" : ""}{item.supportingMetrics.percentChange}%
-                                </span>
-                              </div>
-                            )}
-                            {item.supportingMetrics.budgetLimit !== undefined && (
-                              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                                <span className="text-[10px] text-white/50 block font-semibold">Budget Limit</span>
-                                <span className="font-black text-white text-xs">
-                                  {formatCurrency(item.supportingMetrics.budgetLimit, item.supportingMetrics.currency || user?.currency)}
-                                </span>
-                              </div>
-                            )}
-                            {item.supportingMetrics.dailyBurnRate !== undefined && (
-                              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                                <span className="text-[10px] text-white/50 block font-semibold">Daily Velocity</span>
-                                <span className="font-black text-white text-xs">
-                                  {formatCurrency(item.supportingMetrics.dailyBurnRate, item.supportingMetrics.currency || user?.currency)}/day
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Card Action Trigger */}
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    onClick={() => handleAction(item)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      height: 32,
+                      padding: "0 12px",
+                      borderRadius: 999,
+                      background: "#fff",
+                      border: `1.5px solid ${C.border}`,
+                      color: C.foreground,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      ...M,
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = C.highlight;
+                      e.currentTarget.style.borderColor = C.highlight;
+                      e.currentTarget.style.color = C.highlightFg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#fff";
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.foreground;
+                    }}
+                  >
+                    <span>{item.actionLabel || "Review"}</span>
+                    <ArrowUpRight style={{ width: 13 }} />
+                  </button>
+                </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      ) : (
+        /* Empty State */
+        <div
+          style={{
+            padding: "24px 16px",
+            background: C.altBg,
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: C.growthSoft,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: C.growth,
+              flexShrink: 0,
+            }}
+          >
+            <CheckCircle2 style={{ width: 18 }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, fontWeight: 800, color: C.foreground, margin: "0 0 2px" }}>
+              Finances are currently balanced & healthy
+            </p>
+            <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>
+              No abnormal spikes or overspending detected across your active budget categories.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

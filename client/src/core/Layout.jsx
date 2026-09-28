@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ArrowLeftRight, PieChart,
   BarChart3, Tag, User, LogOut,
-  BookOpen, Bell, X, Repeat, ChevronRight,
+  BookOpen, Bell, X, Repeat, ChevronRight, Sparkles,
 } from "lucide-react";
 import { useAuth } from "../features/auth/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -109,6 +109,7 @@ export default function Layout() {
 
   const navLinks = [
     { to:"/app",               label:"Overview",      icon:LayoutDashboard, end:true },
+    { to:"/app/insights",      label:"AI Insights",   icon:Sparkles },
     { to:"/app/transactions",  label:"Transactions",  icon:ArrowLeftRight },
     { to:"/app/khata",         label:"Khata",         icon:BookOpen },
     { to:"/app/budget",        label:"Budget",        icon:PieChart },

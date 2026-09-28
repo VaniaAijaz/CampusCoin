@@ -26,6 +26,9 @@ import {
   Check,
   Calendar,
   Layers,
+  Search,
+  ArrowLeftRight,
+  PieChart,
 } from "lucide-react";
 import {
   getInsights,
@@ -40,10 +43,55 @@ import { formatCurrency } from "../../utils/currencyUtils";
 import toast from "react-hot-toast";
 import Portal from "../../components/ui/Portal";
 import GlassConfirmModal from "../../components/ui/GlassConfirmModal";
+import AdSenseAd from "../../components/ads/AdSenseAd";
 
-// Video-Accurate Physical Spatial Glass Standard Recipe
-const glassCard =
-  "base-glass glass-card rounded-3xl bg-white/[0.03] backdrop-blur-[64px] backdrop-saturate-[120%] border border-white/10 border-t-white/20 border-l-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] text-white transform-gpu backface-hidden";
+/* ── Canonical CampusCoin Design Tokens ── */
+const C = {
+  hero: "oklch(0.115 0.018 255)",
+  heroFg: "oklch(0.985 0.003 250)",
+  heroMuted: "oklch(0.73 0.018 252)",
+  heroLine: "oklch(0.31 0.025 255)",
+  brand: "oklch(0.59 0.22 262)",
+  brandSoft: "oklch(0.93 0.06 262)",
+  highlight: "oklch(0.88 0.18 157)",
+  highlightFg: "oklch(0.17 0.04 160)",
+  growth: "oklch(0.64 0.17 157)",
+  growthSoft: "oklch(0.94 0.05 158)",
+  background: "oklch(0.99 0.003 250)",
+  foreground: "oklch(0.16 0.025 260)",
+  muted: "oklch(0.5 0.025 255)",
+  border: "oklch(0.9 0.012 255)",
+  altBg: "oklch(0.965 0.01 254)",
+
+  // Category Semantic Accents
+  takeAction: "#e11d48",
+  takeActionSoft: "#ffe4e6",
+  takeActionBorder: "#fecdd3",
+  save: "#d97706",
+  saveSoft: "#fef3c7",
+  saveBorder: "#fde68a",
+  grow: "#059669",
+  growSoft: "#d1fae5",
+  growBorder: "#a7f3d0",
+  understand: "#2563eb",
+  understandSoft: "#dbeafe",
+  understandBorder: "#bfdbfe",
+};
+
+const M = { fontFamily: "'Manrope',ui-sans-serif,system-ui,sans-serif" };
+const inputSt = {
+  width: "100%",
+  padding: "9px 14px",
+  borderRadius: 999,
+  background: C.altBg,
+  border: `1.5px solid ${C.border}`,
+  fontSize: 13,
+  color: C.foreground,
+  outline: "none",
+  fontFamily: M.fontFamily,
+  transition: "border-color 0.15s",
+  boxSizing: "border-box",
+};
 
 export default function InsightsPage() {
   const { user } = useAuth();
@@ -55,8 +103,9 @@ export default function InsightsPage() {
   const [goalContributions, setGoalContributions] = useState({});
   const [rebalanceModalItem, setRebalanceModalItem] = useState(null);
   const [driversModalItem, setDriversModalItem] = useState(null);
+  const [applyingBudgets, setApplyingBudgets] = useState(false);
 
-  // Fetch all insights
+  // Fetch insights
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["insightsList", activeTab],
     queryFn: () =>
@@ -107,81 +156,80 @@ export default function InsightsPage() {
     },
   });
 
-  const applyBudgetsMutation = useMutation({
-    mutationFn: applyBudgetAdjustments,
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["insightsList"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboardInsights"] });
-      queryClient.invalidateQueries({ queryKey: ["budgetsData"] });
-      setRebalanceModalItem(null);
-      toast.success(res.message || "Budget caps updated successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to apply budget adjustments.");
-    },
-  });
-
-  const allInsights = data?.insights || [];
+  const insights = data?.insights || [];
+  const cur = user?.currency || "USD";
   const isRefreshing = isFetching || refreshMutation.isPending;
 
-  // Filter tabs
-  const tabs = [
-    { id: "all", label: "All Insights", icon: Layers, count: allInsights.length },
-    { id: "take_action", label: "Take Action", dotColor: "bg-rose-400", count: allInsights.filter((i) => i.category === "take_action").length },
-    { id: "save", label: "Save", dotColor: "bg-amber-400", count: allInsights.filter((i) => i.category === "save").length },
-    { id: "grow", label: "Grow", dotColor: "bg-emerald-400", count: allInsights.filter((i) => i.category === "grow").length },
-    { id: "understand", label: "Understand", dotColor: "bg-sky-400", count: allInsights.filter((i) => i.category === "understand").length },
-    { id: "bookmarked", label: "Saved", icon: Bookmark, count: allInsights.filter((i) => i.isBookmarked).length },
-  ];
+  // Filter & Stats Summary
+  const stats = useMemo(() => {
+    let takeActionCount = 0;
+    let saveCount = 0;
+    let growCount = 0;
+    let understandCount = 0;
+    let highPriorityCount = 0;
 
-  const displayedInsights = useMemo(() => {
-    if (activeTab === "bookmarked") {
-      return allInsights.filter((i) => i.isBookmarked);
-    }
-    if (activeTab !== "all") {
-      return allInsights.filter((i) => i.category === activeTab);
-    }
-    return allInsights;
-  }, [allInsights, activeTab]);
+    insights.forEach((item) => {
+      if (item.category === "take_action") takeActionCount++;
+      else if (item.category === "save") saveCount++;
+      else if (item.category === "grow") growCount++;
+      else if (item.category === "understand") understandCount++;
+      if (item.priority === "high") highPriorityCount++;
+    });
+
+    return {
+      total: insights.length,
+      takeActionCount,
+      saveCount,
+      growCount,
+      understandCount,
+      highPriorityCount,
+      healthLabel:
+        highPriorityCount > 0
+          ? `${highPriorityCount} High Alert`
+          : takeActionCount > 0
+          ? "Action Needed"
+          : "Healthy & Stable",
+    };
+  }, [insights]);
 
   const toggleWhy = (id) => {
     setExpandedWhyIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const getCategoryTheme = (cat) => {
+  const getCategoryConfig = (cat) => {
     switch (cat) {
       case "take_action":
         return {
-          pill: "bg-rose-500/20 text-rose-300 border-rose-500/40",
-          dot: "bg-rose-400",
           label: "Take Action",
-          border: "border-rose-500/30",
-          badge: "bg-rose-500/25",
+          color: C.takeAction,
+          bg: C.takeActionSoft,
+          border: C.takeActionBorder,
+          icon: AlertTriangle,
         };
       case "save":
         return {
-          pill: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-          dot: "bg-amber-400",
           label: "Save",
-          border: "border-amber-500/30",
-          badge: "bg-amber-500/25",
+          color: C.save,
+          bg: C.saveSoft,
+          border: C.saveBorder,
+          icon: Flame,
         };
       case "grow":
         return {
-          pill: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-          dot: "bg-emerald-400",
           label: "Grow",
-          border: "border-emerald-500/30",
-          badge: "bg-emerald-500/25",
+          color: C.grow,
+          bg: C.growSoft,
+          border: C.growBorder,
+          icon: Target,
         };
       case "understand":
       default:
         return {
-          pill: "bg-sky-500/20 text-sky-300 border-sky-500/40",
-          dot: "bg-sky-400",
           label: "Understand",
-          border: "border-sky-500/30",
-          badge: "bg-sky-500/25",
+          color: C.understand,
+          bg: C.understandSoft,
+          border: C.understandBorder,
+          icon: Info,
         };
     }
   };
@@ -191,160 +239,374 @@ export default function InsightsPage() {
     switch (actionType) {
       case "review_spending":
         if (actionPayload?.categoryId) {
-          navigate(`/app/transactions?category=${encodeURIComponent(actionPayload.categoryName || relatedCategoryName || "")}`);
+          navigate(
+            `/app/transactions?categoryId=${actionPayload.categoryId}&category=${encodeURIComponent(
+              actionPayload.categoryName || relatedCategoryName || ""
+            )}`
+          );
         } else {
           navigate("/app/transactions");
         }
         break;
+
       case "set_limit":
       case "adjust_budget":
-        if (actionPayload?.suggestedBudgets) {
+        if (actionPayload?.suggestedBudgets?.length) {
           setRebalanceModalItem(item);
         } else if (actionPayload?.categoryId) {
-          navigate(`/app/budget?open=create&category=${encodeURIComponent(actionPayload.categoryName || relatedCategoryName || "")}&limit=${actionPayload.suggestedLimit || actionPayload.limitAmount || ""}`);
+          navigate(
+            `/app/budgets?open=create&categoryId=${actionPayload.categoryId}&category=${encodeURIComponent(
+              actionPayload.categoryName || ""
+            )}&limit=${actionPayload.suggestedLimit || ""}`
+          );
         } else {
-          navigate("/app/budget");
+          navigate("/app/budgets");
         }
         break;
+
       case "create_savings_plan":
-        // Interactive calculator is inside the card
+      case "open_savings_goals":
+        navigate("/app/savings");
         break;
+
       case "review_subscriptions":
         navigate("/app/subscriptions");
         break;
+
       case "view_spending_drivers":
-        setDriversModalItem(item);
+        if (item.supportingMetrics?.drivers?.length) {
+          setDriversModalItem(item);
+        } else {
+          navigate("/app/transactions");
+        }
         break;
-      case "create_emergency_goal":
-        toast("Navigate to your goals section to set your student emergency fund!", { icon: "🛡️" });
-        break;
+
       default:
+        navigate("/app/transactions");
         break;
     }
   };
 
-  // Interactive Monthly Contribution Stepper Helper for Savings Goal cards
-  const getGoalMath = (item) => {
-    const target = item.supportingMetrics?.goalTarget || 100000;
-    const saved = item.supportingMetrics?.goalSaved || 0;
-    const remaining = Math.max(0, target - saved);
-
-    const initialMonthly = item.supportingMetrics?.suggestedMonthly || Math.max(10, Math.round(remaining / 12));
-    const currentContribution = goalContributions[item._id] !== undefined ? goalContributions[item._id] : initialMonthly;
-
-    const months = currentContribution > 0 ? Math.max(1, Math.ceil(remaining / currentContribution)) : 0;
-
-    return {
-      target,
-      saved,
-      remaining,
-      monthly: currentContribution,
-      months,
-      step: Math.max(5, Math.round(target / 20)),
-    };
-  };
-
-  const adjustGoalMonthly = (itemId, delta, item) => {
-    const { monthly, step } = getGoalMath(item);
-    const newMonthly = Math.max(5, monthly + delta * step);
-    setGoalContributions((prev) => ({ ...prev, [itemId]: newMonthly }));
+  const handleApplyRebalance = async () => {
+    if (!rebalanceModalItem?.supportingMetrics?.suggestedBudgets?.length) return;
+    setApplyingBudgets(true);
+    try {
+      const res = await applyBudgetAdjustments({
+        adjustments: rebalanceModalItem.supportingMetrics.suggestedBudgets,
+        insightId: rebalanceModalItem._id,
+      });
+      if (res.success) {
+        toast.success("Budgets adjusted successfully!");
+        setRebalanceModalItem(null);
+        queryClient.invalidateQueries({ queryKey: ["insightsList"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboardInsights"] });
+        window.dispatchEvent(new CustomEvent("campuscoin:txUpdated"));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to apply budget adjustments.");
+    } finally {
+      setApplyingBudgets(false);
+    }
   };
 
   return (
-    <div className="space-y-6 w-full text-white pb-12">
-      {/* ─── Hero Header & Summary Stats ─── */}
-      <div className={`${glassCard} p-6 sm:p-8 relative overflow-hidden`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-amber-400 to-brand-primary text-brand-dark shadow-lg shadow-amber-500/20">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2 drop-shadow-sm">
-                  AI Financial Insights & Copilot
-                </h2>
-                <p className="text-xs sm:text-sm text-white/70 mt-0.5 font-medium">
-                  Verified deterministic calculations with AI-guided explanations and actionable advice
-                </p>
-              </div>
-            </div>
-          </div>
+    <div style={{ ...M, display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* ── HEADER ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: C.brand,
+              margin: "0 0 6px",
+            }}
+          >
+            Financial Intelligence
+          </p>
+          <h1
+            style={{
+              fontSize: "clamp(1.6rem,4vw,2.4rem)",
+              fontWeight: 900,
+              color: C.foreground,
+              margin: 0,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+            }}
+          >
+            AI Financial Insights
+          </h1>
+          <p style={{ fontSize: 14, color: C.muted, margin: "6px 0 0", fontWeight: 500 }}>
+            Personalized, explainable financial analysis powered by your real data.
+          </p>
+        </div>
 
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <button
             onClick={() => refreshMutation.mutate()}
             disabled={isRefreshing}
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50 min-h-[44px]"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              height: 42,
+              padding: "0 22px",
+              borderRadius: 999,
+              background: C.highlight,
+              color: C.highlightFg,
+              border: "none",
+              fontSize: 14,
+              fontWeight: 800,
+              cursor: isRefreshing ? "not-allowed" : "pointer",
+              ...M,
+              boxShadow: `0 4px 16px ${C.highlight}55`,
+              transition: "background 0.15s",
+              opacity: isRefreshing ? 0.7 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!isRefreshing) e.currentTarget.style.background = "oklch(0.82 0.18 157)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isRefreshing) e.currentTarget.style.background = C.highlight;
+            }}
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-amber-300" : ""}`} />
-            <span>{isRefreshing ? "Analyzing Live Data..." : "Run AI Audit"}</span>
+            <RefreshCw
+              style={{
+                width: 15,
+                animation: isRefreshing ? "spin 1s linear infinite" : "none",
+              }}
+            />
+            {isRefreshing ? "Analyzing Patterns..." : "Re-evaluate Insights"}
           </button>
-        </div>
-
-        {/* Top 3 Metric Counter Badges */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-300 shrink-0">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider block">Action Items</span>
-              <span className="text-xl font-black text-white">
-                {allInsights.filter((i) => i.category === "take_action").length} Attention Flag{allInsights.filter((i) => i.category === "take_action").length !== 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
-              <Flame className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider block">Saving Opportunities</span>
-              <span className="text-xl font-black text-white">
-                {allInsights.filter((i) => i.category === "save").length} Detected
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 shrink-0">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider block">Growth & Reserves</span>
-              <span className="text-xl font-black text-white">
-                {allInsights.filter((i) => i.category === "grow").length} Strategy Plan{allInsights.filter((i) => i.category === "grow").length !== 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* ─── Category Filter Navigation Tabs ─── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          const TabIcon = tab.icon;
+      {/* ── HERO BANNER ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 22px",
+          borderRadius: 8,
+          background: C.hero,
+          position: "relative",
+          overflow: "hidden",
+          flexWrap: "wrap",
+          gap: 14,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            opacity: 0.12,
+            backgroundImage: `linear-gradient(${C.heroLine} 1px,transparent 1px),linear-gradient(90deg,${C.heroLine} 1px,transparent 1px)`,
+            backgroundSize: "48px 48px",
+          }}
+        />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: `${C.highlight}22`,
+              border: `1.5px solid ${C.highlight}44`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: C.highlight,
+            }}
+          >
+            <Sparkles style={{ width: 18 }} />
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: C.heroFg }}>
+                CampusCoin Copilot
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  background: `${C.highlight}22`,
+                  color: C.highlight,
+                  border: `1px solid ${C.highlight}44`,
+                }}
+              >
+                100% Deterministic & Personalized
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: C.heroMuted, margin: "2px 0 0", fontWeight: 500 }}>
+              Continuous evaluation against your verified spending history, active limits, and goals.
+            </p>
+          </div>
+        </div>
 
+        <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: C.heroMuted, fontWeight: 500 }}>
+            {stats.total} recommendation{stats.total !== 1 ? "s" : ""} generated
+          </span>
+        </div>
+      </div>
+
+      {/* ── KPI SUMMARY STRIP ── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4,1fr)",
+          gap: 0,
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          overflow: "hidden",
+          background: C.border,
+        }}
+      >
+        {[
+          {
+            label: "Active Insights",
+            value: stats.total,
+            raw: true,
+            accent: C.brand,
+            soft: C.brandSoft,
+            icon: Sparkles,
+          },
+          {
+            label: "Take Action Alerts",
+            value: stats.takeActionCount,
+            raw: true,
+            accent: C.takeAction,
+            soft: C.takeActionSoft,
+            icon: AlertTriangle,
+          },
+          {
+            label: "Savings & Growth",
+            value: stats.saveCount + stats.growCount,
+            raw: true,
+            accent: C.growth,
+            soft: C.growthSoft,
+            icon: Target,
+          },
+          {
+            label: "Copilot Status",
+            value: stats.healthLabel,
+            raw: true,
+            accent: stats.highPriorityCount > 0 ? C.takeAction : C.growth,
+            soft: stats.highPriorityCount > 0 ? C.takeActionSoft : C.growthSoft,
+            icon: Shield,
+          },
+        ].map((s) => (
+          <div key={s.label} style={{ background: "#fff", padding: "18px 20px" }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: s.soft,
+                color: s.accent,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 10,
+              }}
+            >
+              <s.icon style={{ width: 16 }} />
+            </div>
+            <div
+              style={{
+                fontSize: "clamp(1.2rem,2.4vw,1.7rem)",
+                fontWeight: 900,
+                color: s.accent,
+                letterSpacing: "-0.03em",
+                lineHeight: 1,
+                marginBottom: 4,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {s.value}
+            </div>
+            <p
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: C.muted,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                margin: 0,
+              }}
+            >
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── CATEGORY FILTER TABS ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {[
+          { id: "all", label: "All Insights", count: stats.total },
+          { id: "take_action", label: "Take Action", count: stats.takeActionCount },
+          { id: "save", label: "Save", count: stats.saveCount },
+          { id: "grow", label: "Grow", count: stats.growCount },
+          { id: "understand", label: "Understand", count: stats.understandCount },
+          { id: "bookmarked", label: "Saved", icon: Bookmark },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer min-h-[40px] ${
-                isActive
-                  ? "bg-white/25 border border-white/40 text-white shadow-md shadow-black/20"
-                  : "bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white"
-              }`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 18px",
+                borderRadius: 999,
+                cursor: "pointer",
+                ...M,
+                fontSize: 13,
+                fontWeight: isActive ? 700 : 500,
+                background: isActive ? C.hero : "#fff",
+                color: isActive ? C.heroFg : C.muted,
+                border: `1.5px solid ${isActive ? C.hero : C.border}`,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.borderColor = C.brand;
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.borderColor = C.border;
+              }}
             >
-              {TabIcon ? (
-                <TabIcon className={`w-3.5 h-3.5 ${isActive ? "text-amber-300" : "text-white/60"}`} />
-              ) : tab.dotColor ? (
-                <span className={`w-2 h-2 rounded-full ${tab.dotColor}`} />
-              ) : null}
+              {tab.icon && <tab.icon style={{ width: 13 }} />}
               <span>{tab.label}</span>
               {tab.count !== undefined && (
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${isActive ? "bg-white/25 text-white" : "bg-white/10 text-white/60"}`}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    padding: "1px 6px",
+                    borderRadius: 999,
+                    background: isActive ? `${C.highlight}33` : C.altBg,
+                    color: isActive ? C.highlight : C.foreground,
+                  }}
+                >
                   {tab.count}
                 </span>
               )}
@@ -353,453 +615,1031 @@ export default function InsightsPage() {
         })}
       </div>
 
-      {/* ─── Insights Cards Grid / Feed ─── */}
+      {/* ── INSIGHTS LIST OR EMPTY STATE ── */}
       {isLoading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-white/60 text-sm">
-          <RefreshCw className="w-8 h-8 animate-spin text-amber-300" />
-          <span>Analyzing transactions, categories, and monthly limits...</span>
+        <div
+          style={{
+            background: "#fff",
+            border: `1.5px solid ${C.border}`,
+            borderRadius: 8,
+            padding: "60px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            color: C.muted,
+            fontSize: 14,
+          }}
+        >
+          <span
+            style={{
+              width: 18,
+              height: 18,
+              border: `2px solid ${C.border}`,
+              borderTopColor: C.brand,
+              borderRadius: "50%",
+              display: "inline-block",
+              animation: "spin 0.7s linear infinite",
+            }}
+          />
+          Evaluating deterministic financial metrics & generating recommendations...
         </div>
-      ) : displayedInsights.length === 0 ? (
-        <div className={`${glassCard} p-10 text-center space-y-3`}>
-          <CheckCircle2 className="w-10 h-10 text-emerald-300 mx-auto" />
-          <h3 className="text-base font-bold text-white">No active recommendations in this category</h3>
-          <p className="text-xs text-white/60 max-w-md mx-auto">
-            {activeTab === "bookmarked"
-              ? "You haven't bookmarked any insights yet. Click the bookmark icon on any recommendation to save it here."
-              : "Everything looks healthy and balanced! Keep recording your daily transactions to maintain your financial score."}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {displayedInsights.map((item) => {
-            const theme = getCategoryTheme(item.category);
+      ) : insights.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {insights.map((item) => {
+            const cat = getCategoryConfig(item.category);
             const isWhyOpen = Boolean(expandedWhyIds[item._id]);
-            const isGoalCard = item.insightType === "savings_goal";
-            const isRebalanceCard = item.insightType === "budget_adjustment";
-            const goalMath = isGoalCard ? getGoalMath(item) : null;
+            const isPinned = Boolean(item.isPinned);
+            const isBookmarked = Boolean(item.isBookmarked);
+            const metrics = item.supportingMetrics || {};
 
             return (
-              <div
+              <motion.div
                 key={item._id}
-                className={`${glassCard} p-6 flex flex-col justify-between space-y-4 border ${item.isPinned ? "border-amber-400/50 shadow-[0_0_25px_rgba(251,191,36,0.15)]" : "border-white/10"} hover:border-white/25 transition-all relative overflow-hidden`}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  background: "#fff",
+                  border: `1.5px solid ${isPinned ? C.highlight : C.border}`,
+                  borderRadius: 8,
+                  padding: "20px 22px",
+                  position: "relative",
+                  boxShadow: isPinned ? `0 4px 18px ${C.highlight}22` : "none",
+                }}
               >
-                {item.isPinned && (
-                  <div className="absolute top-0 right-0 bg-amber-400 text-black px-3 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-bl-xl flex items-center gap-1 shadow-sm">
-                    <Pin className="w-3 h-3 fill-black" /> Pinned
+                {/* Top Strip: Badges & Controls */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    marginBottom: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "3px 10px",
+                        borderRadius: 999,
+                        background: cat.bg,
+                        color: cat.color,
+                        border: `1px solid ${cat.border}`,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      <cat.icon style={{ width: 12 }} />
+                      {cat.label}
+                    </span>
+
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: "3px 8px",
+                        borderRadius: 999,
+                        background:
+                          item.priority === "high"
+                            ? C.takeActionSoft
+                            : item.priority === "medium"
+                            ? C.saveSoft
+                            : C.altBg,
+                        color:
+                          item.priority === "high"
+                            ? C.takeAction
+                            : item.priority === "medium"
+                            ? C.save
+                            : C.muted,
+                        border: `1px solid ${C.border}`,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      {item.priority} Priority
+                    </span>
+
+                    {item.relatedCategoryName && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: C.muted,
+                          background: C.altBg,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        🏷️ {item.relatedCategoryName}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions (Pin, Bookmark, Dismiss) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <button
+                      onClick={() => pinMutation.mutate(item._id)}
+                      title={isPinned ? "Unpin" : "Pin to top"}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        border: `1px solid ${isPinned ? C.highlight : C.border}`,
+                        background: isPinned ? `${C.highlight}33` : C.altBg,
+                        color: isPinned ? C.highlightFg : C.muted,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.12s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = C.brandSoft)}
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = isPinned
+                          ? `${C.highlight}33`
+                          : C.altBg)
+                      }
+                    >
+                      <Pin style={{ width: 13, transform: isPinned ? "rotate(45deg)" : "none" }} />
+                    </button>
+
+                    <button
+                      onClick={() => bookmarkMutation.mutate(item._id)}
+                      title={isBookmarked ? "Remove Bookmark" : "Save for later"}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        border: `1px solid ${isBookmarked ? C.brand : C.border}`,
+                        background: isBookmarked ? C.brandSoft : C.altBg,
+                        color: isBookmarked ? C.brand : C.muted,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.12s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = C.brandSoft)}
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = isBookmarked ? C.brandSoft : C.altBg)
+                      }
+                    >
+                      <Bookmark
+                        style={{
+                          width: 13,
+                          fill: isBookmarked ? C.brand : "none",
+                        }}
+                      />
+                    </button>
+
+                    <button
+                      onClick={() => dismissMutation.mutate(item._id)}
+                      title="Dismiss from feed"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        border: `1px solid ${C.border}`,
+                        background: C.altBg,
+                        color: C.muted,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.12s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = C.takeActionSoft;
+                        e.currentTarget.style.color = C.takeAction;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = C.altBg;
+                        e.currentTarget.style.color = C.muted;
+                      }}
+                    >
+                      <X style={{ width: 14 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Title & Summary */}
+                <h3
+                  style={{
+                    fontSize: "clamp(1.1rem,2vw,1.35rem)",
+                    fontWeight: 900,
+                    color: C.foreground,
+                    margin: "0 0 6px",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p style={{ fontSize: 13, color: C.muted, margin: "0 0 14px", lineHeight: 1.5 }}>
+                  {item.summary}
+                </p>
+
+                {/* Recommendation Box */}
+                <div
+                  style={{
+                    background: C.altBg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    marginBottom: 14,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                  }}
+                >
+                  <Sparkles
+                    style={{ width: 16, color: C.brand, flexShrink: 0, marginTop: 2 }}
+                  />
+                  <div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        color: C.brand,
+                        display: "block",
+                        marginBottom: 2,
+                      }}
+                    >
+                      Personalized AI Recommendation
+                    </span>
+                    <p style={{ fontSize: 13, color: C.foreground, margin: 0, fontWeight: 600 }}>
+                      {item.recommendation}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Supporting Metrics Strip (Deterministic) */}
+                {metrics && Object.keys(metrics).length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      marginBottom: 14,
+                    }}
+                  >
+                    {metrics.currentAmount !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: C.foreground,
+                          background: "#fff",
+                          border: `1px solid ${C.border}`,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        Current: <strong>{formatCurrency(metrics.currentAmount, cur)}</strong>
+                      </span>
+                    )}
+                    {metrics.avgAmount !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: C.muted,
+                          background: "#fff",
+                          border: `1px solid ${C.border}`,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        3-Mo Avg: <strong>{formatCurrency(metrics.avgAmount, cur)}</strong>
+                      </span>
+                    )}
+                    {metrics.percentageChange !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: metrics.percentageChange > 0 ? C.takeAction : C.growth,
+                          background:
+                            metrics.percentageChange > 0 ? C.takeActionSoft : C.growthSoft,
+                          border: `1px solid ${
+                            metrics.percentageChange > 0 ? C.takeActionBorder : C.growBorder
+                          }`,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        {metrics.percentageChange > 0 ? "+" : ""}
+                        {metrics.percentageChange}% vs baseline
+                      </span>
+                    )}
+                    {metrics.budgetLimit !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: C.muted,
+                          background: "#fff",
+                          border: `1px solid ${C.border}`,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        Monthly Cap: <strong>{formatCurrency(metrics.budgetLimit, cur)}</strong>
+                      </span>
+                    )}
+                    {metrics.projectedMonthEnd !== undefined && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: C.brand,
+                          background: C.brandSoft,
+                          border: `1px solid ${C.border}`,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                        }}
+                      >
+                        Forecast: <strong>{formatCurrency(metrics.projectedMonthEnd, cur)}</strong>
+                      </span>
+                    )}
                   </div>
                 )}
 
-                <div>
-                  {/* Category Pill & Action Buttons Bar */}
-                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-white/10 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${theme.pill}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${theme.dot}`} />
-                        {theme.label}
+                {/* Interactive Savings Stepper if pattern is goal */}
+                {item.pattern === "active_savings_goal" && metrics.targetAmount && (
+                  <div
+                    style={{
+                      background: "#fff",
+                      border: `1.5px solid ${C.border}`,
+                      borderRadius: 8,
+                      padding: "14px 16px",
+                      marginBottom: 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 700, color: C.foreground }}>
+                        Goal Target: {formatCurrency(metrics.targetAmount, cur)} · Remaining:{" "}
+                        {formatCurrency(metrics.remainingAmount || 0, cur)}
                       </span>
-
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border ${
-                          item.priority === "high"
-                            ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-                            : item.priority === "medium"
-                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                            : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                        }`}
-                      >
-                        {item.priority} Priority
+                      <span style={{ fontSize: 12, fontWeight: 700, color: C.growth }}>
+                        {metrics.currentAmount
+                          ? Math.round((metrics.currentAmount / metrics.targetAmount) * 100)
+                          : 0}
+                        % Completed
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => bookmarkMutation.mutate(item._id)}
-                        className={`p-2 rounded-full border transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center ${
-                          item.isBookmarked
-                            ? "bg-amber-500/25 border-amber-500/50 text-amber-300"
-                            : "bg-white/5 hover:bg-white/15 border-white/15 text-white/60 hover:text-white"
-                        }`}
-                        title={item.isBookmarked ? "Remove Bookmark" : "Bookmark Insight"}
-                      >
-                        <Bookmark className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => pinMutation.mutate(item._id)}
-                        className={`p-2 rounded-full border transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center ${
-                          item.isPinned
-                            ? "bg-amber-400/30 border-amber-400/60 text-amber-300"
-                            : "bg-white/5 hover:bg-white/15 border-white/15 text-white/60 hover:text-white"
-                        }`}
-                        title={item.isPinned ? "Unpin from Top" : "Pin to Top"}
-                      >
-                        <Pin className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => dismissMutation.mutate(item._id)}
-                        className="p-2 rounded-full bg-white/5 hover:bg-rose-500/20 border border-white/15 hover:border-rose-500/30 text-white/60 hover:text-rose-300 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
-                        title="Dismiss Recommendation"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                    <div
+                      style={{
+                        height: 6,
+                        borderRadius: 999,
+                        background: C.altBg,
+                        overflow: "hidden",
+                        marginBottom: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${Math.min(
+                            100,
+                            Math.round(
+                              ((metrics.currentAmount || 0) / (metrics.targetAmount || 1)) * 100
+                            )
+                          )}%`,
+                          background: C.growth,
+                          borderRadius: 999,
+                        }}
+                      />
                     </div>
-                  </div>
 
-                  {/* Title & Summary */}
-                  <div className="mt-3.5 space-y-1.5">
-                    <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-snug">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-white/80 leading-relaxed font-medium">
-                      {item.summary}
-                    </p>
-                  </div>
-
-                  {/* Recommendation Callout */}
-                  <div className="mt-3.5 p-3.5 rounded-2xl bg-white/[0.05] border border-white/15 text-xs text-white/95 leading-relaxed font-medium flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-[10px] text-amber-300/80 font-bold uppercase tracking-wider block mb-0.5">
-                        AI Recommendation
+                    {/* Interactive Monthly Contribution Slider */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span style={{ fontSize: 12, color: C.muted }}>
+                        Adjust Monthly Contribution:
                       </span>
-                      <span>{item.recommendation}</span>
-                    </div>
-                  </div>
-
-                  {/* ─── Interactive Savings Goal Scenario Widget ─── */}
-                  {isGoalCard && goalMath && (
-                    <div className="mt-4 p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-3">
-                      <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-emerald-300 flex items-center gap-1.5">
-                          <Target className="w-3.5 h-3.5" /> Dynamic Timeline Calculator
-                        </span>
-                        <span className="text-white">
-                          Est. completion: <strong>~{goalMath.months} months</strong>
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-black/40 border border-white/10">
-                        <span className="text-xs text-white/70 font-medium">Monthly Contribution:</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => adjustGoalMonthly(item._id, -1, item)}
-                            className="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white cursor-pointer active:scale-95"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="font-black text-sm text-emerald-300 min-w-[70px] text-center">
-                            {formatCurrency(goalMath.monthly, item.supportingMetrics?.currency || user?.currency)}
-                          </span>
-                          <button
-                            onClick={() => adjustGoalMonthly(item._id, 1, item)}
-                            className="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white cursor-pointer active:scale-95"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-white/70 leading-normal">
-                        At {formatCurrency(goalMath.monthly, item.supportingMetrics?.currency || user?.currency)}/month, you will accumulate the remaining {formatCurrency(goalMath.remaining, item.supportingMetrics?.currency || user?.currency)} in approximately {goalMath.months} months.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ─── Budget Adjustment Rebalancing Preview ─── */}
-                  {isRebalanceCard && item.actionPayload?.suggestedBudgets && (
-                    <div className="mt-4 p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 space-y-2.5">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Sliders className="w-3.5 h-3.5 text-sky-300" /> Proposed Category Rebalancing
-                      </span>
-
-                      <div className="space-y-1.5 text-xs">
-                        {item.actionPayload.suggestedBudgets.map((b, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-black/30 border border-white/5">
-                            <span className="font-semibold text-white/90">{b.categoryName}</span>
-                            <div className="flex items-center gap-2 font-mono">
-                              <span className="text-white/60 line-through">
-                                {formatCurrency(b.currentLimit, item.supportingMetrics?.currency || user?.currency)}
-                              </span>
-                              <span className="text-sky-300 font-bold">→</span>
-                              <span className="text-emerald-300 font-bold">
-                                {formatCurrency(b.suggestedLimit, item.supportingMetrics?.currency || user?.currency)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* ─── Bottom Actions & "Why am I getting this?" Toggle ─── */}
-                <div className="pt-2 border-t border-white/10 space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      {item.actionType && item.actionType !== "none" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <button
-                          onClick={() => handleAction(item)}
-                          className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/40 text-white text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5 min-h-[38px]"
+                          onClick={() =>
+                            setGoalContributions((prev) => {
+                              const curr =
+                                prev[item._id] || metrics.suggestedMonthlyContribution || 100;
+                              return { ...prev, [item._id]: Math.max(10, curr - 50) };
+                            })
+                          }
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            border: `1px solid ${C.border}`,
+                            background: C.altBg,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                          }}
                         >
-                          {item.actionType === "review_spending" && <span>Review Spending</span>}
-                          {item.actionType === "set_limit" && <span>Set Limit</span>}
-                          {item.actionType === "adjust_budget" && <span>{isRebalanceCard ? "Review & Apply" : "Adjust Budget"}</span>}
-                          {item.actionType === "create_savings_plan" && <span>Save Toward Goal</span>}
-                          {item.actionType === "review_subscriptions" && <span>Review Subscriptions</span>}
-                          {item.actionType === "view_spending_drivers" && <span>View Drivers</span>}
-                          {item.actionType === "create_emergency_goal" && <span>Create Emergency Goal</span>}
-                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          -
                         </button>
-                      )}
-
-                      <button
-                        onClick={() => toggleWhy(item._id)}
-                        className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/15 text-white/75 hover:text-white text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer min-h-[38px]"
-                      >
-                        <span>Why am I getting this?</span>
-                        {isWhyOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                      </button>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: C.foreground }}>
+                          {formatCurrency(
+                            goalContributions[item._id] ||
+                              metrics.suggestedMonthlyContribution ||
+                              100,
+                            cur
+                          )}
+                          /mo
+                        </span>
+                        <button
+                          onClick={() =>
+                            setGoalContributions((prev) => {
+                              const curr =
+                                prev[item._id] || metrics.suggestedMonthlyContribution || 100;
+                              return { ...prev, [item._id]: curr + 50 };
+                            })
+                          }
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            border: `1px solid ${C.border}`,
+                            background: C.altBg,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                          }}
+                        >
+                          +
+                        </button>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: C.brand,
+                            padding: "3px 8px",
+                            borderRadius: 999,
+                            background: C.brandSoft,
+                          }}
+                        >
+                          ≈{" "}
+                          {Math.ceil(
+                            (metrics.remainingAmount || 100) /
+                              (goalContributions[item._id] ||
+                                metrics.suggestedMonthlyContribution ||
+                                100)
+                          )}{" "}
+                          months to complete
+                        </span>
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Expandable Explanation Breakdown */}
+                {/* "Why am I getting this?" Expandable Accordion */}
+                <div style={{ marginBottom: 14 }}>
+                  <button
+                    onClick={() => toggleWhy(item._id)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: C.brand,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      ...M,
+                    }}
+                  >
+                    <span>Why am I getting this?</span>
+                    <ChevronDown
+                      style={{
+                        width: 14,
+                        transform: isWhyOpen ? "rotate(180deg)" : "none",
+                        transition: "transform 0.15s",
+                      }}
+                    />
+                  </button>
+
                   <AnimatePresence>
                     {isWhyOpen && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
+                        transition={{ duration: 0.15 }}
+                        style={{ overflow: "hidden", marginTop: 8 }}
                       >
-                        <div className="p-4 rounded-2xl bg-black/50 border border-white/20 space-y-3 text-xs text-white/80">
-                          <div className="flex items-center gap-2 text-white font-bold pb-2 border-b border-white/10">
-                            <Info className="w-4 h-4 text-sky-300" />
-                            <span>Data Grounding & Statistical Metrics</span>
-                          </div>
-
-                          <p className="leading-relaxed text-white/90">
+                        <div
+                          style={{
+                            background: C.altBg,
+                            border: `1px solid ${C.border}`,
+                            borderRadius: 8,
+                            padding: "12px 16px",
+                            fontSize: 12,
+                            color: C.foreground,
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          <p style={{ margin: "0 0 6px", fontWeight: 700, color: C.foreground }}>
                             {item.explanation}
                           </p>
-
-                          {/* Supporting Numerical Metrics Pill Box */}
-                          {item.supportingMetrics && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-                              {item.supportingMetrics.currentAmount !== undefined && (
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                                  <span className="text-[10px] text-white/50 block font-semibold">Current Spend</span>
-                                  <span className="font-black text-white text-xs">
-                                    {formatCurrency(item.supportingMetrics.currentAmount, item.supportingMetrics.currency || user?.currency)}
-                                  </span>
-                                </div>
-                              )}
-
-                              {item.supportingMetrics.avgAmount !== undefined && (
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                                  <span className="text-[10px] text-white/50 block font-semibold">3-Mo Average</span>
-                                  <span className="font-black text-white text-xs">
-                                    {formatCurrency(item.supportingMetrics.avgAmount, item.supportingMetrics.currency || user?.currency)}
-                                  </span>
-                                </div>
-                              )}
-
-                              {item.supportingMetrics.lastMonthAmount !== undefined && (
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                                  <span className="text-[10px] text-white/50 block font-semibold">Last Month</span>
-                                  <span className="font-black text-white text-xs">
-                                    {formatCurrency(item.supportingMetrics.lastMonthAmount, item.supportingMetrics.currency || user?.currency)}
-                                  </span>
-                                </div>
-                              )}
-
-                              {item.supportingMetrics.percentChange !== undefined && (
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                                  <span className="text-[10px] text-white/50 block font-semibold">Variance %</span>
-                                  <span className={`font-black text-xs ${item.supportingMetrics.percentChange > 0 ? "text-rose-300" : "text-emerald-300"}`}>
-                                    {item.supportingMetrics.percentChange > 0 ? "+" : ""}{item.supportingMetrics.percentChange}%
-                                  </span>
-                                </div>
-                              )}
-
-                              {item.supportingMetrics.budgetLimit !== undefined && (
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                                  <span className="text-[10px] text-white/50 block font-semibold">Budget Limit</span>
-                                  <span className="font-black text-white text-xs">
-                                    {formatCurrency(item.supportingMetrics.budgetLimit, item.supportingMetrics.currency || user?.currency)}
-                                  </span>
-                                </div>
-                              )}
-
-                              {item.supportingMetrics.dailyBurnRate !== undefined && (
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                                  <span className="text-[10px] text-white/50 block font-semibold">Burn Velocity</span>
-                                  <span className="font-black text-white text-xs">
-                                    {formatCurrency(item.supportingMetrics.dailyBurnRate, item.supportingMetrics.currency || user?.currency)}/day
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          <span style={{ fontSize: 11, color: C.muted }}>
+                            Confidence: <strong>{item.confidence || "HIGH"}</strong> · Calculated
+                            at {new Date(item.generatedAt || Date.now()).toLocaleDateString()}
+                          </span>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-              </div>
+
+                {/* Working Action Buttons */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => handleAction(item)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      height: 36,
+                      padding: "0 18px",
+                      borderRadius: 999,
+                      background: C.highlight,
+                      color: C.highlightFg,
+                      border: "none",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      ...M,
+                      boxShadow: `0 2px 10px ${C.highlight}44`,
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "oklch(0.82 0.18 157)")
+                    }
+                    onMouseLeave={(e) => (e.currentTarget.style.background = C.highlight)}
+                  >
+                    <span>{item.actionLabel || "Take Action"}</span>
+                    <ArrowUpRight style={{ width: 14 }} />
+                  </button>
+
+                  {item.pattern === "spending_spike" && metrics.drivers?.length > 0 && (
+                    <button
+                      onClick={() => setDriversModalItem(item)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        height: 36,
+                        padding: "0 16px",
+                        borderRadius: 999,
+                        background: C.altBg,
+                        border: `1.5px solid ${C.border}`,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: C.foreground,
+                        cursor: "pointer",
+                        ...M,
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = C.brandSoft)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = C.altBg)}
+                    >
+                      <span>View Spike Drivers ({metrics.drivers.length})</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
             );
           })}
         </div>
-      )}
-
-      {/* ─── Rebalance Confirmation Modal (Review & Apply) ─── */}
-      {rebalanceModalItem && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <div className={`${glassCard} p-6 sm:p-7 max-w-lg w-full space-y-4 shadow-2xl relative`}>
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-sky-300" /> Review & Apply Budget Adjustments
-                </h3>
-                <button
-                  onClick={() => setRebalanceModalItem(null)}
-                  className="p-1 rounded-lg text-white/60 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <p className="text-xs text-white/80 leading-relaxed">
-                CampusCoin AI recommends adjusting the following monthly category limits based on your actual spending patterns:
-              </p>
-
-              <div className="space-y-2 py-2">
-                {(() => {
-                  const budgetsList = rebalanceModalItem.actionPayload?.suggestedBudgets?.length
-                    ? rebalanceModalItem.actionPayload.suggestedBudgets
-                    : (rebalanceModalItem.actionPayload?.categoryId || rebalanceModalItem.relatedCategoryId ? [{
-                        categoryId: rebalanceModalItem.actionPayload?.categoryId || rebalanceModalItem.relatedCategoryId,
-                        categoryName: rebalanceModalItem.actionPayload?.categoryName || rebalanceModalItem.relatedCategoryName || "Category",
-                        currentLimit: rebalanceModalItem.actionPayload?.limitAmount || rebalanceModalItem.supportingMetrics?.budgetLimit || 0,
-                        suggestedLimit: rebalanceModalItem.actionPayload?.suggestedLimit || rebalanceModalItem.supportingMetrics?.budgetLimit || 0,
-                      }] : []);
-
-                  if (budgetsList.length === 0) {
-                    return (
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/70 text-center">
-                        No specific budget adjustments detected for this insight.
-                      </div>
-                    );
-                  }
-
-                  return budgetsList.map((b, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 text-xs">
-                      <span className="font-bold text-white">{b.categoryName}</span>
-                      <div className="flex items-center gap-3 font-mono">
-                        <span className="text-white/50 line-through">
-                          {formatCurrency(b.currentLimit, rebalanceModalItem.supportingMetrics?.currency || user?.currency)}
-                        </span>
-                        <span className="text-sky-300 font-bold">→</span>
-                        <span className="text-emerald-300 font-black text-sm">
-                          {formatCurrency(b.suggestedLimit, rebalanceModalItem.supportingMetrics?.currency || user?.currency)}
-                        </span>
-                      </div>
-                    </div>
-                  ));
-                })()}
-              </div>
-
-              <p className="text-[11px] text-white/60 leading-relaxed italic">
-                * Note: Applying this change will update your active category budget targets in the Budget tab. You can manually adjust them anytime.
-              </p>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-                <button
-                  onClick={() => setRebalanceModalItem(null)}
-                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    const budgetsList = rebalanceModalItem.actionPayload?.suggestedBudgets?.length
-                      ? rebalanceModalItem.actionPayload.suggestedBudgets
-                      : (rebalanceModalItem.actionPayload?.categoryId || rebalanceModalItem.relatedCategoryId ? [{
-                          categoryId: rebalanceModalItem.actionPayload?.categoryId || rebalanceModalItem.relatedCategoryId,
-                          categoryName: rebalanceModalItem.actionPayload?.categoryName || rebalanceModalItem.relatedCategoryName || "Category",
-                          currentLimit: rebalanceModalItem.actionPayload?.limitAmount || rebalanceModalItem.supportingMetrics?.budgetLimit || 0,
-                          suggestedLimit: rebalanceModalItem.actionPayload?.suggestedLimit || rebalanceModalItem.supportingMetrics?.budgetLimit || 0,
-                        }] : []);
-                    if (budgetsList.length > 0) {
-                      applyBudgetsMutation.mutate(budgetsList);
-                    } else {
-                      toast.error("No valid budgets to apply.");
-                    }
-                  }}
-                  disabled={applyBudgetsMutation.isPending}
-                  className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-xs cursor-pointer flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
-                >
-                  {applyBudgetsMutation.isPending ? "Applying..." : "Confirm & Apply"}
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+      ) : (
+        /* Empty State */
+        <div
+          style={{
+            background: "#fff",
+            border: `1.5px solid ${C.border}`,
+            borderRadius: 8,
+            padding: "60px 20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: "50%",
+              background: C.growthSoft,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <CheckCircle2 style={{ width: 24, color: C.growth }} />
           </div>
-        </Portal>
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontSize: 17,
+                fontWeight: 800,
+                color: C.foreground,
+                margin: "0 0 6px",
+              }}
+            >
+              You're all caught up!
+            </p>
+            <p style={{ fontSize: 13, color: C.muted, margin: 0, maxWidth: 420 }}>
+              No critical spending anomalies or overspending risks were detected in this filter.
+              Keep recording transactions to maintain accurate financial intelligence.
+            </p>
+          </div>
+          <button
+            onClick={() => refreshMutation.mutate()}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              height: 42,
+              padding: "0 22px",
+              borderRadius: 999,
+              background: C.highlight,
+              color: C.highlightFg,
+              border: "none",
+              fontSize: 14,
+              fontWeight: 800,
+              cursor: "pointer",
+              ...M,
+            }}
+          >
+            <RefreshCw style={{ width: 14 }} /> Refresh Analysis
+          </button>
+        </div>
       )}
 
-      {/* ─── Forecast Spending Drivers Modal ─── */}
-      {driversModalItem && (
-        <Portal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <div className={`${glassCard} p-6 sm:p-7 max-w-md w-full space-y-4 shadow-2xl relative`}>
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-brand-primary" /> Month-End Spending Drivers
-                </h3>
-                <button
-                  onClick={() => setDriversModalItem(null)}
-                  className="p-1 rounded-lg text-white/60 hover:text-white"
+      {/* ── MODAL: REVIEW & APPLY BUDGET REBALANCING ── */}
+      <Portal>
+        <AnimatePresence>
+          {rebalanceModalItem && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1000,
+                background: "rgba(15,23,42,0.65)",
+                backdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                style={{
+                  ...M,
+                  background: "#fff",
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: "24px 26px",
+                  maxWidth: 520,
+                  width: "100%",
+                  boxShadow: "0 20px 48px rgba(0,0,0,0.18)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 16,
+                  }}
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Sliders style={{ width: 18, color: C.brand }} />
+                    <h3 style={{ fontSize: 17, fontWeight: 900, color: C.foreground, margin: 0 }}>
+                      Review & Apply Suggested Budgets
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setRebalanceModalItem(null)}
+                    style={{
+                      border: "none",
+                      background: "none",
+                      color: C.muted,
+                      cursor: "pointer",
+                      fontSize: 16,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-              <p className="text-xs text-white/80 leading-relaxed">
-                Categories contributing most significantly to your projected month-end spend:
-              </p>
+                <p style={{ fontSize: 13, color: C.muted, margin: "0 0 16px", lineHeight: 1.5 }}>
+                  CampusCoin AI calculated these suggested monthly caps based on your past 3 months
+                  of actual spending. No changes occur until you confirm.
+                </p>
 
-              <div className="space-y-2.5 py-2">
-                {driversModalItem.actionPayload?.drivers?.map((d, i) => (
-                  <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-white">{d.categoryName}</span>
-                      <span className="font-mono font-bold text-white">
-                        {formatCurrency(d.amount, driversModalItem.supportingMetrics?.currency || user?.currency)} ({d.percent}%)
+                <div
+                  style={{
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    marginBottom: 20,
+                  }}
+                >
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: C.altBg, borderBottom: `1px solid ${C.border}` }}>
+                        <th
+                          style={{
+                            padding: "10px 14px",
+                            textAlign: "left",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: C.muted,
+                          }}
+                        >
+                          Category
+                        </th>
+                        <th
+                          style={{
+                            padding: "10px 14px",
+                            textAlign: "right",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: C.muted,
+                          }}
+                        >
+                          Current
+                        </th>
+                        <th
+                          style={{
+                            padding: "10px 14px",
+                            textAlign: "right",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: C.brand,
+                          }}
+                        >
+                          Suggested
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rebalanceModalItem.supportingMetrics?.suggestedBudgets?.map((b, idx) => (
+                        <tr
+                          key={idx}
+                          style={{
+                            borderBottom:
+                              idx !==
+                              rebalanceModalItem.supportingMetrics.suggestedBudgets.length - 1
+                                ? `1px solid ${C.border}`
+                                : "none",
+                          }}
+                        >
+                          <td style={{ padding: "10px 14px", fontWeight: 700, color: C.foreground }}>
+                            {b.categoryName}
+                          </td>
+                          <td style={{ padding: "10px 14px", textAlign: "right", color: C.muted }}>
+                            {formatCurrency(b.currentLimit, cur)}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 14px",
+                              textAlign: "right",
+                              fontWeight: 800,
+                              color: C.growth,
+                            }}
+                          >
+                            {formatCurrency(b.suggestedLimit, cur)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <button
+                    onClick={() => setRebalanceModalItem(null)}
+                    style={{
+                      padding: "9px 18px",
+                      borderRadius: 999,
+                      border: `1.5px solid ${C.border}`,
+                      background: C.altBg,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: C.muted,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleApplyRebalance}
+                    disabled={applyingBudgets}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "9px 22px",
+                      borderRadius: 999,
+                      border: "none",
+                      background: C.highlight,
+                      color: C.highlightFg,
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor: applyingBudgets ? "not-allowed" : "pointer",
+                      boxShadow: `0 4px 14px ${C.highlight}55`,
+                    }}
+                  >
+                    {applyingBudgets ? "Applying..." : "Apply Verified Budgets"}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </Portal>
+
+      {/* ── MODAL: SPENDING DRIVERS INSPECTOR ── */}
+      <Portal>
+        <AnimatePresence>
+          {driversModalItem && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1000,
+                background: "rgba(15,23,42,0.65)",
+                backdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                style={{
+                  ...M,
+                  background: "#fff",
+                  border: `1.5px solid ${C.border}`,
+                  borderRadius: 12,
+                  padding: "24px 26px",
+                  maxWidth: 500,
+                  width: "100%",
+                  boxShadow: "0 20px 48px rgba(0,0,0,0.18)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 14,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <ArrowLeftRight style={{ width: 18, color: C.takeAction }} />
+                    <h3 style={{ fontSize: 17, fontWeight: 900, color: C.foreground, margin: 0 }}>
+                      Contributing Transactions
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setDriversModalItem(null)}
+                    style={{
+                      border: "none",
+                      background: "none",
+                      color: C.muted,
+                      cursor: "pointer",
+                      fontSize: 16,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <p style={{ fontSize: 13, color: C.muted, margin: "0 0 16px" }}>
+                  The spike in <strong>{driversModalItem.relatedCategoryName || "spending"}</strong>{" "}
+                  was primarily driven by these recent transactions:
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    marginBottom: 20,
+                    maxHeight: 280,
+                    overflowY: "auto",
+                  }}
+                >
+                  {driversModalItem.supportingMetrics?.drivers?.map((d, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        borderRadius: 8,
+                        background: C.altBg,
+                        border: `1px solid ${C.border}`,
+                      }}
+                    >
+                      <div>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: C.foreground,
+                            display: "block",
+                          }}
+                        >
+                          {d.description || "Expense"}
+                        </span>
+                        <span style={{ fontSize: 11, color: C.muted }}>
+                          {new Date(d.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 900, color: C.takeAction }}>
+                        {formatCurrency(d.amount, cur)}
                       </span>
                     </div>
-                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-400"
-                        style={{ width: `${Math.min(100, d.percent)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <div className="flex justify-end pt-3 border-t border-white/10">
-                <button
-                  onClick={() => setDriversModalItem(null)}
-                  className="px-5 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-xs cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <button
+                    onClick={() => {
+                      setDriversModalItem(null);
+                      handleAction(driversModalItem);
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "9px 20px",
+                      borderRadius: 999,
+                      border: "none",
+                      background: C.highlight,
+                      color: C.highlightFg,
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Open in Ledger
+                  </button>
+                </div>
+              </motion.div>
             </div>
-          </div>
-        </Portal>
-      )}
+          )}
+        </AnimatePresence>
+      </Portal>
+
+      {/* ── AD BANNER ── */}
+      <AdSenseAd slot="dashboard-bottom" />
     </div>
   );
 }

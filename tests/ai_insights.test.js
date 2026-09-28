@@ -239,6 +239,21 @@ describe("AI Insights & Recommendations System Tests", () => {
   });
 
   describe("API Endpoint Integration Tests (/api/insights)", () => {
+    beforeAll(async () => {
+      let u = await User.findById(testUserId);
+      if (!u) {
+        u = await User.create({
+          name: "Alex Rivera",
+          email: `alex_${Date.now()}@campuscoin.edu`,
+          passwordHash: "$2a$12$dummyHashForTestingAlexRivera123",
+          academicYear: "Sophomore",
+        });
+        testUserId = u._id.toString();
+      }
+      const generateToken = require("../server/core/generateToken");
+      authToken = generateToken({ id: testUserId, role: u.role || "student" });
+    });
+
     it("GET /api/insights without token should return 401", async () => {
       const res = await request(app).get("/api/insights");
       expect(res.status).toBe(401);
@@ -317,6 +332,99 @@ describe("AI Insights & Recommendations System Tests", () => {
       expect(res.body.forecast).toBeDefined();
       expect(typeof res.body.forecast.dailyBurnRate).toBe("number");
       expect(typeof res.body.forecast.projectedMonthEndExpense).toBe("number");
+    });
+
+    it("POST /api/insights/apply-budgets should apply verified budget adjustments", async () => {
+      const res = await request(app)
+        .post("/api/insights/apply-budgets")
+        .set("Authorization", `Bearer ${authToken}`)
+        .send({
+          suggestedBudgets: [
+            {
+              categoryId: foodCatId,
+              categoryName: "Food",
+              currentLimit: 200,
+              suggestedLimit: 250,
+            },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.budgets)).toBe(true);
+    });
+
+    it("GET /api/insights/dynamic should return single dynamic tip", async () => {
+      const res = await request(app)
+        .get("/api/insights/dynamic")
+        .set("Authorization", `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(typeof res.body.tip).toBe("string");
+    });
+  });
+
+  describe("Personalization Multi-User Verification (Rule 38)", () => {
+    it("should produce distinct, context-specific insights for two different users", async () => {
+      // User B: High income surplus student with minimal expenses
+      const userBEmail = `student_b_${Date.now()}@campuscoin.edu`;
+      const regB = await request(app)
+        .post("/api/auth/register")
+        .send({
+          name: "User B",
+          email: userBEmail,
+          password: testPassword,
+          academicYear: "Senior",
+          monthlyAllowanceBaseline: 1500,
+          monthlySavingsGoal: 300,
+        });
+
+      const userBId = regB.body.user.id || regB.body.user._id;
+
+      // Seed User B with 1 income and 1 normal low expense
+      const now = new Date();
+      await Transaction.create({
+        userId: userBId,
+        categoryId: foodCatId,
+        amount: 2000,
+        type: "income",
+        description: "Monthly Scholarship",
+        date: new Date(now.getFullYear(), now.getMonth(), 1),
+      });
+
+      await Transaction.create({
+        userId: userBId,
+        categoryId: foodCatId,
+        amount: 80,
+        type: "expense",
+        description: "Standard grocery",
+        date: new Date(now.getFullYear(), now.getMonth(), 2),
+      });
+
+      await Transaction.create({
+        userId: userBId,
+        categoryId: foodCatId,
+        amount: 70,
+        type: "expense",
+        description: "Meal plan",
+        date: new Date(now.getFullYear(), now.getMonth(), 3),
+      });
+
+      const resultA = await analyzeUserFinances(testUserId);
+      const resultB = await analyzeUserFinances(userBId);
+
+      // User A (high food spend & spike) vs User B (high surplus, healthy budget)
+      const userAInsightTypes = resultA.insights.map((i) => i.insightType);
+      const userBInsightTypes = resultB.insights.map((i) => i.insightType);
+
+      expect(userAInsightTypes).toContain("high_spending");
+      expect(userBInsightTypes).toContain("saving_opportunity");
+      expect(resultB.metrics.netSurplus).toBeGreaterThan(resultA.metrics.netSurplus);
+
+      // Clean up User B
+      await User.deleteMany({ _id: userBId });
+      await Transaction.deleteMany({ userId: userBId });
     });
   });
 });
